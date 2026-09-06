@@ -16,9 +16,16 @@
 - [x] SEO: canonical, OG/Twitter, prev/next, BreadcrumbList/WebSite/Organization JSON-LD, sitemap filter, robots.txt, `_headers` (CSP/HSTS/caching)
 - [x] `validate:content`, `budget` scripts; 21 unit tests; production build passing
 
-## Remaining (needs owner credentials or time)
-- [ ] CSV import/export tools (`tools/import-csv.ts`, `tools/export-questions.ts`) — package scripts exist; implement using `questionPairFingerprint` for dupes
-- [ ] Playwright smoke + visual regression configs (`playwright.config.ts`, `playwright.visual.config.ts`) and `tests/e2e/`
-- [ ] PNG favicon/apple-touch-icon/og-default.png (favicon.svg exists; layout references PNGs)
-- [ ] Verify Supabase adapter end-to-end against a real project; regenerate `database.types.ts`
-- [ ] Optional: Cloudflare rate-limit binding (`FORM_RATE_LIMITER`) in wrangler.jsonc
+## Completed in the final implementation pass
+- [x] CSV import/export tools (`tools/import-csv.ts`, `tools/export-questions.ts`) with normalized, order-independent duplicate detection
+- [x] Playwright smoke + visual regression configs and browser flows in `tests/e2e/`
+- [x] PNG/ICO favicon, apple-touch icon, 192/512 app icons, and 1200×630 default social image
+- [x] Strict TypeScript errors fixed across the game, vote API, and Supabase adapter types
+- [x] Cloudflare rate-limit binding (`FORM_RATE_LIMITER`) configured in `wrangler.jsonc`
+
+## Owner setup required
+- [ ] Create the production Supabase project, run migrations, and provide project credentials
+- [ ] Regenerate `database.types.ts` from the linked project and run the real Supabase end-to-end verification
+- [ ] Replace legal placeholders (entity, address, jurisdiction, dates, and DMCA agent)
+- [ ] Create production Turnstile widgets and add Cloudflare Worker secrets
+- [ ] Review visual baselines on the deployment/CI Linux image and deploy the Worker/custom domain

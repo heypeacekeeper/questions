@@ -15,11 +15,19 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  // Global Cloudflare rate limiter used by vote/contact/submission endpoints.
+  // namespace_id only needs to be unique within this Cloudflare account.
+  "ratelimits": [
+    {
+      "name": "FORM_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
   // Non-secret runtime variables. Secrets (SUPABASE_SECRET_KEY, TURNSTILE_SECRET_KEY,
   // VOTER_HASH_SECRET) must be set with `wrangler secret put` — never here.
   "vars": {
     "PUBLIC_SITE_URL": "https://wouldyouratherquestions.org",
-    "DATA_PROVIDER": "supabase",
     "FEATURE_VOTING": "true",
     "FEATURE_SUBMISSIONS": "true",
     "FEATURE_CONTACT_FORM": "true"

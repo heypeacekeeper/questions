@@ -36,6 +36,10 @@ function appVersion(): string {
 }
 
 export default function buildArtifacts(): AstroIntegration {
+  // The Cloudflare adapter replaces process.env with Wrangler vars before the
+  // done hook. Preserve the invoking build environment without validating it
+  // during config loading (so `astro check` remains credential-free).
+  const invocationEnv = { ...process.env };
   return {
     name: 'wyr:build-artifacts',
     hooks: {
@@ -43,6 +47,7 @@ export default function buildArtifacts(): AstroIntegration {
         // @astrojs/cloudflare (Workers) writes static assets to dist/client.
         const root = fileURLToPath(dir);
         const outDir = existsSync(join(root, 'client')) ? join(root, 'client') : root;
+        Object.assign(process.env, invocationEnv);
         const ctx = await getContentContext();
         const [categories, questions] = await Promise.all([ctx.categories.getAllCategories(), ctx.questions.getAllQuestions()]);
 

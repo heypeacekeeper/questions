@@ -8,7 +8,7 @@
  * The category catalogue (names, paths, SEO copy) below IS the launch
  * category definition set and is mirrored in supabase/migrations/0002_seed_categories.sql.
  */
-import type { Category, CategoryWithCount } from '@/domain/category';
+import type { Category } from '@/domain/category';
 import type { Question } from '@/domain/question';
 
 const NOW = '2026-01-01T00:00:00.000Z';

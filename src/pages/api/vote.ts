@@ -17,7 +17,9 @@ export const POST: APIRoute = async (ctx) => {
   if (issued) token = generateVoterToken();
   const outcome = await new VotingService(mc.votes, mc.rateLimiter, secret).castVote(parsed.body, token as string);
   const secure = new URL(ctx.request.url).protocol === 'https:' ? '; Secure' : '';
-  const setCookie = issued ? { 'set-cookie': `${VOTING.cookieName}=${token}; Max-Age=${VOTING.cookieMaxAgeSeconds}; Path=/; HttpOnly; SameSite=Lax${secure}` } : {};
+  const setCookie: Record<string, string> = issued
+    ? { 'set-cookie': `${VOTING.cookieName}=${token}; Max-Age=${VOTING.cookieMaxAgeSeconds}; Path=/; HttpOnly; SameSite=Lax${secure}` }
+    : {};
   switch (outcome.kind) {
     case 'ok': return json({ ok: true, result: outcome.result }, 200, setCookie);
     case 'invalid': return fail(400, 'Invalid vote.');

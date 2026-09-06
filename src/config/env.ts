@@ -199,6 +199,38 @@ export function readProcessEnv(): RawEnv {
   return { ...p } as RawEnv;
 }
 
+/** Astro/Vite inlines direct property reads into prerender chunks, whose process.env is intentionally sparse. */
+export function readImportMetaEnv(): RawEnv {
+  const env = (import.meta as unknown as { env?: ImportMetaEnv }).env ?? ({} as ImportMetaEnv);
+  const values: RawEnv = {
+    MODE: env.MODE,
+    ASTRO_MODE: env.MODE,
+    DATA_PROVIDER: env.DATA_PROVIDER,
+    ALLOW_MOCK_IN_PRODUCTION: env.ALLOW_MOCK_IN_PRODUCTION,
+    ALLOW_DEMO_CONTENT: env.ALLOW_DEMO_CONTENT,
+    PUBLIC_SITE_URL: env.PUBLIC_SITE_URL,
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY: env.SUPABASE_PUBLISHABLE_KEY,
+    SUPABASE_SECRET_KEY: env.SUPABASE_SECRET_KEY,
+    PUBLIC_TURNSTILE_SITE_KEY: env.PUBLIC_TURNSTILE_SITE_KEY,
+    TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
+    VOTER_HASH_SECRET: env.VOTER_HASH_SECRET,
+    FEATURE_VOTING: env.FEATURE_VOTING,
+    FEATURE_SUBMISSIONS: env.FEATURE_SUBMISSIONS,
+    FEATURE_CONTACT_FORM: env.FEATURE_CONTACT_FORM,
+    FEATURE_ADS: env.FEATURE_ADS,
+    FEATURE_GA4: env.FEATURE_GA4,
+    FEATURE_CLOUDFLARE_ANALYTICS: env.FEATURE_CLOUDFLARE_ANALYTICS,
+    FEATURE_BLOG: env.FEATURE_BLOG,
+    FEATURE_SEARCH: env.FEATURE_SEARCH,
+    PUBLIC_GA4_MEASUREMENT_ID: env.PUBLIC_GA4_MEASUREMENT_ID,
+    PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN: env.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN,
+    PUBLIC_SEARCH_CONSOLE_VERIFICATION: env.PUBLIC_SEARCH_CONSOLE_VERIFICATION,
+    PUBLIC_ADSENSE_PUBLISHER_ID: env.PUBLIC_ADSENSE_PUBLISHER_ID,
+  };
+  return Object.fromEntries(Object.entries(values).filter((entry): entry is [string, string] => entry[1] !== undefined));
+}
+
 let cachedBuildEnv: AppEnv | undefined;
 
 /**
@@ -207,7 +239,7 @@ let cachedBuildEnv: AppEnv | undefined;
  */
 export function getBuildEnv(): AppEnv {
   if (!cachedBuildEnv) {
-    const raw = readProcessEnv();
+    const raw = { ...readProcessEnv(), ...readImportMetaEnv() };
     const mode = raw.NODE_ENV ?? (raw.ASTRO_MODE || undefined) ?? 'production';
     cachedBuildEnv = buildAppEnv(raw, { mode, context: 'build' });
   }
