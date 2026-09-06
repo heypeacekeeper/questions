@@ -1,0 +1,14 @@
+---
+import { getContentContext } from '@/repositories/factory';
+import { TURNSTILE } from '@/config/site';
+interface Props { action: string }
+const { action } = Astro.props;
+const { env } = await getContentContext();
+const siteKey = env.turnstileSiteKey ?? TURNSTILE.testSiteKey;
+---
+<div class="form-field">
+  <span class="form-legend" id={`turnstile-label-${action}`}>Human verification</span>
+  <div class="turnstile-slot" data-turnstile data-sitekey={siteKey} data-action={action} aria-labelledby={`turnstile-label-${action}`}></div>
+  <p class="form-error" data-error-for="turnstile" role="alert"></p>
+</div>
+<script is:inline async defer src={TURNSTILE.scriptUrl}></script>

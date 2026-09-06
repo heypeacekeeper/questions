@@ -1,0 +1,11 @@
+---
+import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES } from '@/config/site';
+const meta = { title: 'Terms and Conditions', description: 'Terms of use for Would You Rather Questions, including submissions and acceptable use.', path: ROUTES.terms };
+---
+<ProseLayout meta={meta} heading="Terms and Conditions" legal>
+<p>Operator: <span class="placeholder">Would You Rather Questions — legal entity to be added</span>. Governing law: <span class="placeholder">[JURISDICTION]</span>.</p>
+<h2>Use of the site</h2><p>The site is provided free for personal, educational and entertainment use. Do not scrape, overload or attempt to manipulate votes or forms.</p>
+<h2>Submissions</h2><p>By submitting a question you confirm it is your own wording, grant us a perpetual, royalty-free licence to publish, edit and distribute it, and accept that it may be declined. See the <a href={ROUTES.editorialPolicy}>Editorial Policy</a>.</p>
+<h2>Content</h2><p>Questions are for fun and are provided "as is" without warranties. Vote percentages reflect anonymous visitor votes and are not statistically representative.</p>
+<h2>Copyright</h2><p>Site design and text are © the operator. Report infringement via the <a href={ROUTES.dmca}>DMCA page</a>.</p>
+</ProseLayout>

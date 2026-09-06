@@ -1,0 +1,32 @@
+---
+/** Share pages: noindex, question-specific OG, voting allowed, locked to one question. */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Game from '@/components/Game.astro';
+import { getContentContext } from '@/repositories/factory';
+import { QuestionService } from '@/application/question-service';
+import { toGameQuestion, questionSentence } from '@/domain/question';
+import { ROUTES, sharePath } from '@/config/site';
+import type { Question } from '@/domain/question';
+
+export async function getStaticPaths() {
+  const ctx = await getContentContext();
+  const all = await ctx.questions.getAllQuestions();
+  // Published + archived (archived keeps a graceful "unavailable" page). Drafts are never exposed.
+  return all.filter((q) => q.status !== 'draft').map((q) => ({ params: { code: q.shareCode }, props: { question: q } }));
+}
+const { question } = Astro.props as { question: Question };
+const ctx = await getContentContext();
+const visible = await ctx.categoryService.getVisibleCategories();
+const primary = QuestionService.primaryCategory(question, visible);
+const available = question.status === 'published';
+const sentence = questionSentence(question);
+const meta = { title: available ? sentence : 'This question is no longer available', description: available ? `Vote now: ${sentence} See what everyone else picked.` : 'This Would You Rather question has been retired, but there are plenty more to play.', path: sharePath(question.shareCode), robots: 'noindex,follow' };
+---
+<BaseLayout meta={meta}>
+  {available ? <Game mode="single" initial={toGameQuestion(question)} category={primary} votingEnabled={ctx.env.features.FEATURE_VOTING} /> : null}
+  <section class="content-intro"><div class="wrap">
+    <h1 class="page-title">{available ? sentence : 'This question is no longer available'}</h1>
+    <div class="intro-copy"><p>{available ? 'Pick a side to see how everyone else voted, then share the link with friends.' : 'The question behind this link has been retired. The links below will take you to questions that are still live.'}</p></div>
+    <nav class="quick-links" aria-label="Keep playing">{primary && <a href={primary.canonicalPath}>{primary.icon} More {primary.name} questions</a>}<a href={ROUTES.home}>🎲 Play a random game</a><a href={ROUTES.categories}>All categories</a></nav>
+  </div></section>
+</BaseLayout>

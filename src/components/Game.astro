@@ -1,0 +1,202 @@
+---
+/**
+ * Interactive game. The first question and both options are rendered in the
+ * HTML so nothing is empty before JavaScript runs. `src/scripts/game.ts`
+ * progressively enhances it.
+ *
+ * Modes:
+ *  - mixed:    homepage, pack picker available, uses /game-data/mixed/*
+ *  - category: locked to one category, no picker
+ *  - single:   share page, locked to one question, voting allowed
+ */
+import type { GameQuestion } from '@/domain/question';
+import type { CategoryWithCount } from '@/domain/category';
+import { API_PATHS, GAME_DATA, ROUTES, STORAGE_KEYS, VOTING } from '@/config/site';
+import { MIXED_PACK_SLUG } from '@/application/game-data-service';
+
+interface PackOption {
+  slug: string;
+  name: string;
+  icon: string;
+  description: string;
+  requiresAgeGate: boolean;
+}
+
+interface Props {
+  mode: 'mixed' | 'category' | 'single';
+  /** First question to render statically (null → empty state). */
+  initial: GameQuestion | null;
+  /** Pack set slug for the manifest (mixed | category slug). Ignored for single. */
+  setSlug?: string;
+  /** Label for the toolbar pack button. */
+  packLabel?: string;
+  /** Category options for the homepage picker. */
+  packs?: readonly PackOption[];
+  /** Whether voting is enabled (feature flag). */
+  votingEnabled: boolean;
+  /** Category (for category mode analytics + share fallback link). */
+  category?: CategoryWithCount | null;
+}
+
+const { mode, initial, setSlug = MIXED_PACK_SLUG, packLabel = 'Mixed', packs = [], votingEnabled, category = null } = Astro.props;
+
+const config = {
+  mode,
+  set: setSlug,
+  manifest: `${ROUTES.gameDataPrefix}${GAME_DATA.manifestFile}`,
+  voteApi: API_PATHS.vote,
+  votingEnabled,
+  refill: GAME_DATA.refillThreshold,
+  sharePrefix: ROUTES.sharePrefix,
+  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, voted: STORAGE_KEYS.voted, seen: STORAGE_KEYS.seen },
+  cookie: VOTING.cookieName,
+  category: category?.slug ?? null,
+  initial,
+};
+const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', icon: '🎲', description: 'A little bit of everything', requiresAgeGate: false }, ...packs] : [];
+---
+
+<section class="game-section" id="game" aria-labelledby="game-heading">
+  <h2 class="sr-only" id="game-heading">Play Would You Rather</h2>
+
+  <div class="game-wrap">
+    <div class="game-shell" id="game-shell" data-game-config={JSON.stringify(config)}>
+      <div class="game-toolbar">
+        {mode === 'mixed' ? (
+          <button class="tool-button" id="pack-button" type="button" aria-haspopup="dialog" aria-controls="pack-dialog">
+            <span id="pack-label">{packLabel}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+              <path d="m5 8 7 8 7-8" />
+            </svg>
+          </button>
+        ) : mode === 'category' && category ? (
+          <span class="tool-button" id="pack-label" aria-label={`Playing ${category.name} questions`}>{category.icon} {category.name}</span>
+        ) : (
+          <a class="tool-button" href={category?.canonicalPath ?? ROUTES.home}>{category ? `More ${category.name}` : 'Play more'} →</a>
+        )}
+
+        <span class="toolbar-spacer"></span>
+
+        <button class="tool-button icon-button" id="share-button" type="button" aria-label="Share this question" title="Share" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" />
+          </svg>
+        </button>
+
+        <button class="tool-button icon-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''}>
+        {initial ? (
+          <>
+            <button class="choice choice-a" id="choice-a" type="button" aria-describedby="game-instructions">
+              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
+              <span class="choice-content">
+                <span class="option-label">OPTION A</span>
+                <span class="choice-text" id="text-a">{initial.a}</span>
+                <span class="result" id="result-a">
+                  <strong class="result-percent" id="percent-a"></strong>
+                  <span class="result-votes" id="votes-a"></span>
+                </span>
+              </span>
+              <span class="result-fill" id="fill-a" aria-hidden="true"></span>
+            </button>
+
+            <button class="choice choice-b" id="choice-b" type="button" aria-describedby="game-instructions">
+              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
+              <span class="choice-content">
+                <span class="option-label">OPTION B</span>
+                <span class="choice-text" id="text-b">{initial.b}</span>
+                <span class="result" id="result-b">
+                  <strong class="result-percent" id="percent-b"></strong>
+                  <span class="result-votes" id="votes-b"></span>
+                </span>
+              </span>
+              <span class="result-fill" id="fill-b" aria-hidden="true"></span>
+            </button>
+
+            <div class="game-pivot">
+              <div class="or-badge" aria-hidden="true">OR</div>
+              <button class="next-button" id="next-button" type="button">
+                Next question
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="verdict">
+              <span class="verdict-text" id="verdict-text"></span>
+            </div>
+
+            <noscript>
+              <div class="game-nojs">
+                <span class="verdict-text">Enable JavaScript to vote and see the next question. The question lists below work without it.</span>
+              </div>
+            </noscript>
+          </>
+        ) : (
+          <div class="game-empty" id="game-empty">
+            <p>No questions are available in this collection yet. Try another category from the menu.</p>
+          </div>
+        )}
+      </div>
+
+      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B. Use the left and right arrow keys to vote.</p>
+      <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </div>
+
+  {mode === 'mixed' && (
+    <dialog class="pack-dialog" id="pack-dialog" aria-labelledby="pack-dialog-title">
+      <div class="dialog-content">
+        <div id="pack-picker">
+          <div class="dialog-header">
+            <div class="dialog-copy">
+              <h2 id="pack-dialog-title">Pick a question pack</h2>
+              <p>Choose what kind of questions you want to play.</p>
+            </div>
+            <button class="close-button" id="close-pack-dialog" type="button" aria-label="Close question packs">×</button>
+          </div>
+
+          <div class="pack-grid" id="pack-grid">
+            {packOptions.map((p) => (
+              <button type="button" class="pack-button" data-pack={p.slug} data-gated={p.requiresAgeGate ? '1' : '0'} data-name={p.name} aria-current="false">
+                <span class="pack-emoji" aria-hidden="true">{p.icon}</span>
+                <span class="pack-copy">
+                  <strong>{p.name}</strong>
+                  <small>{p.description}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p class="dialog-note">Your pack will be remembered on this device.</p>
+        </div>
+
+        <div class="age-gate" id="age-gate" hidden role="group" aria-labelledby="age-gate-title">
+          <div class="dialog-header">
+            <div class="dialog-copy">
+              <h2 id="age-gate-title"><span id="age-gate-pack">This pack</span> — 18+</h2>
+              <p>Please confirm you are an adult before continuing.</p>
+            </div>
+            <button class="close-button" id="close-age-gate" type="button" aria-label="Close age confirmation">×</button>
+          </div>
+          <p>This pack contains suggestive, grown-up questions. It is not intended for children or classrooms. Your confirmation is remembered on this device only.</p>
+          <div class="gate-actions">
+            <button id="age-back-button" type="button">Go back</button>
+            <button class="confirm-age" id="confirm-age-button" type="button">I am 18 or older</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  )}
+</section>
+
+<script>
+  import { initGame } from '@/scripts/game';
+  initGame();
+</script>

@@ -1,0 +1,9 @@
+---
+import ProseLayout from '@/layouts/ProseLayout.astro'; import SubmissionForm from '@/components/SubmissionForm.astro'; import { getContentContext } from '@/repositories/factory'; import { ROUTES } from '@/config/site';
+const ctx = await getContentContext(); const categories = await ctx.categoryService.getSubmissionCategories();
+const meta = { title: 'Submit a Would You Rather Question', description: 'Send us your best Would You Rather question. Reviewed by our editors before publication.', path: ROUTES.submit };
+---
+<ProseLayout meta={meta} heading="Submit a Question">
+<p>Got a dilemma everyone argues about? Send it in. Submissions are reviewed by a human before anything is published, and we may edit wording for clarity. See the <a href={ROUTES.editorialPolicy}>Editorial Policy</a>.</p>
+{ctx.env.features.FEATURE_SUBMISSIONS ? <SubmissionForm categories={categories} /> : <p class="notice">Submissions are currently closed. Please check back soon.</p>}
+</ProseLayout>

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+.wrangler/
+worker-configuration.d.ts
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Test artifacts
+test-results/
+playwright-report/
+tests/visual/__diff_output__/
+tests/visual/*-actual.png
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Data exports (may contain personal data)
+exports/
+*.backup
+*.bak
+*.tar.gz
+*.zip

@@ -1,0 +1,18 @@
+---
+import type { CategoryWithCount } from '@/domain/category';
+interface Props { categories: readonly CategoryWithCount[]; heading?: string }
+const { categories, heading = 'More Would You Rather categories' } = Astro.props;
+---
+{categories.length > 0 && (
+  <section class="question-section" aria-labelledby="related-heading">
+    <header class="section-header"><h2 id="related-heading" style="font-size:clamp(22px,3vw,28px)">{heading}</h2></header>
+    <div class="related-grid">
+      {categories.map((c) => (
+        <a href={c.canonicalPath}>
+          <span class="category-icon" aria-hidden="true">{c.icon}</span>
+          <span class="category-copy"><strong>{c.name}</strong><small>{c.publishedQuestionCount} questions</small></span>
+        </a>
+      ))}
+    </div>
+  </section>
+)}

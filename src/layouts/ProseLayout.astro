@@ -1,0 +1,13 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { homeBreadcrumb, type PageMeta } from '@/lib/seo';
+interface Props { meta: PageMeta; heading: string; legal?: boolean }
+const { meta, heading, legal = false } = Astro.props;
+const breadcrumbs = [homeBreadcrumb(), { name: heading, path: meta.path }];
+---
+<BaseLayout meta={meta} breadcrumbs={breadcrumbs}>
+  <section class="content-intro"><div class="wrap"><Breadcrumbs items={breadcrumbs} /><h1>{heading}</h1>
+    {legal && <p class="notice" style="margin-top:14px"><strong>Template notice:</strong> this page is a customizable template published by <span class="placeholder">Would You Rather Questions</span>. It is not legal advice and should be reviewed by a qualified professional before production use. Highlighted items are owner placeholders.</p>}
+    <div class="prose"><slot /></div></div></section>
+</BaseLayout>

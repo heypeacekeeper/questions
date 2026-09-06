@@ -1,0 +1,49 @@
+{
+  "name": "would-you-rather-questions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Would You Rather Questions – static Astro site on Cloudflare Workers with Supabase content.",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "dev:mock": "cross-env DATA_PROVIDER=mock astro dev",
+    "build": "npm run validate:content && astro build && npm run budget",
+    "build:mock": "cross-env DATA_PROVIDER=mock ALLOW_MOCK_IN_PRODUCTION=true ALLOW_DEMO_CONTENT=true npm run build",
+    "build:no-budget": "npm run validate:content && astro build",
+    "preview": "wrangler dev",
+    "check": "astro check && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
+    "validate:content": "tsx tools/validate-content.ts",
+    "budget": "tsx tools/performance-budget.ts",
+    "import:csv": "tsx tools/import-csv.ts",
+    "export:json": "tsx tools/export-questions.ts --format json",
+    "export:csv": "tsx tools/export-questions.ts --format csv",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "audit": "npm audit --omit=dev"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.3.0",
+    "@astrojs/sitemap": "^3.7.4",
+    "@supabase/supabase-js": "^2.115.0",
+    "astro": "^7.3.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.63.0",
+    "cross-env": "^10.0.0",
+    "dotenv": "^17.4.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.129.0"
+  }
+}

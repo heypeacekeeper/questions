@@ -1,0 +1,9 @@
+---
+import ProseLayout from '@/layouts/ProseLayout.astro'; import ContactForm from '@/components/ContactForm.astro'; import { getContentContext } from '@/repositories/factory'; import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
+const { env } = await getContentContext();
+const meta = { title: 'Contact Us', description: 'Contact Would You Rather Questions about corrections, feedback, partnerships or privacy requests.', path: ROUTES.contact };
+---
+<ProseLayout meta={meta} heading="Contact Us">
+<p>Email us at <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a>, or use the form below. We read every message; please allow a few days for a reply. For privacy requests, see the <a href={ROUTES.privacy}>Privacy Policy</a>.</p>
+{env.features.FEATURE_CONTACT_FORM ? <ContactForm /> : <p class="notice">The contact form is currently unavailable — please email us instead.</p>}
+</ProseLayout>

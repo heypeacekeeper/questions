@@ -1,0 +1,30 @@
+---
+import { BRAND_DISPLAY_DOMAIN, ROUTES } from '@/config/site';
+const year = new Date().getFullYear();
+const links = [
+  { label: 'About', href: ROUTES.about },
+  { label: 'Contact', href: ROUTES.contact },
+  { label: 'Submit', href: ROUTES.submit },
+  { label: 'Categories', href: ROUTES.categories },
+  { label: 'Editorial Policy', href: ROUTES.editorialPolicy },
+  { label: 'Privacy', href: ROUTES.privacy },
+  { label: 'Cookies', href: ROUTES.cookies },
+  { label: 'Terms', href: ROUTES.terms },
+  { label: 'Accessibility', href: ROUTES.accessibility },
+  { label: 'DMCA', href: ROUTES.dmca },
+];
+---
+
+<footer class="site-footer" id="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-copy">
+      <span class="footer-brand">{BRAND_DISPLAY_DOMAIN}</span>
+      <p>© {year} · Made for difficult decisions.</p>
+      <p><button type="button" class="consent-manage-link" data-consent-open>Cookie preferences</button></p>
+    </div>
+
+    <nav class="footer-links" aria-label="Footer navigation">
+      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+    </nav>
+  </div>
+</footer>

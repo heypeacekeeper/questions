@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+# /s/ is intentionally NOT blocked so crawlers can see the noindex directive.
+Disallow: /api/
+Sitemap: https://wouldyouratherquestions.org/sitemap-index.xml

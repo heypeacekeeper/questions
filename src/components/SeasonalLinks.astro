@@ -1,0 +1,12 @@
+---
+import type { CategoryWithCount } from '@/domain/category';
+interface Props { category: CategoryWithCount | null }
+const { category } = Astro.props;
+---
+{category && (
+  <section class="side-card" aria-labelledby="seasonal-heading">
+    <h2 id="seasonal-heading">In season</h2>
+    <p>{category.shortDescription}</p>
+    <a class="side-cta side-cta-yellow" href={category.canonicalPath}>{category.icon} {category.name} questions</a>
+  </section>
+)}

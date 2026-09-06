@@ -1,0 +1,23 @@
+---
+import type { CategoryWithCount } from '@/domain/category';
+import { API_PATHS, FORM_LIMITS, ROUTES, TURNSTILE } from '@/config/site';
+import TurnstileWidget from './TurnstileWidget.astro';
+interface Props { categories: readonly CategoryWithCount[] }
+const { categories } = Astro.props;
+---
+<form class="form" id="submission-form" data-form data-endpoint={API_PATHS.submitQuestion} novalidate>
+  <noscript><p class="notice nojs-form-note">This form needs JavaScript to submit.</p></noscript>
+  <p class="hint">Complete the sentence: <strong>Would you rather…</strong></p>
+  <div class="form-field"><label for="s-a">Option A</label><input id="s-a" name="optionA" type="text" required minlength={FORM_LIMITS.optionMin} maxlength={FORM_LIMITS.optionMax} placeholder="have a pet dragon" /><p class="form-error" data-error-for="optionA"></p></div>
+  <div class="form-field"><label for="s-b">Option B</label><input id="s-b" name="optionB" type="text" required minlength={FORM_LIMITS.optionMin} maxlength={FORM_LIMITS.optionMax} placeholder="have a pet unicorn" /><p class="form-error" data-error-for="optionB"></p></div>
+  <div class="form-field"><label for="s-cat">Category</label><select id="s-cat" name="categoryId" required><option value="">Choose a category…</option>{categories.map((c) => <option value={c.id}>{c.icon} {c.name}</option>)}</select><p class="form-error" data-error-for="categoryId"></p></div>
+  <div class="form-field"><label for="s-name">Name <span class="optional">(optional)</span></label><input id="s-name" name="name" type="text" maxlength={FORM_LIMITS.nameMax} autocomplete="name" /><p class="form-error" data-error-for="name"></p></div>
+  <div class="form-field"><label for="s-email">Email <span class="optional">(optional)</span></label><span class="hint">Only used if we need to ask you about this submission. Never for marketing; no account is created.</span><input id="s-email" name="email" type="email" maxlength={FORM_LIMITS.emailMax} autocomplete="email" /><p class="form-error" data-error-for="email"></p></div>
+  <div class="form-field"><label class="form-check"><input type="checkbox" name="agree" required /><span>I confirm this question is my own wording, suitable for the chosen category, and I allow it to be published and edited under the <a href={ROUTES.terms}>Terms</a> and <a href={ROUTES.editorialPolicy}>Editorial Policy</a>.</span></label><p class="form-error" data-error-for="agree"></p></div>
+  <div class="honeypot" aria-hidden="true"><label for="s-website">Website</label><input id="s-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+  <TurnstileWidget action={TURNSTILE.actions.submitQuestion} />
+  <p class="form-error" data-error-for="_form" role="alert"></p>
+  <div class="form-actions"><button class="button-primary" type="submit">Submit question</button></div>
+  <p class="form-status" data-status role="status"></p>
+</form>
+<script>import { initForms } from '@/scripts/forms'; initForms();</script>

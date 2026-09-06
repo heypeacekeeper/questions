@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Cloudflare Workers + static assets (NOT the deprecated Pages integration).
+  "name": "would-you-rather-questions",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  // `main` and `assets.directory` are injected by @astrojs/cloudflare at build time.
+  "assets": {
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  // Non-secret runtime variables. Secrets (SUPABASE_SECRET_KEY, TURNSTILE_SECRET_KEY,
+  // VOTER_HASH_SECRET) must be set with `wrangler secret put` — never here.
+  "vars": {
+    "PUBLIC_SITE_URL": "https://wouldyouratherquestions.org",
+    "DATA_PROVIDER": "supabase",
+    "FEATURE_VOTING": "true",
+    "FEATURE_SUBMISSIONS": "true",
+    "FEATURE_CONTACT_FORM": "true"
+  },
+  // Custom domain routing. Enable after the zone is on Cloudflare (see README).
+  // "routes": [
+  //   { "pattern": "wouldyouratherquestions.org", "custom_domain": true },
+  //   { "pattern": "www.wouldyouratherquestions.org", "custom_domain": true }
+  // ],
+  "placement": { "mode": "smart" }
+}

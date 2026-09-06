@@ -1,0 +1,17 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getContentContext } from '@/repositories/factory';
+import { ROUTES } from '@/config/site';
+import { homeBreadcrumb } from '@/lib/seo';
+const ctx = await getContentContext();
+const categories = await ctx.categoryService.getVisibleCategories();
+const meta = { title: 'All Would You Rather Question Categories', description: 'Browse every Would You Rather category: kids, teens, adults, couples, friends, family, funny, hard, deep, work and icebreakers.', path: ROUTES.categories };
+const breadcrumbs = [homeBreadcrumb(), { name: 'Categories', path: ROUTES.categories }];
+---
+<BaseLayout meta={meta} breadcrumbs={breadcrumbs}>
+  <section class="content-intro"><div class="wrap"><Breadcrumbs items={breadcrumbs} /><h1>Would You Rather Categories</h1><div class="intro-copy"><p>Every collection on the site, with the number of questions currently published in each. New categories appear here automatically once they have content.</p></div></div></section>
+  <div class="wrap"><section class="question-section" aria-label="Category directory"><div class="directory-grid">
+    {categories.map((c) => (<a class="directory-card" href={c.canonicalPath}><span class="card-top"><span class="category-icon" aria-hidden="true">{c.icon}</span><h2>{c.name}</h2></span><p>{c.shortDescription}</p><span class="count">{c.publishedQuestionCount} questions</span></a>))}
+  </div></section></div>
+</BaseLayout>

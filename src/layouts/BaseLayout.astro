@@ -1,0 +1,98 @@
+---
+/**
+ * Base document: metadata, structured data, header, footer, consent manager,
+ * analytics (consent-gated), and the shared stylesheet.
+ */
+import '@/styles/global.css';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import ConsentManager from '@/components/ConsentManager.astro';
+import Analytics from '@/components/Analytics.astro';
+import { getContentContext } from '@/repositories/factory';
+import { BRAND_NAME, PUBLIC_EMAIL, SOCIAL, absoluteUrl } from '@/config/site';
+import { breadcrumbJsonLd, defaultImage, jsonLdString, organizationJsonLd, websiteJsonLd, type BreadcrumbItem, type PageMeta } from '@/lib/seo';
+
+interface Props {
+  meta: PageMeta;
+  breadcrumbs?: readonly BreadcrumbItem[];
+  /** Additional JSON-LD blocks. */
+  jsonLd?: readonly Record<string, unknown>[];
+  /** Body class hook. */
+  bodyClass?: string;
+}
+
+const { meta, breadcrumbs = [], jsonLd = [], bodyClass } = Astro.props;
+const ctx = await getContentContext();
+const { env } = ctx;
+const siteUrl = env.siteUrl;
+
+const canonical = absoluteUrl(meta.path, siteUrl);
+const ogImage = meta.image ? (meta.image.startsWith('http') ? meta.image : absoluteUrl(meta.image, siteUrl)) : defaultImage(siteUrl);
+const robots = meta.robots ?? 'index,follow,max-image-preview:large';
+const title = meta.title.includes(BRAND_NAME) || meta.title.length > 55 ? meta.title : `${meta.title} – ${BRAND_NAME}`;
+
+const navCategories = await ctx.categoryService.getNavigationCategories();
+
+const structuredData: Record<string, unknown>[] = [
+  websiteJsonLd(siteUrl, 'Free Would You Rather questions for kids, teens, adults, couples, friends, family, work and classrooms.'),
+  organizationJsonLd(siteUrl, PUBLIC_EMAIL),
+  ...(breadcrumbs.length > 1 ? [breadcrumbJsonLd(siteUrl, breadcrumbs)] : []),
+  ...jsonLd,
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#fff8f1" />
+
+    <title>{title}</title>
+    <meta name="description" content={meta.description} />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    {meta.prev && <link rel="prev" href={absoluteUrl(meta.prev, siteUrl)} />}
+    {meta.next && <link rel="next" href={absoluteUrl(meta.next, siteUrl)} />}
+    {env.searchConsoleVerification && <meta name="google-site-verification" content={env.searchConsoleVerification} />}
+
+    <meta property="og:type" content={meta.ogType ?? 'website'} />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={BRAND_NAME} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content={String(SOCIAL.imageWidth)} />
+    <meta property="og:image:height" content={String(SOCIAL.imageHeight)} />
+    <meta property="og:image:alt" content={meta.imageAlt ?? BRAND_NAME} />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content={SOCIAL.twitterCard} />
+    <meta name="twitter:title" content={meta.title} />
+    <meta name="twitter:description" content={meta.description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {structuredData.map((block) => <script type="application/ld+json" set:html={jsonLdString(block)} />)}
+    <slot name="head" />
+  </head>
+
+  <body class={bodyClass}>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <Header categories={navCategories} />
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <ConsentManager />
+    <Analytics />
+  </body>
+</html>
