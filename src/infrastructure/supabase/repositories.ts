@@ -26,7 +26,7 @@ import type { CategoryRow, QuestionCategoryRow, QuestionRow } from './database.t
 import { mapCastVote, mapCategoryWithCount, mapQuestion } from './mappers';
 
 export class SupabaseContentError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  constructor(message: string, public override readonly cause?: unknown) {
     super(`Supabase content request failed: ${message}`);
     this.name = 'SupabaseContentError';
   }
@@ -39,7 +39,7 @@ interface ContentGraph {
 
 const PAGE_SIZE = 1000;
 
-async function fetchAll<T>(fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+async function fetchAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
   const out: T[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await fetchPage(from, from + PAGE_SIZE - 1);

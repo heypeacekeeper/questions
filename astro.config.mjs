@@ -25,6 +25,7 @@ export default defineConfig({
     inlineStylesheets: 'auto',
   },
   compressHTML: true,
+  devToolbar: { enabled: false },
   // No client-side view transitions / SPA router. Native navigation only.
   prefetch: false,
   // Sessions would provision a KV namespace we do not need.

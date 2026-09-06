@@ -47,7 +47,7 @@ export function initGame(): void {
     return;
   }
 
-  const stage = $('game-stage');
+  const stageElement = $('game-stage');
   const choiceA = $<HTMLButtonElement>('choice-a');
   const choiceB = $<HTMLButtonElement>('choice-b');
   const textA = $('text-a');
@@ -71,7 +71,8 @@ export function initGame(): void {
   const ageGate = $('age-gate');
   const ageGatePack = $('age-gate-pack');
 
-  if (!stage) return;
+  if (!stageElement) return;
+  const stage = stageElement;
 
   const local = safeStorage('local');
   const session = safeStorage('session');

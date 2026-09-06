@@ -10,7 +10,7 @@ export type ContentStatus = 'draft' | 'published' | 'archived';
 export type VoteChoiceRow = 'A' | 'B';
 export type SubmissionStatusRow = 'pending' | 'approved' | 'rejected';
 
-export interface CategoryRow {
+export type CategoryRow = {
   id: string;
   name: string;
   slug: string;
@@ -34,7 +34,7 @@ export interface CategoryRow {
   updated_at: string;
 }
 
-export interface QuestionRow {
+export type QuestionRow = {
   id: string;
   option_a: string;
   option_b: string;
@@ -47,13 +47,13 @@ export interface QuestionRow {
   published_at: string | null;
 }
 
-export interface QuestionCategoryRow {
+export type QuestionCategoryRow = {
   question_id: string;
   category_id: string;
   created_at: string;
 }
 
-export interface VoteRow {
+export type VoteRow = {
   id: number;
   question_id: string;
   choice: VoteChoiceRow;
@@ -61,7 +61,7 @@ export interface VoteRow {
   created_at: string;
 }
 
-export interface QuestionSubmissionRow {
+export type QuestionSubmissionRow = {
   id: string;
   option_a: string;
   option_b: string;
@@ -76,7 +76,7 @@ export interface QuestionSubmissionRow {
   updated_at: string;
 }
 
-export interface ContactMessageRow {
+export type ContactMessageRow = {
   id: string;
   name: string;
   email: string;
@@ -87,12 +87,12 @@ export interface ContactMessageRow {
   created_at: string;
 }
 
-export interface CategoryQuestionCountRow {
+export type CategoryQuestionCountRow = {
   category_id: string;
   published_question_count: number;
 }
 
-export interface CastVoteRow {
+export type CastVoteRow = {
   status: 'ok' | 'not_found' | 'not_published';
   accepted: boolean;
   your_choice: VoteChoiceRow;
@@ -106,7 +106,7 @@ export interface CastVoteRow {
 type Insertable<Row, Optional extends keyof Row = never> = Omit<Row, Optional> & Partial<Pick<Row, Optional>>;
 
 /** Minimal `Database` generic compatible with supabase-js typing. */
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       categories: {
