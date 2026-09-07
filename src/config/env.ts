@@ -26,9 +26,6 @@ export interface AppEnv {
   /** Server only. */
   readonly turnstileSecretKey: string | undefined;
 
-  /** Server only. Pepper for anonymous abuse-rate-limit identifiers. */
-  readonly voterHashSecret: string | undefined;
-
   readonly ga4MeasurementId: string | undefined;
   readonly cloudflareAnalyticsToken: string | undefined;
   readonly searchConsoleVerification: string | undefined;
@@ -123,7 +120,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   const supabaseSecretKey = trimOrUndefined(raw.SUPABASE_SECRET_KEY);
   const turnstileSiteKey = trimOrUndefined(raw.PUBLIC_TURNSTILE_SITE_KEY);
   const turnstileSecretKey = trimOrUndefined(raw.TURNSTILE_SECRET_KEY);
-  const voterHashSecret = trimOrUndefined(raw.VOTER_HASH_SECRET);
   const ga4MeasurementId = trimOrUndefined(raw.PUBLIC_GA4_MEASUREMENT_ID);
   const cloudflareAnalyticsToken = trimOrUndefined(raw.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN);
   const searchConsoleVerification = trimOrUndefined(raw.PUBLIC_SEARCH_CONSOLE_VERIFICATION);
@@ -146,13 +142,9 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
 
   // --- Runtime secrets (Worker) ----------------------------------------------
   if (context === 'worker' && isProduction) {
-    if (features.FEATURE_VOTING && !voterHashSecret) problems.push('VOTER_HASH_SECRET is required when FEATURE_VOTING is enabled');
     if ((features.FEATURE_SUBMISSIONS || features.FEATURE_CONTACT_FORM) && !turnstileSecretKey) {
       problems.push('TURNSTILE_SECRET_KEY is required when forms are enabled');
     }
-  }
-  if (voterHashSecret !== undefined && voterHashSecret.length < 32 && isProduction) {
-    problems.push('VOTER_HASH_SECRET must be at least 32 characters');
   }
 
   // --- Feature-dependent public IDs -----------------------------------------
@@ -179,7 +171,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
     supabaseSecretKey,
     turnstileSiteKey,
     turnstileSecretKey,
-    voterHashSecret,
     ga4MeasurementId,
     cloudflareAnalyticsToken,
     searchConsoleVerification,
@@ -210,7 +201,6 @@ export function readImportMetaEnv(): RawEnv {
     SUPABASE_SECRET_KEY: env.SUPABASE_SECRET_KEY,
     PUBLIC_TURNSTILE_SITE_KEY: env.PUBLIC_TURNSTILE_SITE_KEY,
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
-    VOTER_HASH_SECRET: env.VOTER_HASH_SECRET,
     FEATURE_VOTING: env.FEATURE_VOTING,
     FEATURE_SUBMISSIONS: env.FEATURE_SUBMISSIONS,
     FEATURE_CONTACT_FORM: env.FEATURE_CONTACT_FORM,

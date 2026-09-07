@@ -24,7 +24,6 @@ const safeEnvironment = {
   ALLOW_DEMO_CONTENT: 'true',
   PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
   TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
-  VOTER_HASH_SECRET: 'mock-runtime-voter-secret-at-least-32-characters',
   CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false',
 };
 
@@ -37,7 +36,6 @@ const worker = spawn(process.execPath, [
   '--var', 'ALLOW_DEMO_CONTENT:true',
   '--var', 'PUBLIC_TURNSTILE_SITE_KEY:1x00000000000000000000AA',
   '--var', 'TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA',
-  '--var', 'VOTER_HASH_SECRET:mock-runtime-voter-secret-at-least-32-characters',
 ], { cwd: runtimeDirectory, env: safeEnvironment, stdio: 'inherit', shell: false });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

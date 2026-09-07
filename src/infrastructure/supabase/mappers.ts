@@ -1,8 +1,7 @@
 /** Convert Supabase rows → provider-independent domain objects. Pure functions. */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import { buildVoteResult, type VoteResult } from '@/domain/vote';
-import type { CastVoteRow, CategoryRow, QuestionRow } from './database.types';
+import type { CategoryRow, QuestionRow } from './database.types';
 
 export function mapCategory(row: CategoryRow): Category {
   return {
@@ -42,6 +41,7 @@ export function mapQuestion(row: QuestionRow, categoryIds: readonly string[]): Q
     status: row.status,
     shareCode: row.share_code,
     sortOrder: row.sort_order,
+    displayVoteCount: row.display_vote_count,
     categoryIds: [...categoryIds],
     isDemo: row.is_demo,
     createdAt: row.created_at,
@@ -50,7 +50,3 @@ export function mapQuestion(row: QuestionRow, categoryIds: readonly string[]): Q
   };
 }
 
-export function mapCastVote(questionId: string, row: CastVoteRow): VoteResult {
-  // Recompute percentages domain-side to keep a single source of truth for rounding.
-  return buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) });
-}

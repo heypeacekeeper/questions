@@ -7,7 +7,6 @@
  */
 
 export type ContentStatus = 'draft' | 'published' | 'archived';
-export type VoteChoiceRow = 'A' | 'B';
 export type SubmissionStatusRow = 'pending' | 'approved' | 'rejected';
 
 export type CategoryRow = {
@@ -35,6 +34,7 @@ export type CategoryRow = {
 }
 
 export type QuestionRow = {
+  display_vote_count: number;
   id: string;
   option_a: string;
   option_b: string;
@@ -51,21 +51,6 @@ export type QuestionCategoryRow = {
   question_id: string;
   category_id: string;
   created_at: string;
-}
-
-export type VoteRow = {
-  id: number;
-  question_id: string;
-  choice: VoteChoiceRow;
-  voter_hash: string;
-  created_at: string;
-}
-
-export type QuestionVoteTotalsRow = {
-  question_id: string;
-  votes_a: number;
-  votes_b: number;
-  updated_at: string;
 }
 
 export type QuestionSubmissionRow = {
@@ -99,15 +84,6 @@ export type CategoryQuestionCountRow = {
   published_question_count: number;
 }
 
-export type CastVoteRow = {
-  status: 'ok' | 'not_found' | 'not_published';
-  votes_a: number;
-  votes_b: number;
-  total: number;
-  percent_a: number;
-  percent_b: number;
-}
-
 type Insertable<Row, Optional extends keyof Row = never> = Omit<Row, Optional> & Partial<Pick<Row, Optional>>;
 
 /** Minimal `Database` generic compatible with supabase-js typing. */
@@ -122,7 +98,7 @@ export type Database = {
       };
       questions: {
         Row: QuestionRow;
-        Insert: Insertable<QuestionRow, 'id' | 'created_at' | 'updated_at' | 'published_at' | 'share_code' | 'sort_order' | 'is_demo' | 'status'>;
+        Insert: Insertable<QuestionRow, 'id' | 'created_at' | 'updated_at' | 'published_at' | 'share_code' | 'sort_order' | 'display_vote_count' | 'is_demo' | 'status'>;
         Update: Partial<QuestionRow>;
         Relationships: [];
       };
@@ -130,18 +106,6 @@ export type Database = {
         Row: QuestionCategoryRow;
         Insert: Insertable<QuestionCategoryRow, 'created_at'>;
         Update: Partial<QuestionCategoryRow>;
-        Relationships: [];
-      };
-      votes: {
-        Row: VoteRow;
-        Insert: Insertable<VoteRow, 'id' | 'created_at'>;
-        Update: Partial<VoteRow>;
-        Relationships: [];
-      };
-      question_vote_totals: {
-        Row: QuestionVoteTotalsRow;
-        Insert: Insertable<QuestionVoteTotalsRow, 'votes_a' | 'votes_b' | 'updated_at'>;
-        Update: Partial<QuestionVoteTotalsRow>;
         Relationships: [];
       };
       question_submissions: {
@@ -164,14 +128,6 @@ export type Database = {
       };
     };
     Functions: {
-      cast_vote: {
-        Args: { p_question_id: string; p_choice: VoteChoiceRow };
-        Returns: CastVoteRow[];
-      };
-      get_vote_totals: {
-        Args: { p_question_id: string };
-        Returns: { votes_a: number; votes_b: number }[];
-      };
       generate_share_code: {
         Args: { code_length?: number };
         Returns: string;
@@ -179,7 +135,6 @@ export type Database = {
     };
     Enums: {
       content_status: ContentStatus;
-      vote_choice: VoteChoiceRow;
       submission_status: SubmissionStatusRow;
     };
     CompositeTypes: Record<string, never>;

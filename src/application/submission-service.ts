@@ -8,7 +8,7 @@ import type { ContactRepository, HumanVerificationService, RateLimiter, Submissi
 import { FORM_LIMITS, TURNSTILE } from '@/config/site';
 import { cleanUserText, cleanUserTextMultiline, looksLikeEmail, normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import { sha256Hex } from '@/lib/crypto';
-import { UUID_PATTERN } from './voting-service';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // ---------------------------------------------------------------------------
 // Shared anti-spam envelope

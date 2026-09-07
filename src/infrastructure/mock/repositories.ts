@@ -1,9 +1,8 @@
 /** In-memory mock repositories for local development and tests. */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import { buildVoteResult, type VoteChoice, type VoteResult } from '@/domain/vote';
 import type { ContactMessage, QuestionSubmission, StoredContactMessage, StoredQuestionSubmission } from '@/domain/forms';
-import type { CategoryRepository, ContactRepository, HumanVerificationService, QuestionRepository, RateLimiter, SubmissionRepository, VoteRepository, VoteSubmitOutcome, WriteOutcome } from '@/repositories/interfaces';
+import type { CategoryRepository, ContactRepository, HumanVerificationService, QuestionRepository, RateLimiter, SubmissionRepository, WriteOutcome } from '@/repositories/interfaces';
 import { SEASONAL_WINDOWS } from '@/config/site';
 import { ALL_CATEGORIES, DEMO_QUESTIONS, generateMockFillerQuestions } from './fixtures';
 
@@ -31,25 +30,6 @@ export class MockCategoryRepository implements CategoryRepository {
   async getSeasonalCategories(): Promise<readonly CategoryWithCount[]> { const slugs = new Set(SEASONAL_WINDOWS.map((w) => w.slug)); return (await this.getPublishedCategories()).filter((c) => slugs.has(c.slug) || (c.seasonalStart && c.seasonalEnd)); }
 }
 
-/** Aggregate mock store with the same repeat-vote semantics as migration 0004. */
-export class MockVoteRepository implements VoteRepository {
-  private readonly totalsByQuestion = new Map<string, { votesA: number; votesB: number }>();
-  constructor(private readonly data: MockDataset) {}
-  async submitVote(questionId: string, choice: VoteChoice): Promise<VoteSubmitOutcome> {
-    const question = this.data.questions.find((item) => item.id === questionId);
-    if (!question) return { kind: 'not_found' };
-    if (question.status !== 'published') return { kind: 'not_published' };
-    const totals = this.totalsByQuestion.get(questionId) ?? { votesA: 0, votesB: 0 };
-    if (choice === 'A') totals.votesA += 1;
-    else totals.votesB += 1;
-    this.totalsByQuestion.set(questionId, totals);
-    return { kind: 'ok', result: buildVoteResult(questionId, totals) };
-  }
-  async getVoteResult(questionId: string): Promise<VoteResult | null> {
-    if (!this.data.questions.some((item) => item.id === questionId)) return null;
-    return buildVoteResult(questionId, this.totalsByQuestion.get(questionId) ?? { votesA: 0, votesB: 0 });
-  }
-}
 export class MockSubmissionRepository implements SubmissionRepository {
   readonly stored: StoredQuestionSubmission[] = [];
   constructor(private readonly data: MockDataset) {}

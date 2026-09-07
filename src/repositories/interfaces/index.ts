@@ -6,7 +6,6 @@
  */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import type { VoteChoice, VoteResult } from '@/domain/vote';
 import type { ContactMessage, QuestionSubmission, StoredContactMessage, StoredQuestionSubmission } from '@/domain/forms';
 
 // ---------------------------------------------------------------------------
@@ -44,19 +43,6 @@ export interface CategoryRepository {
 // ---------------------------------------------------------------------------
 // Mutations (Worker runtime)
 // ---------------------------------------------------------------------------
-
-export type VoteSubmitOutcome =
-  | { readonly kind: 'ok'; readonly result: VoteResult }
-  | { readonly kind: 'not_found' }
-  | { readonly kind: 'not_published' }
-  | { readonly kind: 'error'; readonly message: string };
-
-export interface VoteRepository {
-  /** Atomically increment the selected aggregate total and return current totals. */
-  submitVote(questionId: string, choice: VoteChoice): Promise<VoteSubmitOutcome>;
-  /** Current aggregate totals without voting (used sparingly, e.g. tests). */
-  getVoteResult(questionId: string): Promise<VoteResult | null>;
-}
 
 export type WriteOutcome<T> =
   | { readonly kind: 'ok'; readonly value: T }
@@ -128,10 +114,9 @@ export interface ContentRepositories {
 }
 
 export interface MutationRepositories {
-  readonly votes: VoteRepository;
   readonly submissions: SubmissionRepository;
   readonly contact: ContactRepository;
   readonly categories: CategoryRepository;
 }
 
-export type { Category, CategoryWithCount, Question, VoteChoice, VoteResult };
+export type { Category, CategoryWithCount, Question };

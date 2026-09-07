@@ -14,7 +14,6 @@ export const PUBLIC_EMAIL = 'hello@wouldyouratherquestions.org';
 export const DEFAULT_SITE_URL = 'https://wouldyouratherquestions.org';
 
 export const API_PATHS = {
-  vote: '/api/vote/',
   contact: '/api/contact/',
   submitQuestion: '/api/submit-question/',
 } as const;
@@ -74,15 +73,6 @@ export const GAME_DATA = {
   manifestFile: 'manifest.json',
 } as const;
 
-export const VOTING = {
-  cookieName: 'wyr_voter',
-  cookieMaxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-  /** Votes per anonymous abuse-prevention token per rolling minute. */
-  rateLimitPerMinute: 60,
-  /** Max request body accepted by /api/vote (bytes). */
-  maxBodyBytes: 512,
-} as const;
-
 export const FORM_LIMITS = {
   optionMin: 2,
   optionMax: 200,
@@ -112,7 +102,6 @@ export const TURNSTILE = {
 export const COOKIES = {
   consent: 'wyr_consent',
   consentMaxAgeSeconds: 60 * 60 * 24 * 180, // 6 months
-  voter: VOTING.cookieName,
 } as const;
 
 export const STORAGE_KEYS = {

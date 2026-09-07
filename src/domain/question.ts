@@ -11,6 +11,8 @@ export interface Question {
   /** Permanent random short code used by /s/[code]/ */
   readonly shareCode: string;
   readonly sortOrder: number;
+  /** Owner-editable static count shown in game results. */
+  readonly displayVoteCount: number;
   /** Category ids this question belongs to (may be several). */
   readonly categoryIds: readonly string[];
   /** Demo fixtures are flagged so builds can refuse them in production. */
@@ -26,10 +28,11 @@ export interface GameQuestion {
   readonly a: string;
   readonly b: string;
   readonly s: string; // shareCode
+  readonly d: number; // displayVoteCount
 }
 
 export function toGameQuestion(q: Question): GameQuestion {
-  return { id: q.id, a: q.optionA, b: q.optionB, s: q.shareCode };
+  return { id: q.id, a: q.optionA, b: q.optionB, s: q.shareCode, d: q.displayVoteCount };
 }
 
 export function isPublished(q: Pick<Question, 'status'>): boolean {

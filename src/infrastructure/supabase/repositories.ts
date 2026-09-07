@@ -8,22 +8,18 @@
  */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import type { VoteChoice, VoteResult } from '@/domain/vote';
-import { buildVoteResult } from '@/domain/vote';
 import type { ContactMessage, QuestionSubmission, StoredContactMessage, StoredQuestionSubmission } from '@/domain/forms';
 import type {
   CategoryRepository,
   ContactRepository,
   QuestionRepository,
   SubmissionRepository,
-  VoteRepository,
-  VoteSubmitOutcome,
   WriteOutcome,
 } from '@/repositories/interfaces';
 import { SEASONAL_WINDOWS } from '@/config/site';
 import type { TypedSupabaseClient } from './client';
 import type { CategoryRow, QuestionCategoryRow, QuestionRow } from './database.types';
-import { mapCastVote, mapCategoryWithCount, mapQuestion } from './mappers';
+import { mapCategoryWithCount, mapQuestion } from './mappers';
 
 export class SupabaseContentError extends Error {
   constructor(message: string, public override readonly cause?: unknown) {
@@ -154,27 +150,6 @@ export class SupabaseWorkerCategoryRepository implements CategoryRepository {
   }
   async getSeasonalCategories(): Promise<readonly CategoryWithCount[]> {
     return (await this.rows()).filter((c) => c.seasonalStart && c.seasonalEnd);
-  }
-}
-
-export class SupabaseVoteRepository implements VoteRepository {
-  constructor(private readonly client: TypedSupabaseClient) {}
-
-  async submitVote(questionId: string, choice: VoteChoice): Promise<VoteSubmitOutcome> {
-    const { data, error } = await this.client.rpc('cast_vote', { p_question_id: questionId, p_choice: choice });
-    if (error) return { kind: 'error', message: error.message };
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) return { kind: 'error', message: 'empty response' };
-    if (row.status === 'not_found') return { kind: 'not_found' };
-    if (row.status === 'not_published') return { kind: 'not_published' };
-    return { kind: 'ok', result: mapCastVote(questionId, row) };
-  }
-
-  async getVoteResult(questionId: string): Promise<VoteResult | null> {
-    const { data, error } = await this.client.rpc('get_vote_totals', { p_question_id: questionId });
-    if (error) return null;
-    const row = Array.isArray(data) ? data[0] : data;
-    return row ? buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) }) : null;
   }
 }
 

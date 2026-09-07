@@ -23,7 +23,7 @@ const sentence = questionSentence(question);
 const meta = { title: available ? sentence : 'This question is no longer available', description: available ? `Vote now: ${sentence} See what everyone else picked.` : 'This Would You Rather question has been retired, but there are plenty more to play.', path: sharePath(question.shareCode), robots: 'noindex,follow' };
 ---
 <BaseLayout meta={meta}>
-  {available ? <Game mode="single" initial={toGameQuestion(question)} category={primary} votingEnabled={ctx.env.features.FEATURE_VOTING} /> : null}
+  {available ? <Game mode="single" initial={toGameQuestion(question)} category={primary} /> : null}
   <section class="content-intro"><div class="wrap">
     <h1 class="page-title">{available ? sentence : 'This question is no longer available'}</h1>
     <div class="intro-copy"><p>{available ? 'Pick a side to see how everyone else voted, then share the link with friends.' : 'The question behind this link has been retired. The links below will take you to questions that are still live.'}</p></div>
