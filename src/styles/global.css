@@ -1401,12 +1401,13 @@ svg{display:block}
   }
 
   .choice{padding:48px 18px 36px}
-  .game-stage.voted{
+
+  /* .game-stage.voted{
     height:auto;
     min-height:0;
     max-height:none;
     grid-template-rows:minmax(280px,auto) minmax(320px,auto);
-  }
+  } */
   .game-stage.voted .choice-a{padding-bottom:84px}
   .game-stage.voted .choice-b{padding-top:84px;padding-bottom:72px}
 
