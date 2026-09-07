@@ -46,6 +46,7 @@ export function initGame(): void {
     if (!current || busy) return;
     hasVoted = true; gameStage.classList.add('voted');
     const picked = choice === 'A' ? choiceA : choiceB; const other = choice === 'A' ? choiceB : choiceA;
+    [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     picked?.classList.add('picked'); other?.classList.add('not-picked');
     const result = resultFor(current.id);
     if (percentA) percentA.textContent = `${result.percentA.toFixed(1)}%`; if (percentB) percentB.textContent = `${result.percentB.toFixed(1)}%`;

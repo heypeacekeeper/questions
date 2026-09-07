@@ -75,6 +75,7 @@ export function validateContent(categories: readonly CategoryWithCount[], questi
     const label = `question ${q.id}`;
     ids.set(q.id, (ids.get(q.id) ?? 0) + 1);
     shareCodes.set(q.shareCode, [...(shareCodes.get(q.shareCode) ?? []), q.id]);
+    if (!Number.isFinite(q.displayVoteCount) || !Number.isInteger(q.displayVoteCount) || q.displayVoteCount < 0) push('error', 'QUESTION_INVALID_DISPLAY_VOTE_COUNT', `${label} has an invalid non-negative integer display vote count`, [q.id]);
     if (!QUESTION_STATUSES.includes(q.status)) push('error', 'QUESTION_INVALID_STATUS', `${label} has invalid status "${q.status}"`, [q.id]);
     if (!SHARE_CODE_PATTERN.test(q.shareCode)) push('error', 'QUESTION_INVALID_SHARE_CODE', `${label} share code "${q.shareCode}" is invalid`, [q.id]);
     if (!q.optionA.trim() || !q.optionB.trim()) push('error', 'QUESTION_EMPTY_OPTION', `${label} has an empty option`, [q.id]);
