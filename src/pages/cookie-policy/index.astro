@@ -3,7 +3,7 @@ import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES, COOKIES,
 const meta = { title: 'Cookie Policy', description: 'Cookies and local storage used by Would You Rather Questions and how to manage them.', path: ROUTES.cookies };
 ---
 <ProseLayout meta={meta} heading="Cookie Policy" legal>
-<h2>Essential</h2><ul><li><code>{COOKIES.voter}</code> — random anonymous voting identifier (HttpOnly, 1 year).</li><li><code>{COOKIES.consent}</code> — your cookie choices (6 months).</li><li>Local/session storage: <code>{STORAGE_KEYS.pack}</code>, <code>{STORAGE_KEYS.adultConfirmed}</code>, <code>{STORAGE_KEYS.voted}</code>, <code>{STORAGE_KEYS.seen}</code> — game preferences on your device.</li></ul>
+<h2>Essential</h2><ul><li><code>{COOKIES.consent}</code> — your cookie choices (6 months).</li><li>Local/session storage: <code>{STORAGE_KEYS.pack}</code>, <code>{STORAGE_KEYS.adultConfirmed}</code>, <code>{STORAGE_KEYS.seen}</code> — game preferences and current-session question history on your device.</li></ul>
 <h2>Optional (consent required)</h2><ul><li>Google Analytics 4 cookies (<code>_ga</code>, <code>_ga_*</code>) — only if analytics is enabled and you accept.</li><li>Google AdSense cookies — only after AdSense is enabled and you accept advertising. Where required (EEA, UK, Switzerland), a Google-certified consent platform will be used before ads are served.</li></ul>
 <h2>Cookieless analytics</h2><p>Cloudflare Web Analytics, if enabled, uses no cookies or local storage.</p>
 <h2>Managing cookies</h2><p>Use "Cookie preferences" in the footer, or your browser settings. See the <a href={ROUTES.privacy}>Privacy Policy</a>.</p>

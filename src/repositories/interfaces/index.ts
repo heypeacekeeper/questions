@@ -6,7 +6,6 @@
  */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import type { VoteChoice, VoteResult } from '@/domain/vote';
 import type { ContactMessage, QuestionSubmission, StoredContactMessage, StoredQuestionSubmission } from '@/domain/forms';
 
 // ---------------------------------------------------------------------------
@@ -44,22 +43,6 @@ export interface CategoryRepository {
 // ---------------------------------------------------------------------------
 // Mutations (Worker runtime)
 // ---------------------------------------------------------------------------
-
-export type VoteSubmitOutcome =
-  | { readonly kind: 'ok'; readonly result: VoteResult }
-  | { readonly kind: 'not_found' }
-  | { readonly kind: 'not_published' }
-  | { readonly kind: 'error'; readonly message: string };
-
-export interface VoteRepository {
-  /**
-   * Atomically record a vote (if the voter hasn't voted on this question) and
-   * return current totals. Must be safe under concurrency.
-   */
-  submitVote(questionId: string, choice: VoteChoice, voterHash: string): Promise<VoteSubmitOutcome>;
-  /** Current totals without voting (used sparingly, e.g. tests). */
-  getVoteResult(questionId: string, voterHash: string | null): Promise<VoteResult | null>;
-}
 
 export type WriteOutcome<T> =
   | { readonly kind: 'ok'; readonly value: T }
@@ -103,8 +86,6 @@ export interface RateLimiter {
 }
 
 export type AnalyticsEventName =
-  | 'vote_submitted'
-  | 'vote_failed'
   | 'question_advanced'
   | 'pack_changed'
   | 'share_clicked'
@@ -131,10 +112,9 @@ export interface ContentRepositories {
 }
 
 export interface MutationRepositories {
-  readonly votes: VoteRepository;
   readonly submissions: SubmissionRepository;
   readonly contact: ContactRepository;
   readonly categories: CategoryRepository;
 }
 
-export type { Category, CategoryWithCount, Question, VoteChoice, VoteResult };
+export type { Category, CategoryWithCount, Question };

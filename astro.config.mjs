@@ -16,6 +16,8 @@ import buildArtifacts from './src/scripts/build-artifacts.ts';
  *  - The Cloudflare adapter targets Workers with static assets (not the
  *    deprecated Pages integration).
  */
+const mockMode = process.env.DATA_PROVIDER === 'mock';
+
 export default defineConfig({
   site: SITE_URL,
   output: 'static',
@@ -46,6 +48,9 @@ export default defineConfig({
     buildArtifacts(),
   ],
   vite: {
+    // Mock commands set DATA_PROVIDER before Astro starts. An empty envDir stops
+    // Vite from loading the owner's root .env during isolated mock builds.
+    envDir: mockMode ? fileURLToPath(new URL('./tools/mock-env', import.meta.url)) : undefined,
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },

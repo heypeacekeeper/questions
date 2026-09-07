@@ -3,7 +3,7 @@ import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES, PUBLIC_E
 const meta = { title: 'Accessibility Statement', description: 'Our commitment to WCAG 2.2 AA accessibility and how to report barriers.', path: ROUTES.accessibility };
 ---
 <ProseLayout meta={meta} heading="Accessibility Statement">
-<p>We aim to meet WCAG 2.2 Level AA. The site uses semantic landmarks, a skip link, visible focus indicators, keyboard-operable game controls (arrow keys to vote, Enter for the next question), screen-reader announcements of results, labelled forms with clear errors, and respects reduced-motion preferences.</p>
+<p>We aim to meet WCAG 2.2 Level AA. The site uses semantic landmarks, a skip link, visible focus indicators, keyboard-operable game controls (arrow keys to choose, Enter for the next question), screen-reader announcements of results, labelled forms with clear errors, and respects reduced-motion preferences.</p>
 <h2>Known limitations</h2><p>Third-party widgets (Cloudflare Turnstile) are outside our control. Decorative emoji icons are hidden from assistive technology.</p>
 <h2>Feedback</h2><p>If you encounter a barrier, email <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a> or use the <a href={ROUTES.contact}>contact form</a>.</p>
 </ProseLayout>

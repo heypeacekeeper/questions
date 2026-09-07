@@ -19,16 +19,12 @@ export interface AppEnv {
   readonly dataProvider: DataProvider;
 
   readonly supabaseUrl: string | undefined;
-  readonly supabasePublishableKey: string | undefined;
   /** Server/build only. Never exposed to the client. */
   readonly supabaseSecretKey: string | undefined;
 
   readonly turnstileSiteKey: string | undefined;
   /** Server only. */
   readonly turnstileSecretKey: string | undefined;
-
-  /** Server only. Pepper for voter-token hashing. */
-  readonly voterHashSecret: string | undefined;
 
   readonly ga4MeasurementId: string | undefined;
   readonly cloudflareAnalyticsToken: string | undefined;
@@ -42,7 +38,6 @@ export interface AppEnv {
 }
 
 export interface FeatureFlags {
-  readonly FEATURE_VOTING: boolean;
   readonly FEATURE_SUBMISSIONS: boolean;
   readonly FEATURE_CONTACT_FORM: boolean;
   readonly FEATURE_ADS: boolean;
@@ -55,7 +50,6 @@ export interface FeatureFlags {
 export type RawEnv = Record<string, string | undefined>;
 
 const FEATURE_DEFAULTS: FeatureFlags = {
-  FEATURE_VOTING: true,
   FEATURE_SUBMISSIONS: true,
   FEATURE_CONTACT_FORM: true,
   FEATURE_ADS: false,
@@ -110,7 +104,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   }
 
   const features: FeatureFlags = {
-    FEATURE_VOTING: parseBool(raw.FEATURE_VOTING, FEATURE_DEFAULTS.FEATURE_VOTING),
     FEATURE_SUBMISSIONS: parseBool(raw.FEATURE_SUBMISSIONS, FEATURE_DEFAULTS.FEATURE_SUBMISSIONS),
     FEATURE_CONTACT_FORM: parseBool(raw.FEATURE_CONTACT_FORM, FEATURE_DEFAULTS.FEATURE_CONTACT_FORM),
     FEATURE_ADS: parseBool(raw.FEATURE_ADS, FEATURE_DEFAULTS.FEATURE_ADS),
@@ -121,11 +114,9 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   };
 
   const supabaseUrl = trimOrUndefined(raw.SUPABASE_URL);
-  const supabasePublishableKey = trimOrUndefined(raw.SUPABASE_PUBLISHABLE_KEY);
   const supabaseSecretKey = trimOrUndefined(raw.SUPABASE_SECRET_KEY);
   const turnstileSiteKey = trimOrUndefined(raw.PUBLIC_TURNSTILE_SITE_KEY);
   const turnstileSecretKey = trimOrUndefined(raw.TURNSTILE_SECRET_KEY);
-  const voterHashSecret = trimOrUndefined(raw.VOTER_HASH_SECRET);
   const ga4MeasurementId = trimOrUndefined(raw.PUBLIC_GA4_MEASUREMENT_ID);
   const cloudflareAnalyticsToken = trimOrUndefined(raw.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN);
   const searchConsoleVerification = trimOrUndefined(raw.PUBLIC_SEARCH_CONSOLE_VERIFICATION);
@@ -148,13 +139,9 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
 
   // --- Runtime secrets (Worker) ----------------------------------------------
   if (context === 'worker' && isProduction) {
-    if (features.FEATURE_VOTING && !voterHashSecret) problems.push('VOTER_HASH_SECRET is required when FEATURE_VOTING is enabled');
     if ((features.FEATURE_SUBMISSIONS || features.FEATURE_CONTACT_FORM) && !turnstileSecretKey) {
       problems.push('TURNSTILE_SECRET_KEY is required when forms are enabled');
     }
-  }
-  if (voterHashSecret !== undefined && voterHashSecret.length < 32 && isProduction) {
-    problems.push('VOTER_HASH_SECRET must be at least 32 characters');
   }
 
   // --- Feature-dependent public IDs -----------------------------------------
@@ -178,11 +165,9 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
     siteUrl,
     dataProvider,
     supabaseUrl,
-    supabasePublishableKey,
     supabaseSecretKey,
     turnstileSiteKey,
     turnstileSecretKey,
-    voterHashSecret,
     ga4MeasurementId,
     cloudflareAnalyticsToken,
     searchConsoleVerification,
@@ -210,12 +195,9 @@ export function readImportMetaEnv(): RawEnv {
     ALLOW_DEMO_CONTENT: env.ALLOW_DEMO_CONTENT,
     PUBLIC_SITE_URL: env.PUBLIC_SITE_URL,
     SUPABASE_URL: env.SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY: env.SUPABASE_PUBLISHABLE_KEY,
     SUPABASE_SECRET_KEY: env.SUPABASE_SECRET_KEY,
     PUBLIC_TURNSTILE_SITE_KEY: env.PUBLIC_TURNSTILE_SITE_KEY,
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
-    VOTER_HASH_SECRET: env.VOTER_HASH_SECRET,
-    FEATURE_VOTING: env.FEATURE_VOTING,
     FEATURE_SUBMISSIONS: env.FEATURE_SUBMISSIONS,
     FEATURE_CONTACT_FORM: env.FEATURE_CONTACT_FORM,
     FEATURE_ADS: env.FEATURE_ADS,

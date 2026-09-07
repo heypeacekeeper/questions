@@ -47,7 +47,7 @@ const meta = {
 const breadcrumbs = [homeBreadcrumb(), { name: 'Categories', path: ROUTES.categories }, { name: category.name, path: category.canonicalPath }, ...(page > 1 ? [{ name: `Page ${page}`, path }] : [])];
 ---
 <BaseLayout meta={meta} breadcrumbs={breadcrumbs} jsonLd={[collectionPageJsonLd(ctx.env.siteUrl, meta)]}>
-  <Game mode="category" initial={initial} setSlug={category.slug} category={category} votingEnabled={ctx.env.features.FEATURE_VOTING} />
+  <Game mode="category" initial={initial} setSlug={category.slug} category={category} />
   <AdSlot slot="belowGame" />
   <section class="content-intro">
     <div class="wrap">

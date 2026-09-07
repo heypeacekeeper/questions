@@ -90,6 +90,6 @@ function installMonitoring(): void {
 export function reportApiTiming(endpoint: string, ms: number, status: number): void {
   track('api_timing', { endpoint, ms: Math.round(ms), status: String(status) });
   if (status >= 500 || status === 0) {
-    track(endpoint.includes('vote') ? 'vote_failed' : 'form_failed', { endpoint, status: String(status) });
+    track('form_failed', { endpoint, status: String(status) });
   }
 }

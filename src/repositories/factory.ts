@@ -25,7 +25,6 @@ import {
   MockContactRepository,
   MockQuestionRepository,
   MockSubmissionRepository,
-  MockVoteRepository,
   createDefaultMockDataset,
   type MockDataset,
 } from '@/infrastructure/mock/repositories';
@@ -37,7 +36,6 @@ import {
   SupabaseContactRepository,
   SupabaseQuestionRepository,
   SupabaseSubmissionRepository,
-  SupabaseVoteRepository,
   SupabaseWorkerCategoryRepository,
   loadContentGraph,
 } from '@/infrastructure/supabase/repositories';
@@ -110,7 +108,7 @@ export function __resetContentContext(): void {
 export interface MutationContext extends MutationRepositories {
   readonly env: AppEnv;
   readonly verifier: HumanVerificationService;
-  readonly rateLimiter: RateLimiter;
+  readonly formRateLimiter: RateLimiter;
 }
 
 let mockMutationSingleton: MutationRepositories | undefined;
@@ -130,7 +128,8 @@ export function selectVerifier(env: AppEnv): HumanVerificationService {
 
 export function createMutationContext(bindings: RawEnv | undefined): MutationContext {
   const env = getWorkerEnv(bindings);
-  const rateLimiter = createRateLimiter((bindings as Record<string, unknown> | undefined)?.FORM_RATE_LIMITER);
+  const runtimeBindings = bindings as (Record<string, unknown> | undefined);
+  const formRateLimiter = createRateLimiter(runtimeBindings?.FORM_RATE_LIMITER);
 
   const verifier: HumanVerificationService = selectVerifier(env);
 
@@ -138,13 +137,18 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
     if (!mockMutationSingleton) {
       const data = getMockDataset();
       mockMutationSingleton = {
-        votes: new MockVoteRepository(data),
         submissions: new MockSubmissionRepository(data),
         contact: new MockContactRepository(),
         categories: new MockCategoryRepository(data),
       };
     }
-    return { env, ...mockMutationSingleton, verifier, rateLimiter: env.isProduction ? rateLimiter : new InMemoryRateLimiter() };
+    const fallback = new InMemoryRateLimiter();
+    return {
+      env,
+      ...mockMutationSingleton,
+      verifier,
+      formRateLimiter: env.isProduction ? formRateLimiter : fallback,
+    };
   }
 
   if (!env.supabaseUrl || !env.supabaseSecretKey) {
@@ -153,11 +157,10 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
   const client = createWorkerClient(env.supabaseUrl, env.supabaseSecretKey);
   return {
     env,
-    votes: new SupabaseVoteRepository(client),
     submissions: new SupabaseSubmissionRepository(client),
     contact: new SupabaseContactRepository(client),
     categories: new SupabaseWorkerCategoryRepository(client),
     verifier,
-    rateLimiter,
+    formRateLimiter,
   };
 }

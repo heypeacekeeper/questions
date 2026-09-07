@@ -172,39 +172,28 @@ export async function loadManifest(url: string): Promise<GameDataManifest | null
   }
 }
 
-/** Client-side memory of votes cast this browser (UI hint only; server is authoritative). */
-export class VotedStore {
-  constructor(private readonly key: string, private readonly storage: Storage | null) {}
-  get(id: string): 'A' | 'B' | null {
-    try {
-      const raw = this.storage?.getItem(this.key);
-      const map = raw ? (JSON.parse(raw) as Record<string, 'A' | 'B'>) : {};
-      return map[id] ?? null;
-    } catch {
-      return null;
-    }
+/**
+ * Return the deterministic, display-only result for a question. Percentages
+ * use integer tenths internally so they always complement to exactly 100.0.
+ */
+export function generatedDisplayResult(questionId: string): {
+  readonly percentA: number;
+  readonly percentB: number;
+} {
+  let hash = 2166136261;
+  for (const character of questionId) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
   }
-  set(id: string, choice: 'A' | 'B'): void {
-    try {
-      const raw = this.storage?.getItem(this.key);
-      const map = raw ? (JSON.parse(raw) as Record<string, 'A' | 'B'>) : {};
-      map[id] = choice;
-      const entries = Object.entries(map).slice(-500);
-      this.storage?.setItem(this.key, JSON.stringify(Object.fromEntries(entries)));
-    } catch {
-      /* ignore */
-    }
-  }
+
+  const percentATenths = 250 + ((hash >>> 0) % 501);
+  return {
+    percentA: percentATenths / 10,
+    percentB: (1000 - percentATenths) / 10,
+  };
 }
 
-export function formatVotes(n: number): string {
-  return `${n.toLocaleString('en-US')} ${n === 1 ? 'vote' : 'votes'}`;
-}
-
-export function verdictText(yourPercent: number, total: number, accepted: boolean): string {
-  if (!accepted) return `You already voted on this one — ${yourPercent}% agree with you.`;
-  if (total === 1) return "You're the first to vote on this question!";
-  return yourPercent >= 50
-    ? `You're with the majority — ${yourPercent}% chose the same answer.`
-    : `Bold choice — only ${yourPercent}% picked that answer.`;
+/** Format a generated percentage for the result UI. */
+export function formatGeneratedPercent(percent: number): string {
+  return `${percent.toFixed(1)}%`;
 }

@@ -1,15 +1,15 @@
 ---
 import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
-const meta = { title: 'Privacy Policy', description: 'How Would You Rather Questions handles anonymous voting, cookies, analytics, contact messages and question submissions.', path: ROUTES.privacy };
+const meta = { title: 'Privacy Policy', description: 'How Would You Rather Questions handles cookies, analytics, contact messages and question submissions.', path: ROUTES.privacy };
 ---
 <ProseLayout meta={meta} heading="Privacy Policy" legal>
 <p>Last updated: <span class="placeholder">[DATE]</span>. Publisher: <span class="placeholder">Would You Rather Questions — legal entity and address to be added</span>. Contact: <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a>.</p>
 <h2>What we collect</h2>
-<ul><li><strong>Anonymous voting.</strong> When you vote, a random identifier is stored in a cookie (<code>wyr_voter</code>) so each browser counts once per question. We store only a keyed hash of it with your vote, never the raw value. No account is created.</li>
-<li><strong>Abuse prevention.</strong> Our server may hash your IP address with a secret key to rate-limit requests. The raw IP is not stored.</li>
+<ul><li><strong>Game selections.</strong> Selecting an option reveals locally generated display results. We do not record individual selections or store an interaction cookie.</li>
+<li><strong>Abuse prevention.</strong> Our server may hash your IP address to rate-limit protected forms. The raw IP is not stored.</li>
 <li><strong>Contact messages</strong> (name, email, subject, message) are stored in our database (Supabase) so we can reply.</li>
 <li><strong>Question submissions</strong> may include an optional name and email used only for follow-up about that submission — never marketing.</li>
-<li><strong>Local storage</strong> remembers your chosen pack, your age confirmation and which questions you have voted on, on your device only.</li></ul>
+<li><strong>Local storage</strong> remembers your chosen pack, your age confirmation and which questions you have seen during a game session, on your device only.</li></ul>
 <h2>Analytics and advertising</h2><p>Google Analytics 4 and advertising (Google AdSense) load only with your consent via the cookie banner, where enabled. Cloudflare Web Analytics, if enabled, is cookieless. You can change your choices any time via "Cookie preferences" in the footer. See the <a href={ROUTES.cookies}>Cookie Policy</a>.</p>
 <h2>Service providers</h2><p>Hosting: Cloudflare (Workers, Turnstile bot protection). Database: Supabase. Analytics/ads: Google (only when enabled and consented). Data may be processed in the United States and other countries.</p>
 <h2>Your rights</h2><p>Depending on where you live (including the EEA, UK, Switzerland, Canada and Quebec, and US states with privacy laws) you may request access, correction or deletion of your data. Email <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a>.</p>

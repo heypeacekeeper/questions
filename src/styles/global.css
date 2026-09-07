@@ -49,8 +49,10 @@ body{
     radial-gradient(circle at 12px 12px,rgba(245,46,114,.045) 1.5px,transparent 1.8px),
     var(--cream);
   background-size:48px 48px;
-  font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
 }
+
+body.menu-open{overflow:hidden}
 
 button,input,textarea,select{font:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
@@ -127,7 +129,7 @@ svg{display:block}
   margin-right:auto;
   color:var(--ink);
   font-size:14px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:-.35px;
   white-space:nowrap;
 }
@@ -149,7 +151,7 @@ svg{display:block}
 
 .brand-domain{
   color:var(--muted);
-  font-weight:650;
+  font-weight:600;
 }
 
 .nav-links{
@@ -170,7 +172,7 @@ svg{display:block}
   border-radius:9px;
   cursor:pointer;
   font-size:14px;
-  font-weight:750;
+  font-weight:700;
 }
 
 .nav-link:hover,
@@ -257,7 +259,7 @@ svg{display:block}
   border-radius:10px;
   box-shadow:var(--shadow-sm);
   font-size:14px;
-  font-weight:850;
+  font-weight:800;
   white-space:nowrap;
 }
 
@@ -354,7 +356,7 @@ svg{display:block}
   box-shadow:var(--shadow-sm);
   cursor:pointer;
   font-size:12px;
-  font-weight:850;
+  font-weight:800;
   text-decoration:none;
 }
 
@@ -433,30 +435,104 @@ svg{display:block}
   border:1px solid rgba(255,255,255,.35);
   border-radius:999px;
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1.15px;
 }
 
 .choice-text{
   max-width:13em;
   font-size:clamp(28px,4vw,51px);
-  font-weight:900;
+  font-weight:800;
   line-height:1.1;
   letter-spacing:-.04em;
   text-wrap:balance;
   text-shadow:0 2px 10px rgba(40,24,63,.17);
+  transform-origin:center;
+  transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .3s ease;
+
 }
 
+.game-stage.voted .choice-text{
+  transform:translateY(-8px) scale(.9);
+}
+
+
 .result{
-  height:0;
-  overflow:hidden;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:clamp(46px,6vw,64px);
+  overflow:visible;
+  visibility:hidden;
   opacity:0;
+  pointer-events:none;
+}
+
+
+/* Percentage fill effect is intentionally desktop-only. */
+.result-fill{
+  display:none;
+}
+
+@media(min-width:801px){
+  .result-fill{
+    position:absolute;
+    right:0;
+    bottom:0;
+    left:0;
+    z-index:1;
+    display:block;
+    height:0;
+    pointer-events:none;
+    opacity:0;
+    overflow:visible;
+    background:transparent;
+    transition:
+      height .9s cubic-bezier(.16,1,.3,1),
+      opacity .25s ease-out;
+  }
+
+  .game-stage.voted .result-fill{
+    opacity:1;
+  }
+
+  .water-wave{
+    position:absolute;
+    top:-8px;
+    left:-18px;
+    width:calc(100% + 36px);
+    height:calc(100% + 8px);
+    overflow:hidden;
+    animation:water-drift 1.8s ease-in-out infinite alternate;
+  }
+
+  .water-wave-fill{
+    fill:rgba(255,255,255,.16);
+    stroke:none;
+  }
+
+  .water-wave-line{
+    fill:none;
+    stroke:rgba(255,255,255,.72);
+    stroke-width:1.5;
+    vector-effect:non-scaling-stroke;
+  }
+}
+
+@keyframes water-drift{
+  from{
+    transform:translateX(-7px);
+  }
+
+  to{
+    transform:translateX(7px);
+  }
 }
 
 .result-percent{
   display:block;
   font-size:clamp(44px,6.5vw,76px);
-  font-weight:950;
+  font-weight:800;
   line-height:1;
   letter-spacing:-.055em;
 }
@@ -465,48 +541,113 @@ svg{display:block}
   display:block;
   margin-top:7px;
   font-size:14px;
-  font-weight:750;
-}
-
-.result-fill{
-  position:absolute;
-  right:0;
-  bottom:0;
-  left:0;
-  z-index:1;
-  height:0;
-  background:rgba(255,255,255,.18);
-  border-top:2px solid rgba(255,255,255,.72);
-  transition:height .45s ease;
+  font-weight:700;
 }
 
 .your-pick{
-  position:absolute;
-  top:66px;
-  left:50%;
-  z-index:4;
+  display:inline-flex;
+  visibility:hidden;
+  opacity:0;
+  align-self:center;
   padding:6px 12px;
   color:var(--ink);
   background:#fff;
   border-radius:999px;
   box-shadow:var(--shadow-sm);
-  opacity:0;
-  transform:translateX(-50%);
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:.75px;
 }
 
 .game-stage.voted .result{
-  height:auto;
+  visibility:visible;
   opacity:1;
 }
 
-.game-stage.voted .picked .your-pick{opacity:1}
+
+.game-stage.voted .picked .your-pick{
+  visibility:visible;
+  opacity:1;
+  animation:pick-badge-pop .38s cubic-bezier(.2,.9,.25,1.15) both;
+}
+
 
 .game-stage.voted .not-picked{
   filter:saturate(.55) brightness(.87);
 }
+
+/* Result reveal animations — transform/opacity only, so layout stays fixed. */
+.game-stage.voted .result-percent{
+  animation:result-pop .48s cubic-bezier(.2,.85,.25,1.2) both;
+}
+
+.game-stage.voted .picked .your-pick{
+  animation:pick-badge-pop .38s cubic-bezier(.2,.9,.25,1.25) both;
+}
+
+.game-stage.voted .picked{
+  animation:selected-glow .5s ease-out;
+}
+
+.game-stage.voted .next-button{
+  animation:next-button-reveal .38s .08s ease-out both;
+}
+
+@keyframes result-pop{
+  0%{
+    opacity:0;
+    transform:translateY(12px) scale(.82);
+  }
+  70%{
+    opacity:1;
+    transform:translateY(-2px) scale(1.04);
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
+
+
+@keyframes pick-badge-pop{
+  0%{
+    opacity:0;
+    transform:translateY(6px) scale(.7);
+  }
+  70%{
+    opacity:1;
+    transform:translateY(-1px) scale(1.06);
+  }
+  100%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
+@keyframes selected-glow{
+  0%{
+    box-shadow:inset 0 0 0 0 rgba(255,255,255,0);
+  }
+  50%{
+    box-shadow:inset 0 0 50px rgba(255,255,255,.2);
+  }
+  100%{
+    box-shadow:inset 0 0 0 0 rgba(255,255,255,0);
+  }
+}
+
+@keyframes next-button-reveal{
+  from{
+    opacity:0;
+    transform:translateY(8px) scale(.92);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
 
 .game-pivot{
   position:absolute;
@@ -526,7 +667,7 @@ svg{display:block}
   border-radius:50%;
   box-shadow:0 7px 22px rgba(40,24,63,.28);
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1.2px;
 }
 
@@ -541,7 +682,7 @@ svg{display:block}
   border-radius:999px;
   box-shadow:0 9px 24px rgba(40,24,63,.28);
   cursor:pointer;
-  font-weight:900;
+  font-weight:800;
   white-space:nowrap;
 }
 
@@ -576,7 +717,7 @@ svg{display:block}
   border-radius:999px;
   box-shadow:var(--shadow-sm);
   font-size:13px;
-  font-weight:850;
+  font-weight:800;
   text-align:center;
 }
 .verdict-text:empty{display:none}
@@ -593,7 +734,7 @@ svg{display:block}
   background:var(--ink);
   text-align:center;
 }
-.game-empty p{margin:0;font-weight:750}
+.game-empty p{margin:0;font-weight:700}
 
 /* No-JS notice inside the game */
 .game-nojs{
@@ -619,10 +760,11 @@ svg{display:block}
 
 /* ================= PACK DIALOG ================= */
 .pack-dialog{
-  width:min(calc(100% - 28px),480px);
-  max-height:calc(100svh - 28px);
+  width:min(calc(100% - 24px),480px);
+  max-height:calc(100svh - 24px);
   margin:auto;
   padding:0;
+  overflow:auto;
   color:var(--ink);
   background:#fff;
   border:0;
@@ -634,10 +776,14 @@ svg{display:block}
 .dialog-content{padding:19px}
 
 .dialog-header{
+  position:sticky;
+  top:0;
+  z-index:1;
   display:flex;
   align-items:flex-start;
   gap:15px;
   margin-bottom:15px;
+  background:#fff;
 }
 
 .dialog-copy{margin-right:auto}
@@ -746,7 +892,7 @@ svg{display:block}
   background:#fff;
   border-radius:11px;
   cursor:pointer;
-  font-weight:850;
+  font-weight:800;
 }
 
 .gate-actions .confirm-age{
@@ -810,7 +956,7 @@ svg{display:block}
   margin:0 0 10px;
   color:var(--muted);
   font-size:13px;
-  font-weight:650;
+  font-weight:600;
 }
 .breadcrumbs ol{display:flex;flex-wrap:wrap;gap:4px 6px;margin:0;padding:0;list-style:none}
 .breadcrumbs li+li::before{content:"›";margin-right:6px;color:var(--line)}
@@ -848,7 +994,7 @@ svg{display:block}
 .side-card h2{
   margin:0 0 10px;
   font-size:13px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1px;
   text-transform:uppercase;
   color:var(--pink-dark);
@@ -863,7 +1009,7 @@ svg{display:block}
   color:var(--ink);
   border-radius:9px;
   font-size:14px;
-  font-weight:750;
+  font-weight:700;
 }
 .side-card li a:hover{background:#fff1f6;text-decoration:none}
 .side-card .count{color:var(--muted);font-size:12px;font-weight:700}
@@ -879,7 +1025,7 @@ svg{display:block}
   border-radius:10px;
   cursor:pointer;
   font-size:14px;
-  font-weight:850;
+  font-weight:800;
   text-align:center;
 }
 .side-cta:hover{text-decoration:none;transform:translateY(-1px)}
@@ -944,7 +1090,7 @@ svg{display:block}
   margin-bottom:5px;
   color:var(--pink-dark);
   font-size:12px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1px;
   text-transform:uppercase;
 }
@@ -991,7 +1137,7 @@ svg{display:block}
   background:linear-gradient(135deg,var(--pink),var(--purple));
   border-radius:50%;
   font-size:12px;
-  font-weight:900;
+  font-weight:800;
 }
 
 .question-row:nth-child(3n+2)::before{
@@ -1006,14 +1152,20 @@ svg{display:block}
   margin:0;
   color:var(--ink);
   font-size:16px;
-  font-weight:650;
+  font-weight:500;
   line-height:1.5;
 }
 
-.question-row b{
-  color:var(--pink-dark);
-  font-weight:850;
+/* .question-option{
+  color:var(--ink);
+  font-weight:700;
+} */
+
+.question-option{
+  color:var(--ink);
+  font-weight:700;
 }
+
 
 .section-action{
   display:inline-flex;
@@ -1140,7 +1292,7 @@ svg{display:block}
   background:linear-gradient(135deg,var(--pink),var(--purple));
   border-radius:10px;
   font-size:13px;
-  font-weight:900;
+  font-weight:800;
 }
 
 .step h3{
@@ -1233,7 +1385,7 @@ svg{display:block}
   border-radius:10px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
-  font-weight:850;
+  font-weight:800;
 }
 .button-primary:hover{background:#16d4a2}
 .button-primary:disabled{opacity:.6;cursor:progress}
@@ -1284,7 +1436,7 @@ svg{display:block}
 .consent-prefs label{display:flex;align-items:center;gap:10px;font-size:14px}
 .consent-prefs input{width:18px;height:18px}
 .consent-manage-link{
-  background:none;border:0;padding:0;color:var(--text);font-weight:750;cursor:pointer;text-decoration:underline;
+  background:none;border:0;padding:0;color:var(--text);font-weight:700;cursor:pointer;text-decoration:underline;
 }
 
 /* ================= FOOTER ================= */
@@ -1305,7 +1457,7 @@ svg{display:block}
 
 .footer-brand{
   color:var(--ink);
-  font-weight:900;
+  font-weight:800;
 }
 
 .footer-copy p{margin:4px 0 0}
@@ -1319,7 +1471,7 @@ svg{display:block}
 
 .footer-links a{
   color:var(--text);
-  font-weight:750;
+  font-weight:700;
 }
 
 /* ================= TABLET ================= */
@@ -1411,15 +1563,21 @@ svg{display:block}
 
   .choice{padding:48px 18px 36px}
 
+  /* .game-stage.voted{
+    height:auto;
+    min-height:0;
+    max-height:none;
+    grid-template-rows:minmax(280px,auto) minmax(320px,auto);
+  } */
+  .game-stage.voted .choice-a{padding-bottom:84px}
+  .game-stage.voted .choice-b{padding-top:84px;padding-bottom:72px}
+
   .choice-text{
     max-width:18em;
     font-size:clamp(24px,6vw,33px);
   }
 
-  .your-pick{
-    top:auto;
-    bottom:10px;
-  }
+  .your-pick{margin-top:2px}
 
   .result-percent{
     font-size:clamp(38px,10vw,53px);
@@ -1491,10 +1649,10 @@ svg{display:block}
   }
 
   .pack-dialog{
-    width:100%;
-    max-height:90svh;
-    margin:auto 0 0;
-    border-radius:21px 21px 0 0;
+    width:calc(100% - 24px);
+    max-height:calc(100svh - 24px);
+    margin:auto;
+    border-radius:21px;
   }
 
   .pack-grid{grid-template-columns:1fr}
@@ -1555,8 +1713,29 @@ svg{display:block}
   }
 }
 
+/* Percentage result typography */
+.result-percent{
+  display:block;
+  color:#fff;
+  font-size:clamp(36px,5vw,58px);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-.035em;
+  text-shadow:0 3px 12px rgba(40,24,63,.2);
+}
+
+/* Smaller percentage text on mobile */
+@media(max-width:800px){
+  .result-percent{
+    font-size:clamp(32px,8.5vw,44px);
+  }
+}
+
+/* Disable animations when the user prefers reduced motion */
 @media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
+  html{
+    scroll-behavior:auto;
+  }
 
   *,*::before,*::after{
     animation:none!important;

@@ -7,11 +7,11 @@
  * Modes:
  *  - mixed:    homepage, pack picker available, uses /game-data/mixed/*
  *  - category: locked to one category, no picker
- *  - single:   share page, locked to one question, voting allowed
+ *  - single:   share page, locked to one question
  */
 import type { GameQuestion } from '@/domain/question';
 import type { CategoryWithCount } from '@/domain/category';
-import { API_PATHS, GAME_DATA, ROUTES, STORAGE_KEYS, VOTING } from '@/config/site';
+import { GAME_DATA, ROUTES, STORAGE_KEYS } from '@/config/site';
 import { MIXED_PACK_SLUG } from '@/application/game-data-service';
 
 interface PackOption {
@@ -32,25 +32,19 @@ interface Props {
   packLabel?: string;
   /** Category options for the homepage picker. */
   packs?: readonly PackOption[];
-  /** Whether voting is enabled (feature flag). */
-  votingEnabled: boolean;
-  /** Category (for category mode analytics + share fallback link). */
+  /** Category for the share fallback link. */
   category?: CategoryWithCount | null;
 }
 
-const { mode, initial, setSlug = MIXED_PACK_SLUG, packLabel = 'Mixed', packs = [], votingEnabled, category = null } = Astro.props;
+const { mode, initial, setSlug = MIXED_PACK_SLUG, packLabel = 'Mixed', packs = [], category = null } = Astro.props;
 
 const config = {
   mode,
   set: setSlug,
   manifest: `${ROUTES.gameDataPrefix}${GAME_DATA.manifestFile}`,
-  voteApi: API_PATHS.vote,
-  votingEnabled,
   refill: GAME_DATA.refillThreshold,
   sharePrefix: ROUTES.sharePrefix,
-  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, voted: STORAGE_KEYS.voted, seen: STORAGE_KEYS.seen },
-  cookie: VOTING.cookieName,
-  category: category?.slug ?? null,
+  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, seen: STORAGE_KEYS.seen },
   initial,
 };
 const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', icon: '🎲', description: 'A little bit of everything', requiresAgeGate: false }, ...packs] : [];
@@ -90,34 +84,68 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         </button>
       </div>
 
-      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''}>
+      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''} aria-busy="false">
         {initial ? (
           <>
-            <button class="choice choice-a" id="choice-a" type="button" aria-describedby="game-instructions">
-              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
+            <button
+              class="choice choice-a"
+              id="choice-a"
+              type="button"
+              aria-describedby="game-instructions"
+            >
               <span class="choice-content">
                 <span class="option-label">OPTION A</span>
                 <span class="choice-text" id="text-a">{initial.a}</span>
+
                 <span class="result" id="result-a">
                   <strong class="result-percent" id="percent-a"></strong>
-                  <span class="result-votes" id="votes-a"></span>
                 </span>
+
+                <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               </span>
-              <span class="result-fill" id="fill-a" aria-hidden="true"></span>
+
+                <span class="result-fill" id="fill-a" aria-hidden="true">
+                  <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
+                  <path class="water-wave-fill" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"></path>
+                  <path class="water-wave-line" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"></path>
+                  </svg>
+
+                </span>
             </button>
 
-            <button class="choice choice-b" id="choice-b" type="button" aria-describedby="game-instructions">
-              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
-              <span class="choice-content">
-                <span class="option-label">OPTION B</span>
-                <span class="choice-text" id="text-b">{initial.b}</span>
-                <span class="result" id="result-b">
-                  <strong class="result-percent" id="percent-b"></strong>
-                  <span class="result-votes" id="votes-b"></span>
+            <button
+                class="choice choice-b"
+                id="choice-b"
+                type="button"
+                aria-describedby="game-instructions"
+              >
+                <span class="choice-content">
+                  <span class="option-label">OPTION B</span>
+                  <span class="choice-text" id="text-b">{initial.b}</span>
+
+                  <span class="result" id="result-b">
+                    <strong class="result-percent" id="percent-b"></strong>
+                  </span>
+
+                  <span class="your-pick" aria-hidden="true">YOUR PICK</span>
                 </span>
+
+                <span class="result-fill" id="fill-b" aria-hidden="true">
+                <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
+                  <path
+                    class="water-wave-fill"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"
+                  ></path>
+                  <path
+                    class="water-wave-line"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"
+                  ></path>
+                </svg>
               </span>
-              <span class="result-fill" id="fill-b" aria-hidden="true"></span>
-            </button>
+
+              </button>
+
+
 
             <div class="game-pivot">
               <div class="or-badge" aria-hidden="true">OR</div>
@@ -129,13 +157,11 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
               </button>
             </div>
 
-            <div class="verdict">
-              <span class="verdict-text" id="verdict-text"></span>
-            </div>
+            <div class="verdict"><span class="result-votes" id="vote-count"></span></div>
 
             <noscript>
               <div class="game-nojs">
-                <span class="verdict-text">Enable JavaScript to vote and see the next question. The question lists below work without it.</span>
+                <span class="verdict-text">Enable JavaScript to choose an option and see the next question. The question lists below work without it.</span>
               </div>
             </noscript>
           </>
@@ -146,7 +172,7 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         )}
       </div>
 
-      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B. Use the left and right arrow keys to vote.</p>
+      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B. Use the left and right arrow keys to choose.</p>
       <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
     </div>
   </div>

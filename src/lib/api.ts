@@ -38,10 +38,3 @@ export async function clientKey(request: Request, pepper: string): Promise<strin
   const ip = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   return (await sha256Hex(`${pepper}|${ip}`)).slice(0, 32);
 }
-
-export function readCookie(request: Request, name: string): string | null {
-  const raw = request.headers.get('cookie');
-  if (!raw) return null;
-  for (const part of raw.split(';')) { const [k, ...v] = part.trim().split('='); if (k === name) return decodeURIComponent(v.join('=')); }
-  return null;
-}

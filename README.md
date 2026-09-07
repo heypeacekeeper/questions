@@ -1,60 +1,84 @@
 # Would You Rather Questions
 
-Static Astro site on **Cloudflare Workers** with **Supabase** content, rebuilt from `design-reference/index.reference.html` (visual source of truth — not published).
+Static-first Astro site on **Cloudflare Workers** with Supabase content. Pages are prerendered for SEO; only protected form endpoints under `/api/*` run on demand.
 
 ## Architecture
+
 ```
 Astro pages/components → application services → repository interfaces → adapters (supabase | mock)
 ```
-- All content pages are **prerendered** at build. Only `src/pages/api/*` run on demand (`prerender = false`).
-- Supabase is read **once at build time** (secret key, Node). Workers use the secret key only inside `/api/*`.
-- Composition root: `src/repositories/factory.ts`. Supabase-specific code: `src/infrastructure/supabase/`.
-- Central config: `src/config/site.ts`; env validation: `src/config/env.ts`.
+
+- Supabase content is read at build time with the server-only secret key.
+- The game displays deterministic, local-only result percentages and owner-managed display counts. Selecting an option never sends a request or changes stored content.
+- The composition root is `src/repositories/factory.ts`; environment validation is `src/config/env.ts`.
 
 ## Commands
+
 ```bash
 npm install
-cp .env.example .env            # then edit
-npm run dev:mock                # local dev with demo fixtures
-npm test                        # vitest
-npm run check                   # astro check + tsc
-npm run build:mock              # mock build (validate → build → budget)
-npm run build                   # production (DATA_PROVIDER=supabase)
-npm run preview                 # wrangler dev on the build
-npx wrangler deploy             # deploy to Cloudflare Workers
+cp .env.example .env            # edit locally; never commit this file
+npm run dev:mock                # builds mock artifacts, then serves the Worker at http://127.0.0.1:8787
+npm run test:runtime:mock       # built-Worker HTTP smoke test
+npm test
+npm run check
+npm run build:mock              # validation, mock Astro build, performance budget
+npm run build                   # production Supabase build
+npm run preview
+npx wrangler deploy
 ```
 
 ## Environment variables
-See `.env.example`. Required in production: `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (build + Worker secret), `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` (secret), `VOTER_HASH_SECRET` (secret, ≥32 chars). Optional: GA4 / Cloudflare Analytics / AdSense ids behind `FEATURE_*` flags. Build fails if `DATA_PROVIDER=mock` or published demo rows are present in production.
 
-## Supabase setup
-1. Create a project at supabase.com → Settings → API: copy URL + **secret** key.
-2. Run in order in the SQL editor: `supabase/migrations/0000_functions.sql`, `0001_initial_schema.sql`, `0002_seed_categories.sql`, `0003_cast_vote_function.sql`.
-3. Optional demo data: `supabase/seed/demo_questions.sql`. Delete: `delete from questions where is_demo = true;`
-4. Add a question: insert into `questions` (option_a, option_b, status='published'); link rows in `question_categories` (one per category). Share codes generate automatically.
-5. Create a category: insert into `categories` (status 'draft' until it has questions, then 'published'). Pages, nav, sitemap and game packs regenerate on the next build — no code changes.
-6. Archive instead of delete so `/s/<code>/` shows a graceful notice.
-7. Rebuild after content changes: `npm run build && npx wrangler deploy` (or trigger CI). A failed build never replaces the live deployment.
+Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY`. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
+
+## Display-only results and Supabase migration
+
+Selecting either option immediately reveals a deterministic display result generated from the question ID. Option A is always in the 25.0%–75.0% range, Option B complements it to 100.0%, and the same question always produces the same result. The displayed count is the owner-editable `display_vote_count` stored on each question.
+
+1. For a new database, manually run the historical migrations in order through migration 0003.
+2. Review and manually run `supabase/migrations/0004_display_vote_count.sql` in the Supabase SQL editor. Do not apply it automatically from the application.
+3. Migration 0004 adds `display_vote_count`, safely backfills only existing `NULL` values with integers from 2,000 through 7,000, gives new rows a value in that range, and then makes the column required. Owners can later set any non-negative integer count directly in Supabase.
+
+Historical migrations and legacy database data are retained unchanged. The active application does not read or write historical vote records.
+
+## Isolated mock development
+
+`npm run dev:mock` deliberately builds the mock site and serves the generated Cloudflare Worker instead of using `astro dev`. It starts Wrangler from an isolated empty directory, passes only tracked safe mock values plus `.env.mock`, and uses a process environment allowlist. Therefore an owner `.env` at the repository root cannot override mock runtime values. This also makes generated `/game-data/manifest.json` and hashed packs available exactly as they are in deployment.
+
+Use this command on Windows, macOS, and Linux:
+
+```bash
+npm run dev:mock
+```
+
+Use `npm run test:runtime:mock` for a non-browser Worker smoke test of `/` and `/game-data/manifest.json`. Do not use `npx astro dev --mode mock` for Worker verification: it does not serve the generated Worker/artifacts and can load root dotenv files. There is no tracked `src/fetch.ts` custom fetch handler; the previously observed actions/middleware warnings are source-mode Astro dev diagnostics and are avoided by the generated Worker path.
 
 ## Cloudflare deployment
+
+`wrangler.jsonc` provides `FORM_RATE_LIMITER` for `/api/contact` and `/api/submit-question`.
+
+Set server-only secrets without committing values:
+
 ```bash
 npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
-npx wrangler secret put VOTER_HASH_SECRET
 npm run build && npx wrangler deploy
 ```
-Then uncomment `routes` in `wrangler.jsonc` and add the domain to Cloudflare. Create Turnstile widgets (actions `contact`, `submit_question`) for `wouldyouratherquestions.org`. Roll back: Workers → Deployments → Rollback.
 
-## Performance budgets (current, gzip)
-JS 7.8/35 KB · CSS 5.7/25 KB · Home HTML 5.9/100 KB · Category HTML 5.0/150 KB · Pack 1.0/25 KB · fonts 0.
+Configure the configured rate-limit namespace in the Cloudflare account if it differs from the repository default. Worker observability remains enabled and samples approximately 5% of production requests. Configure Turnstile actions `contact` and `submit_question`, then enable custom routes after the zone is on Cloudflare.
+
+## Performance and fonts
+
+The budget reports **total emitted client JS/CSS**, homepage/category HTML, game-data packs, and font files using gzip. Windows paths are normalized before matching generated assets. Budgets remain: JS 35 KB, CSS 25 KB, homepage HTML 100 KB, category HTML 150 KB, pack 25 KB, and zero font files. The site uses only the system font stack and makes no downloadable font requests.
 
 ## Replacing Supabase
-Implement `QuestionRepository`, `CategoryRepository`, `VoteRepository`, `SubmissionRepository`, `ContactRepository` (`src/repositories/interfaces/index.ts`) in a new `src/infrastructure/<provider>/`, mapping records to `src/domain/*` types (see `supabase/mappers.ts`), then swap them in `src/repositories/factory.ts` and set `DATA_PROVIDER`. Preserve constraints: unique share codes/slugs/paths, non-identical options, one vote per (question, voter_hash), valid statuses. Pages, components, services, game, SEO, forms need no changes.
 
-## Backups
-Export tables from the Supabase dashboard (CSV) or `pg_dump`; keep `supabase/migrations/` in git; the deployment manifest (`/deployment-manifest.json`) records the content checksum of each build.
+Implement repository interfaces in `src/infrastructure/<provider>/`, map provider rows to `src/domain/*`, and swap adapters only in `src/repositories/factory.ts`. Preserve content constraints, static game-data generation, and form protections.
 
-## Legal placeholders
-Highlighted `<span class="placeholder">` items in Privacy, Terms, Cookie, DMCA pages (entity, address, jurisdiction, DMCA agent, date) must be replaced; templates are not legal advice.
+## Owner setup
 
-See `TASKS.md` for remaining work.
+- Create/review the production Supabase project, then manually run migration 0004 after reviewing it.
+- Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
+- Configure Worker secrets and the Cloudflare form rate-limit binding.
+- Replace legal placeholders and create production Turnstile widgets.
+- Run `npm run build` locally with real private credentials before production deployment.
