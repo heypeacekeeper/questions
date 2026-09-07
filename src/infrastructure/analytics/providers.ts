@@ -3,7 +3,7 @@
  * independently configurable. GA4 requires consent; Cloudflare Web Analytics
  * is cookieless and can be configured to load without consent.
  *
- * Nothing here ever receives personal data, question text, IPs or voter tokens —
+ * Nothing here ever receives personal data, question text, or IP addresses —
  * `track()` only accepts short enums/ids/numbers (enforced by callers).
  */
 import type { AnalyticsEventName, AnalyticsProvider } from '@/repositories/interfaces';

@@ -15,7 +15,7 @@
     "enabled": true,
     "head_sampling_rate": 0.05
   },
-  // Separate global rate limits: repeat votes and protected forms.
+  // Protected forms share one global rate-limit binding.
   // namespace_id values only need to be unique within this Cloudflare account.
   "ratelimits": [
     {
@@ -24,11 +24,10 @@
       "simple": { "limit": 10, "period": 60 }
     }
   ],
-  // Non-secret runtime variables. Secrets (SUPABASE_SECRET_KEY, TURNSTILE_SECRET_KEY,
-  // VOTER_HASH_SECRET) must be set with `wrangler secret put` — never here.
+  // Non-secret runtime variables. Server-only secrets are set with
+  // `wrangler secret put` and never committed here.
   "vars": {
     "PUBLIC_SITE_URL": "https://wouldyouratherquestions.org",
-    "FEATURE_VOTING": "true",
     "FEATURE_SUBMISSIONS": "true",
     "FEATURE_CONTACT_FORM": "true"
   },

@@ -22,7 +22,7 @@ export interface Question {
   readonly publishedAt: string | null;
 }
 
-/** Minimal shape shipped in static game-data chunks (no vote totals!). */
+/** Minimal shape shipped in static game-data chunks, including display-only counts. */
 export interface GameQuestion {
   readonly id: string;
   readonly a: string;

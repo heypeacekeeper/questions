@@ -3,7 +3,7 @@
  * pack to its content-hashed URL. Pure (no I/O): the build integration writes
  * the returned files to disk.
  *
- * Packs never include vote totals (they are long-lived static files).
+ * Packs include owner-managed display counts alongside static question content.
  */
 import type { CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';

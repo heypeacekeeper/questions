@@ -26,7 +26,7 @@ export default defineConfig({
     serviceWorkers: 'block',
   },
   webServer: {
-    command: `npm run build:mock && npx wrangler dev --config dist/server/wrangler.json --ip 127.0.0.1 --port ${port} --var DATA_PROVIDER:mock --var VOTER_HASH_SECRET:visual-voter-secret-that-is-at-least-32-chars --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
+    command: `npm run build:mock && npx wrangler dev --config dist/server/wrangler.json --ip 127.0.0.1 --port ${port} --var DATA_PROVIDER:mock --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

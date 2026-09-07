@@ -1,7 +1,7 @@
 /**
  * DEMO FIXTURES — clearly labelled, deliberately tiny, easy to delete.
  *
- * These exist only so the layout, game, voting, sharing, static lists and
+ * These exist only so the layout, game, sharing, static lists and
  * database connection can be exercised. They are NOT production content.
  * Every demo question has `isDemo: true` and a share code prefixed `demq`.
  *
@@ -302,7 +302,7 @@ export const DEMO_QUESTIONS: readonly Question[] = [
     status: 'published',
     shareCode: 'demq22a',
     sortOrder: 10,
-    displayVoteCount: 3248,
+    displayVoteCount: 2438,
     categoryIds: [CATEGORY_IDS.kids, CATEGORY_IDS.family, CATEGORY_IDS.funny],
     isDemo: true,
     createdAt: NOW,

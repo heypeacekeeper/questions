@@ -2,7 +2,7 @@
  * Supabase client factories. Three distinct trust levels:
  *
  *  - createBuildClient():  Node build process; secret key; reads all content.
- *  - createWorkerClient(): Cloudflare Worker endpoints; secret key; writes votes/forms.
+ *  - createWorkerClient(): Cloudflare Worker form endpoints; secret key; writes forms.
  *
  * The secret key never reaches the client bundle: this module is only imported
  * from build-time code and `src/pages/api/*` (prerender = false).

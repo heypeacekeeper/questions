@@ -86,8 +86,6 @@ export interface RateLimiter {
 }
 
 export type AnalyticsEventName =
-  | 'vote_submitted'
-  | 'vote_failed'
   | 'question_advanced'
   | 'pack_changed'
   | 'share_clicked'

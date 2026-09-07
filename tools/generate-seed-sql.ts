@@ -68,7 +68,7 @@ const demoLinkRows = DEMO_QUESTIONS.flatMap((q) => q.categoryIds.map((c) => `  (
 
 const demoSql = `-- ============================================================================
 -- DEMO QUESTIONS — optional. Three clearly labelled fixtures so the game,
--- voting, sharing and static lists can be tested against a real database.
+-- sharing and static lists can be tested against a real database.
 --
 -- Every row has is_demo = true and option text starting with "[DEMO]".
 -- Production builds FAIL if demo rows are published unless ALLOW_DEMO_CONTENT=true.

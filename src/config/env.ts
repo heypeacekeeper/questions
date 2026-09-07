@@ -38,7 +38,6 @@ export interface AppEnv {
 }
 
 export interface FeatureFlags {
-  readonly FEATURE_VOTING: boolean;
   readonly FEATURE_SUBMISSIONS: boolean;
   readonly FEATURE_CONTACT_FORM: boolean;
   readonly FEATURE_ADS: boolean;
@@ -51,7 +50,6 @@ export interface FeatureFlags {
 export type RawEnv = Record<string, string | undefined>;
 
 const FEATURE_DEFAULTS: FeatureFlags = {
-  FEATURE_VOTING: true,
   FEATURE_SUBMISSIONS: true,
   FEATURE_CONTACT_FORM: true,
   FEATURE_ADS: false,
@@ -106,7 +104,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   }
 
   const features: FeatureFlags = {
-    FEATURE_VOTING: parseBool(raw.FEATURE_VOTING, FEATURE_DEFAULTS.FEATURE_VOTING),
     FEATURE_SUBMISSIONS: parseBool(raw.FEATURE_SUBMISSIONS, FEATURE_DEFAULTS.FEATURE_SUBMISSIONS),
     FEATURE_CONTACT_FORM: parseBool(raw.FEATURE_CONTACT_FORM, FEATURE_DEFAULTS.FEATURE_CONTACT_FORM),
     FEATURE_ADS: parseBool(raw.FEATURE_ADS, FEATURE_DEFAULTS.FEATURE_ADS),
@@ -201,7 +198,6 @@ export function readImportMetaEnv(): RawEnv {
     SUPABASE_SECRET_KEY: env.SUPABASE_SECRET_KEY,
     PUBLIC_TURNSTILE_SITE_KEY: env.PUBLIC_TURNSTILE_SITE_KEY,
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,
-    FEATURE_VOTING: env.FEATURE_VOTING,
     FEATURE_SUBMISSIONS: env.FEATURE_SUBMISSIONS,
     FEATURE_CONTACT_FORM: env.FEATURE_CONTACT_FORM,
     FEATURE_ADS: env.FEATURE_ADS,

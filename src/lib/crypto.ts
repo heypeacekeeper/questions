@@ -23,18 +23,6 @@ export function generateShareCode(length: number = SHARE_CODE_LENGTH): string {
   return out;
 }
 
-/** Opaque random anonymous voter token for the HttpOnly cookie (base64url, 32 bytes). */
-export function generateVoterToken(): string {
-  return toBase64Url(randomBytes(32));
-}
-
-export function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  const base64 = typeof btoa === 'function' ? btoa(binary) : Buffer.from(binary, 'binary').toString('base64');
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 export function toHex(bytes: ArrayBuffer | Uint8Array): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let out = '';
@@ -46,27 +34,6 @@ export async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return toHex(digest);
-}
-
-/** HMAC-SHA256 keyed with a server-only secret. Used before storing voter identifiers. */
-export async function hmacSha256Hex(secret: string, message: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
-  return toHex(signature);
-}
-
-/** Constant-time string comparison for equal-length hex strings. */
-export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 /** Short non-cryptographic hash for content-addressed filenames (stable across builds). */
