@@ -14,7 +14,8 @@ Astro pages/components → application services → repository interfaces → ad
 ```bash
 npm install
 cp .env.example .env            # edit locally; never commit this file
-npm run dev:mock
+npm run dev:mock                # builds mock artifacts, then serves the Worker at http://127.0.0.1:8787
+npm run test:runtime:mock       # built-Worker HTTP smoke test
 npm test
 npm run check
 npm run build:mock              # validation, mock Astro build, performance budget
@@ -25,6 +26,16 @@ npx wrangler deploy
 
 ## Environment variables
 Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and a ≥32-character `VOTER_HASH_SECRET`. `VOTER_HASH_SECRET` HMACs anonymous tokens only for abuse-rate-limit keys; it does not identify or restrict voters. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
+
+## Isolated mock development
+`npm run dev:mock` deliberately builds the mock site and serves the generated Cloudflare Worker instead of using `astro dev`. It starts Wrangler from an isolated empty directory, passes only tracked safe mock values plus `.env.mock`, and uses a process environment allowlist. Therefore an owner `.env` at the repository root cannot override mock runtime values. This also makes generated `/game-data/manifest.json` and hashed packs available exactly as they are in deployment.
+
+Use this command on Windows, macOS, and Linux:
+```bash
+npm run dev:mock
+```
+
+Use `npm run test:runtime:mock` for a non-browser Worker smoke test of `/`, `/game-data/manifest.json`, and repeat-vote API results. Do not use `npx astro dev --mode mock` for API verification: it does not serve the generated Worker/artifacts and can load root dotenv files. There is no tracked `src/fetch.ts` custom fetch handler; the previously observed actions/middleware warnings are source-mode Astro dev diagnostics and are avoided by the generated Worker path.
 
 ## Repeat-vote architecture and Supabase migration
 Repeat voting is intentional: every successful request increments one aggregate counter, including repeated clicks from the same browser and votes that switch choices. The browser stores no voting history.
