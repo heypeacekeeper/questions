@@ -172,13 +172,28 @@ export async function loadManifest(url: string): Promise<GameDataManifest | null
   }
 }
 
-export function formatVotes(n: number): string {
-  return `${n.toLocaleString('en-US')} ${n === 1 ? 'vote' : 'votes'}`;
+/**
+ * Return the deterministic, display-only result for a question. Percentages
+ * use integer tenths internally so they always complement to exactly 100.0.
+ */
+export function generatedDisplayResult(questionId: string): {
+  readonly percentA: number;
+  readonly percentB: number;
+} {
+  let hash = 2166136261;
+  for (const character of questionId) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  const percentATenths = 250 + ((hash >>> 0) % 501);
+  return {
+    percentA: percentATenths / 10,
+    percentB: (1000 - percentATenths) / 10,
+  };
 }
 
-export function verdictText(selectedPercent: number, total: number): string {
-  if (total === 1) return "You're the first to vote on this question!";
-  return selectedPercent >= 50
-    ? `That option currently has ${selectedPercent}% of the votes.`
-    : `That option currently has ${selectedPercent}% of the votes.`;
+/** Format a generated percentage for the result UI. */
+export function formatGeneratedPercent(percent: number): string {
+  return `${percent.toFixed(1)}%`;
 }

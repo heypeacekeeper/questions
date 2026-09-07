@@ -1,7 +1,13 @@
 /** Progressive enhancement controller for the static first game question. */
 import type { GameQuestion } from '@/domain/question';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
-import { GameEngine, SessionSeenStore, loadManifest } from './game-engine';
+import {
+  formatGeneratedPercent,
+  GameEngine,
+  generatedDisplayResult,
+  loadManifest,
+  SessionSeenStore,
+} from './game-engine';
 
 interface GameConfig {
   mode: 'mixed' | 'category' | 'single';
@@ -41,18 +47,17 @@ export function initGame(): void {
     [percentA, percentB, voteCount, verdict].forEach((element) => { if (element) element.textContent = ''; });
     if (fillA) fillA.style.height = '0'; if (fillB) fillB.style.height = '0'; announce(`Would you rather ${question.a}, or ${question.b}?`);
   }
-  const resultFor = (id: string) => { let hash = 2166136261; for (const char of id) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } const percentA = (250 + ((hash >>> 0) % 501)) / 10; return { percentA, percentB: 100 - percentA }; };
   function choose(choice: 'A' | 'B'): void {
     if (!current || busy) return;
     hasVoted = true; gameStage.classList.add('voted');
     const picked = choice === 'A' ? choiceA : choiceB; const other = choice === 'A' ? choiceB : choiceA;
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     picked?.classList.add('picked'); other?.classList.add('not-picked');
-    const result = resultFor(current.id);
-    if (percentA) percentA.textContent = `${result.percentA.toFixed(1)}%`; if (percentB) percentB.textContent = `${result.percentB.toFixed(1)}%`;
+    const result = generatedDisplayResult(current.id);
+    if (percentA) percentA.textContent = formatGeneratedPercent(result.percentA); if (percentB) percentB.textContent = formatGeneratedPercent(result.percentB);
     if (voteCount) voteCount.textContent = `${current.d.toLocaleString('en-US')} votes`;
     requestAnimationFrame(() => { if (fillA) fillA.style.height = `${result.percentA}%`; if (fillB) fillB.style.height = `${result.percentB}%`; });
-    announce(`Option A ${result.percentA.toFixed(1)} percent. Option B ${result.percentB.toFixed(1)} percent. ${current.d.toLocaleString('en-US')} votes.`);
+    announce(`Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. ${current.d.toLocaleString('en-US')} votes.`);
   }
   async function nextQuestion(): Promise<void> { if (busy || config.mode === 'single') return; busy = true; try { const question = await engine.next(current?.id ?? null); if (question) renderQuestion(question); else setNotice(engine.totalInSet <= 1 ? 'That is the only question in this collection right now.' : 'You have seen every question in this collection. Nice work!'); } finally { busy = false; } }
   async function ensureManifest(): Promise<GameDataManifest | null> { manifest ??= await loadManifest(config.manifest); return manifest; }
