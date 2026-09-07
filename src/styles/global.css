@@ -49,7 +49,7 @@ body{
     radial-gradient(circle at 12px 12px,rgba(245,46,114,.045) 1.5px,transparent 1.8px),
     var(--cream);
   background-size:48px 48px;
-  font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
 }
 
 button,input,textarea,select{font:inherit}
@@ -127,7 +127,7 @@ svg{display:block}
   margin-right:auto;
   color:var(--ink);
   font-size:14px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:-.35px;
   white-space:nowrap;
 }
@@ -149,7 +149,7 @@ svg{display:block}
 
 .brand-domain{
   color:var(--muted);
-  font-weight:650;
+  font-weight:600;
 }
 
 .nav-links{
@@ -170,7 +170,7 @@ svg{display:block}
   border-radius:9px;
   cursor:pointer;
   font-size:14px;
-  font-weight:750;
+  font-weight:700;
 }
 
 .nav-link:hover,
@@ -257,7 +257,7 @@ svg{display:block}
   border-radius:10px;
   box-shadow:var(--shadow-sm);
   font-size:14px;
-  font-weight:850;
+  font-weight:800;
   white-space:nowrap;
 }
 
@@ -354,7 +354,7 @@ svg{display:block}
   box-shadow:var(--shadow-sm);
   cursor:pointer;
   font-size:12px;
-  font-weight:850;
+  font-weight:800;
   text-decoration:none;
 }
 
@@ -433,14 +433,14 @@ svg{display:block}
   border:1px solid rgba(255,255,255,.35);
   border-radius:999px;
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1.15px;
 }
 
 .choice-text{
   max-width:13em;
   font-size:clamp(28px,4vw,51px);
-  font-weight:900;
+  font-weight:800;
   line-height:1.1;
   letter-spacing:-.04em;
   text-wrap:balance;
@@ -456,7 +456,7 @@ svg{display:block}
 .result-percent{
   display:block;
   font-size:clamp(44px,6.5vw,76px);
-  font-weight:950;
+  font-weight:800;
   line-height:1;
   letter-spacing:-.055em;
 }
@@ -465,7 +465,7 @@ svg{display:block}
   display:block;
   margin-top:7px;
   font-size:14px;
-  font-weight:750;
+  font-weight:700;
 }
 
 .result-fill{
@@ -493,7 +493,7 @@ svg{display:block}
   opacity:0;
   transform:translateX(-50%);
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:.75px;
 }
 
@@ -526,7 +526,7 @@ svg{display:block}
   border-radius:50%;
   box-shadow:0 7px 22px rgba(40,24,63,.28);
   font-size:11px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1.2px;
 }
 
@@ -541,7 +541,7 @@ svg{display:block}
   border-radius:999px;
   box-shadow:0 9px 24px rgba(40,24,63,.28);
   cursor:pointer;
-  font-weight:900;
+  font-weight:800;
   white-space:nowrap;
 }
 
@@ -576,7 +576,7 @@ svg{display:block}
   border-radius:999px;
   box-shadow:var(--shadow-sm);
   font-size:13px;
-  font-weight:850;
+  font-weight:800;
   text-align:center;
 }
 .verdict-text:empty{display:none}
@@ -593,7 +593,7 @@ svg{display:block}
   background:var(--ink);
   text-align:center;
 }
-.game-empty p{margin:0;font-weight:750}
+.game-empty p{margin:0;font-weight:700}
 
 /* No-JS notice inside the game */
 .game-nojs{
@@ -746,7 +746,7 @@ svg{display:block}
   background:#fff;
   border-radius:11px;
   cursor:pointer;
-  font-weight:850;
+  font-weight:800;
 }
 
 .gate-actions .confirm-age{
@@ -810,7 +810,7 @@ svg{display:block}
   margin:0 0 10px;
   color:var(--muted);
   font-size:13px;
-  font-weight:650;
+  font-weight:600;
 }
 .breadcrumbs ol{display:flex;flex-wrap:wrap;gap:4px 6px;margin:0;padding:0;list-style:none}
 .breadcrumbs li+li::before{content:"›";margin-right:6px;color:var(--line)}
@@ -848,7 +848,7 @@ svg{display:block}
 .side-card h2{
   margin:0 0 10px;
   font-size:13px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1px;
   text-transform:uppercase;
   color:var(--pink-dark);
@@ -863,7 +863,7 @@ svg{display:block}
   color:var(--ink);
   border-radius:9px;
   font-size:14px;
-  font-weight:750;
+  font-weight:700;
 }
 .side-card li a:hover{background:#fff1f6;text-decoration:none}
 .side-card .count{color:var(--muted);font-size:12px;font-weight:700}
@@ -879,7 +879,7 @@ svg{display:block}
   border-radius:10px;
   cursor:pointer;
   font-size:14px;
-  font-weight:850;
+  font-weight:800;
   text-align:center;
 }
 .side-cta:hover{text-decoration:none;transform:translateY(-1px)}
@@ -944,7 +944,7 @@ svg{display:block}
   margin-bottom:5px;
   color:var(--pink-dark);
   font-size:12px;
-  font-weight:900;
+  font-weight:800;
   letter-spacing:1px;
   text-transform:uppercase;
 }
@@ -991,7 +991,7 @@ svg{display:block}
   background:linear-gradient(135deg,var(--pink),var(--purple));
   border-radius:50%;
   font-size:12px;
-  font-weight:900;
+  font-weight:800;
 }
 
 .question-row:nth-child(3n+2)::before{
@@ -1006,13 +1006,13 @@ svg{display:block}
   margin:0;
   color:var(--ink);
   font-size:16px;
-  font-weight:650;
+  font-weight:600;
   line-height:1.5;
 }
 
 .question-row b{
   color:var(--pink-dark);
-  font-weight:850;
+  font-weight:800;
 }
 
 .section-action{
@@ -1140,7 +1140,7 @@ svg{display:block}
   background:linear-gradient(135deg,var(--pink),var(--purple));
   border-radius:10px;
   font-size:13px;
-  font-weight:900;
+  font-weight:800;
 }
 
 .step h3{
@@ -1233,7 +1233,7 @@ svg{display:block}
   border-radius:10px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
-  font-weight:850;
+  font-weight:800;
 }
 .button-primary:hover{background:#16d4a2}
 .button-primary:disabled{opacity:.6;cursor:progress}
@@ -1284,7 +1284,7 @@ svg{display:block}
 .consent-prefs label{display:flex;align-items:center;gap:10px;font-size:14px}
 .consent-prefs input{width:18px;height:18px}
 .consent-manage-link{
-  background:none;border:0;padding:0;color:var(--text);font-weight:750;cursor:pointer;text-decoration:underline;
+  background:none;border:0;padding:0;color:var(--text);font-weight:700;cursor:pointer;text-decoration:underline;
 }
 
 /* ================= FOOTER ================= */
@@ -1305,7 +1305,7 @@ svg{display:block}
 
 .footer-brand{
   color:var(--ink);
-  font-weight:900;
+  font-weight:800;
 }
 
 .footer-copy p{margin:4px 0 0}
@@ -1319,7 +1319,7 @@ svg{display:block}
 
 .footer-links a{
   color:var(--text);
-  font-weight:750;
+  font-weight:700;
 }
 
 /* ================= TABLET ================= */

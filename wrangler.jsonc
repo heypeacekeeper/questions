@@ -13,11 +13,16 @@
   },
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "head_sampling_rate": 0.05
   },
-  // Global Cloudflare rate limiter used by vote/contact/submission endpoints.
-  // namespace_id only needs to be unique within this Cloudflare account.
+  // Separate global rate limits: repeat votes and protected forms.
+  // namespace_id values only need to be unique within this Cloudflare account.
   "ratelimits": [
+    {
+      "name": "VOTE_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 }
+    },
     {
       "name": "FORM_RATE_LIMITER",
       "namespace_id": "1001",

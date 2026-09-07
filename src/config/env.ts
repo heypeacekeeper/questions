@@ -19,7 +19,6 @@ export interface AppEnv {
   readonly dataProvider: DataProvider;
 
   readonly supabaseUrl: string | undefined;
-  readonly supabasePublishableKey: string | undefined;
   /** Server/build only. Never exposed to the client. */
   readonly supabaseSecretKey: string | undefined;
 
@@ -27,7 +26,7 @@ export interface AppEnv {
   /** Server only. */
   readonly turnstileSecretKey: string | undefined;
 
-  /** Server only. Pepper for voter-token hashing. */
+  /** Server only. Pepper for anonymous abuse-rate-limit identifiers. */
   readonly voterHashSecret: string | undefined;
 
   readonly ga4MeasurementId: string | undefined;
@@ -121,7 +120,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   };
 
   const supabaseUrl = trimOrUndefined(raw.SUPABASE_URL);
-  const supabasePublishableKey = trimOrUndefined(raw.SUPABASE_PUBLISHABLE_KEY);
   const supabaseSecretKey = trimOrUndefined(raw.SUPABASE_SECRET_KEY);
   const turnstileSiteKey = trimOrUndefined(raw.PUBLIC_TURNSTILE_SITE_KEY);
   const turnstileSecretKey = trimOrUndefined(raw.TURNSTILE_SECRET_KEY);
@@ -178,7 +176,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
     siteUrl,
     dataProvider,
     supabaseUrl,
-    supabasePublishableKey,
     supabaseSecretKey,
     turnstileSiteKey,
     turnstileSecretKey,
@@ -210,7 +207,6 @@ export function readImportMetaEnv(): RawEnv {
     ALLOW_DEMO_CONTENT: env.ALLOW_DEMO_CONTENT,
     PUBLIC_SITE_URL: env.PUBLIC_SITE_URL,
     SUPABASE_URL: env.SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY: env.SUPABASE_PUBLISHABLE_KEY,
     SUPABASE_SECRET_KEY: env.SUPABASE_SECRET_KEY,
     PUBLIC_TURNSTILE_SITE_KEY: env.PUBLIC_TURNSTILE_SITE_KEY,
     TURNSTILE_SECRET_KEY: env.TURNSTILE_SECRET_KEY,

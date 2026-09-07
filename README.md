@@ -1,60 +1,62 @@
 # Would You Rather Questions
 
-Static Astro site on **Cloudflare Workers** with **Supabase** content, rebuilt from `design-reference/index.reference.html` (visual source of truth — not published).
+Static-first Astro site on **Cloudflare Workers** with Supabase content. Pages are prerendered for SEO; only `/api/*` runs on demand.
 
 ## Architecture
 ```
 Astro pages/components → application services → repository interfaces → adapters (supabase | mock)
 ```
-- All content pages are **prerendered** at build. Only `src/pages/api/*` run on demand (`prerender = false`).
-- Supabase is read **once at build time** (secret key, Node). Workers use the secret key only inside `/api/*`.
-- Composition root: `src/repositories/factory.ts`. Supabase-specific code: `src/infrastructure/supabase/`.
-- Central config: `src/config/site.ts`; env validation: `src/config/env.ts`.
+- Supabase content is read at build time with the server-only secret key. Worker mutations use that key only inside `/api/*`.
+- Browser clients never receive Supabase credentials and cannot write vote totals directly.
+- The composition root is `src/repositories/factory.ts`; environment validation is `src/config/env.ts`.
 
 ## Commands
 ```bash
 npm install
-cp .env.example .env            # then edit
-npm run dev:mock                # local dev with demo fixtures
-npm test                        # vitest
-npm run check                   # astro check + tsc
-npm run build:mock              # mock build (validate → build → budget)
-npm run build                   # production (DATA_PROVIDER=supabase)
-npm run preview                 # wrangler dev on the build
-npx wrangler deploy             # deploy to Cloudflare Workers
+cp .env.example .env            # edit locally; never commit this file
+npm run dev:mock
+npm test
+npm run check
+npm run build:mock              # validation, mock Astro build, performance budget
+npm run build                   # production Supabase build
+npm run preview
+npx wrangler deploy
 ```
 
 ## Environment variables
-See `.env.example`. Required in production: `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (build + Worker secret), `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` (secret), `VOTER_HASH_SECRET` (secret, ≥32 chars). Optional: GA4 / Cloudflare Analytics / AdSense ids behind `FEATURE_*` flags. Build fails if `DATA_PROVIDER=mock` or published demo rows are present in production.
+Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and a ≥32-character `VOTER_HASH_SECRET`. `VOTER_HASH_SECRET` HMACs anonymous tokens only for abuse-rate-limit keys; it does not identify or restrict voters. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
 
-## Supabase setup
-1. Create a project at supabase.com → Settings → API: copy URL + **secret** key.
-2. Run in order in the SQL editor: `supabase/migrations/0000_functions.sql`, `0001_initial_schema.sql`, `0002_seed_categories.sql`, `0003_cast_vote_function.sql`.
-3. Optional demo data: `supabase/seed/demo_questions.sql`. Delete: `delete from questions where is_demo = true;`
-4. Add a question: insert into `questions` (option_a, option_b, status='published'); link rows in `question_categories` (one per category). Share codes generate automatically.
-5. Create a category: insert into `categories` (status 'draft' until it has questions, then 'published'). Pages, nav, sitemap and game packs regenerate on the next build — no code changes.
-6. Archive instead of delete so `/s/<code>/` shows a graceful notice.
-7. Rebuild after content changes: `npm run build && npx wrangler deploy` (or trigger CI). A failed build never replaces the live deployment.
+## Repeat-vote architecture and Supabase migration
+Repeat voting is intentional: every successful request increments one aggregate counter, including repeated clicks from the same browser and votes that switch choices. The browser stores no voting history.
+
+1. Manually run migrations in order through `supabase/migrations/0003_cast_vote_function.sql` if this is a new database.
+2. **Manually run `supabase/migrations/0004_repeat_voting.sql` in the Supabase SQL editor. Do not apply it automatically from the application.**
+3. Migration 0004 creates `public.question_vote_totals`, transfers every existing A/B total from `public.votes` exactly once, and installs the two-argument aggregate `cast_vote(uuid, vote_choice)` RPC.
+4. `public.votes` remains as legacy historical data and receives no further runtime writes. The migration revokes unnecessary access to it. The aggregate table and RPC are restricted to `service_role`.
 
 ## Cloudflare deployment
+`wrangler.jsonc` requires both independent rate-limit bindings:
+- `VOTE_RATE_LIMITER`: 60 requests per 60 seconds, used only by `/api/vote`.
+- `FORM_RATE_LIMITER`: 10 requests per 60 seconds, used by `/api/contact` and `/api/submit-question`.
+
+Set server-only secrets without committing values:
 ```bash
 npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
 npx wrangler secret put VOTER_HASH_SECRET
 npm run build && npx wrangler deploy
 ```
-Then uncomment `routes` in `wrangler.jsonc` and add the domain to Cloudflare. Create Turnstile widgets (actions `contact`, `submit_question`) for `wouldyouratherquestions.org`. Roll back: Workers → Deployments → Rollback.
+Configure the configured unique rate-limit namespaces in the Cloudflare account if they differ from the repository defaults. Worker observability remains enabled and samples approximately 5% of production requests. Configure Turnstile actions `contact` and `submit_question`, then enable custom routes after the zone is on Cloudflare.
 
-## Performance budgets (current, gzip)
-JS 7.8/35 KB · CSS 5.7/25 KB · Home HTML 5.9/100 KB · Category HTML 5.0/150 KB · Pack 1.0/25 KB · fonts 0.
+## Performance and fonts
+The budget reports **total emitted client JS/CSS**, homepage/category HTML, game-data packs, and font files using gzip. Windows paths are normalized before matching generated assets. Budgets remain: JS 35 KB, CSS 25 KB, homepage HTML 100 KB, category HTML 150 KB, pack 25 KB, and zero font files. The site uses only the system font stack and makes no downloadable font requests.
 
 ## Replacing Supabase
-Implement `QuestionRepository`, `CategoryRepository`, `VoteRepository`, `SubmissionRepository`, `ContactRepository` (`src/repositories/interfaces/index.ts`) in a new `src/infrastructure/<provider>/`, mapping records to `src/domain/*` types (see `supabase/mappers.ts`), then swap them in `src/repositories/factory.ts` and set `DATA_PROVIDER`. Preserve constraints: unique share codes/slugs/paths, non-identical options, one vote per (question, voter_hash), valid statuses. Pages, components, services, game, SEO, forms need no changes.
+Implement repository interfaces in `src/infrastructure/<provider>/`, map provider rows to `src/domain/*`, and swap adapters only in `src/repositories/factory.ts`. Preserve content constraints, aggregate vote semantics, static content validation, and form protections.
 
-## Backups
-Export tables from the Supabase dashboard (CSV) or `pg_dump`; keep `supabase/migrations/` in git; the deployment manifest (`/deployment-manifest.json`) records the content checksum of each build.
-
-## Legal placeholders
-Highlighted `<span class="placeholder">` items in Privacy, Terms, Cookie, DMCA pages (entity, address, jurisdiction, DMCA agent, date) must be replaced; templates are not legal advice.
-
-See `TASKS.md` for remaining work.
+## Owner setup
+- Create the Supabase project and manually run migration 0004 after reviewing it.
+- Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
+- Configure Worker secrets and both Cloudflare rate-limit bindings.
+- Replace legal placeholders and create production Turnstile widgets.
+- Run `npm run build` locally with real private credentials before production deployment.

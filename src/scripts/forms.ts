@@ -1,5 +1,4 @@
 /** Shared form controller: Turnstile render/reset, JSON submit, accessible errors. */
-import { reportApiTiming, track } from './analytics';
 interface TurnstileApi { render(el: HTMLElement, o: Record<string, unknown>): string; reset(id?: string): void; getResponse(id?: string): string | undefined }
 declare global { interface Window { turnstile?: TurnstileApi } }
 interface ApiResponse { ok: boolean; message?: string; issues?: { field: string; message: string }[] }
@@ -36,14 +35,13 @@ export function initForms(): void {
       for (const k of ['agree', 'privacy']) if (k in data || form.elements.namedItem(k)) data[k] = (form.elements.namedItem(k) as HTMLInputElement | null)?.checked ?? false;
       data.turnstileToken = token || window.turnstile?.getResponse(widgetId) || ''; data.renderedAt = renderedAt;
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]'); if (button) button.disabled = true;
-      const started = performance.now(); let code = 0;
       try {
         const res = await fetch(form.dataset.endpoint ?? '', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify(data) });
-        code = res.status; const body = (await res.json().catch(() => ({ ok: false }))) as ApiResponse;
-        if (res.ok && body.ok) { form.reset(); resetTurnstile(); if (status) { status.textContent = body.message ?? 'Thank you! Your message was sent.'; status.classList.add('success'); status.focus?.(); } track('form_submitted', { endpoint: form.dataset.endpoint ?? '' }); }
+        const body = (await res.json().catch(() => ({ ok: false }))) as ApiResponse;
+        if (res.ok && body.ok) { form.reset(); resetTurnstile(); if (status) { status.textContent = body.message ?? 'Thank you! Your message was sent.'; status.classList.add('success'); status.focus?.(); } }
         else { resetTurnstile(); if (body.issues?.length) showIssues(body.issues); if (status) { status.textContent = body.message ?? 'Please check the form and try again.'; status.classList.add('error'); } }
       } catch { resetTurnstile(); if (status) { status.textContent = 'Something went wrong. Please try again in a moment.'; status.classList.add('error'); } }
-      finally { if (button) button.disabled = false; reportApiTiming(form.dataset.endpoint ?? 'form', performance.now() - started, code); }
+      finally { if (button) button.disabled = false; }
     });
   });
 }
