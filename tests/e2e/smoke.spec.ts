@@ -56,6 +56,88 @@ test('home game shows stable local display results and advances', async ({ page 
   await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstQuestionId ?? '');
 });
 
+test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const menuButton = page.locator('#menu-button');
+  const navLinks = page.locator('#nav-links');
+  const navScrim = page.locator('#nav-scrim');
+  const categoryButton = page.locator('#category-button');
+  const categoryMenu = page.locator('#category-menu');
+
+  await menuButton.click();
+  await expect(navLinks).toBeVisible();
+  await expect(navScrim).toBeVisible();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+  await expect(menuButton).toHaveAttribute('aria-label', 'Close menu');
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).toBe('hidden');
+
+  await categoryButton.click();
+  await expect(categoryButton).toHaveAttribute('aria-expanded', 'true');
+  await expect(categoryMenu).toBeVisible();
+  await categoryButton.click();
+  await expect(categoryButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(categoryMenu).toBeHidden();
+  await categoryButton.click();
+  await expect(categoryMenu).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(categoryMenu).toBeHidden();
+  await expect(navLinks).toBeHidden();
+  await expect(navScrim).toBeHidden();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
+  await expect(menuButton).toBeFocused();
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe('hidden');
+
+  await menuButton.click();
+  await menuButton.click();
+  await expect(navLinks).toBeHidden();
+
+  await menuButton.click();
+  await navScrim.click({ position: { x: 5, y: 400 } });
+  await expect(navLinks).toBeHidden();
+
+  await menuButton.click();
+  await page.setViewportSize({ width: 801, height: 844 });
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
+  await expect(navLinks).not.toHaveClass(/open/);
+  await expect(navScrim).not.toHaveClass(/open/);
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe('hidden');
+
+  for (const path of ['/funny-would-you-rather-questions/', '/about-us/']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(path);
+    await page.locator('#menu-button').click();
+    await expect(page.locator('#nav-links')).toBeVisible();
+    await page.locator('#nav-scrim').click({ position: { x: 5, y: 400 } });
+    await expect(page.locator('#nav-links')).toBeHidden();
+  }
+
+  for (const [selector, destination] of [
+    ['#nav-links a[href="/about-us/"]', /about-us\/$/],
+    ['#nav-links a[href="/contact-us/"]', /contact-us\/$/],
+    ['#nav-links a[href="/submit-a-question/"]', /submit-a-question\/$/],
+  ] as const) {
+    await page.goto('/');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await menuButton.click();
+    await page.locator(selector).click();
+    await expect(page).toHaveURL(destination);
+    await expect(page.locator('#menu-button')).toHaveAttribute('aria-expanded', 'false');
+  }
+
+  await page.goto('/');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await menuButton.click();
+  await categoryButton.click();
+  await page.locator('#category-menu a[href="/funny-would-you-rather-questions/"]').click();
+  await expect(page).toHaveURL(/funny-would-you-rather-questions\/$/);
+  await expect(page.locator('#menu-button')).toHaveAttribute('aria-expanded', 'false');
+});
+
 test('contact and submission APIs remain protected form flows', async ({ page }, testInfo) => {
   await page.goto('/');
   const origin = new URL(page.url()).origin;

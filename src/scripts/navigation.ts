@@ -1,8 +1,13 @@
 /**
  * Header navigation behaviour: mobile menu, categories dropdown, Escape and
- * outside-click handling. Idempotent; safe to call once per page load.
+ * outside-click handling. Idempotent even when called before the DOM is ready.
  */
 export function initNavigation(): void {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNavigation, { once: true });
+    return;
+  }
+
   const menuButton = document.getElementById('menu-button');
   const navLinks = document.getElementById('nav-links');
   const navScrim = document.getElementById('nav-scrim');
@@ -26,12 +31,14 @@ export function initNavigation(): void {
   const openMenu = () => {
     navLinks.classList.add('open');
     navScrim.classList.add('open');
+    document.body.classList.add('menu-open');
     menuButton.setAttribute('aria-expanded', 'true');
     menuButton.setAttribute('aria-label', 'Close menu');
   };
   const closeMenu = () => {
     navLinks.classList.remove('open');
     navScrim.classList.remove('open');
+    document.body.classList.remove('menu-open');
     menuButton.setAttribute('aria-expanded', 'false');
     menuButton.setAttribute('aria-label', 'Open menu');
     closeCategories();
@@ -45,30 +52,27 @@ export function initNavigation(): void {
     if (categoriesOpen()) closeCategories();
     else {
       openCategories();
-      // Move focus into the menu for keyboard users.
       const first = categoryMenu.querySelector<HTMLAnchorElement>('a');
       if (event.detail === 0) first?.focus();
     }
   });
 
   categoryMenu.addEventListener('click', (event) => {
-    if ((event.target as Element).closest('a')) {
-      closeCategories();
-      if (menuOpen()) closeMenu();
-    }
+    if ((event.target as Element).closest('a')) closeMenu();
   });
 
   navLinks.addEventListener('click', (event) => {
-    const t = event.target as Element;
-    if (t.closest('.nav-link') || t.closest('.submit-link')) closeMenu();
+    const target = event.target as Element;
+    if (target.closest('.nav-link') || target.closest('.submit-link')) closeMenu();
   });
 
   document.addEventListener('click', (event) => {
-    const t = event.target as Node;
-    if (categoriesOpen() && !categoryMenu.contains(t) && !categoryButton.contains(t)) closeCategories();
+    const target = event.target as Node;
+    if (categoriesOpen() && !categoryMenu.contains(target) && !categoryButton.contains(target)) {
+      closeCategories();
+    }
   });
 
-  // Close dropdown when focus leaves it (keyboard tabbing away).
   categoryMenu.addEventListener('focusout', (event) => {
     const next = event.relatedTarget as Node | null;
     if (next && !categoryMenu.contains(next) && next !== categoryButton) closeCategories();
@@ -76,20 +80,17 @@ export function initNavigation(): void {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (categoriesOpen()) {
-      closeCategories();
-      categoryButton.focus();
-      return;
-    }
     if (menuOpen()) {
       closeMenu();
       menuButton.focus();
+    } else if (categoriesOpen()) {
+      closeCategories();
+      categoryButton.focus();
     }
   });
 
-  // Reset state if the viewport crosses the mobile breakpoint.
-  const mq = window.matchMedia('(max-width: 800px)');
-  mq.addEventListener('change', () => {
-    if (!mq.matches) closeMenu();
+  const mobileViewport = window.matchMedia('(max-width: 800px)');
+  mobileViewport.addEventListener('change', () => {
+    if (!mobileViewport.matches) closeMenu();
   });
 }
