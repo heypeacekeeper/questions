@@ -11,7 +11,7 @@
  */
 import type { GameQuestion } from '@/domain/question';
 import type { CategoryWithCount } from '@/domain/category';
-import { API_PATHS, GAME_DATA, ROUTES, STORAGE_KEYS, VOTING } from '@/config/site';
+import { API_PATHS, GAME_DATA, ROUTES, STORAGE_KEYS } from '@/config/site';
 import { MIXED_PACK_SLUG } from '@/application/game-data-service';
 
 interface PackOption {
@@ -34,7 +34,7 @@ interface Props {
   packs?: readonly PackOption[];
   /** Whether voting is enabled (feature flag). */
   votingEnabled: boolean;
-  /** Category (for category mode analytics + share fallback link). */
+  /** Category for the share fallback link. */
   category?: CategoryWithCount | null;
 }
 
@@ -48,9 +48,7 @@ const config = {
   votingEnabled,
   refill: GAME_DATA.refillThreshold,
   sharePrefix: ROUTES.sharePrefix,
-  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, voted: STORAGE_KEYS.voted, seen: STORAGE_KEYS.seen },
-  cookie: VOTING.cookieName,
-  category: category?.slug ?? null,
+  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, seen: STORAGE_KEYS.seen },
   initial,
 };
 const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', icon: '🎲', description: 'A little bit of everything', requiresAgeGate: false }, ...packs] : [];
@@ -90,7 +88,7 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         </button>
       </div>
 
-      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''}>
+      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''} aria-busy="false">
         {initial ? (
           <>
             <button class="choice choice-a" id="choice-a" type="button" aria-describedby="game-instructions">

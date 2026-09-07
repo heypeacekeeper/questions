@@ -77,12 +77,10 @@ export const GAME_DATA = {
 export const VOTING = {
   cookieName: 'wyr_voter',
   cookieMaxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-  /** Votes per voter token per rolling window (server-side rate limit). */
-  rateLimitPerMinute: 30,
+  /** Votes per anonymous abuse-prevention token per rolling minute. */
+  rateLimitPerMinute: 60,
   /** Max request body accepted by /api/vote (bytes). */
   maxBodyBytes: 512,
-  /** Client-side "already voted" UI memory key. */
-  localStorageKey: 'wyr_voted',
 } as const;
 
 export const FORM_LIMITS = {
@@ -120,7 +118,6 @@ export const COOKIES = {
 export const STORAGE_KEYS = {
   pack: 'wyr_pack',
   adultConfirmed: 'wyr_adult',
-  voted: VOTING.localStorageKey,
   /** sessionStorage: seen question ids for repeat-prevention. */
   seen: 'wyr_seen',
 } as const;

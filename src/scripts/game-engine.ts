@@ -172,39 +172,13 @@ export async function loadManifest(url: string): Promise<GameDataManifest | null
   }
 }
 
-/** Client-side memory of votes cast this browser (UI hint only; server is authoritative). */
-export class VotedStore {
-  constructor(private readonly key: string, private readonly storage: Storage | null) {}
-  get(id: string): 'A' | 'B' | null {
-    try {
-      const raw = this.storage?.getItem(this.key);
-      const map = raw ? (JSON.parse(raw) as Record<string, 'A' | 'B'>) : {};
-      return map[id] ?? null;
-    } catch {
-      return null;
-    }
-  }
-  set(id: string, choice: 'A' | 'B'): void {
-    try {
-      const raw = this.storage?.getItem(this.key);
-      const map = raw ? (JSON.parse(raw) as Record<string, 'A' | 'B'>) : {};
-      map[id] = choice;
-      const entries = Object.entries(map).slice(-500);
-      this.storage?.setItem(this.key, JSON.stringify(Object.fromEntries(entries)));
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
 export function formatVotes(n: number): string {
   return `${n.toLocaleString('en-US')} ${n === 1 ? 'vote' : 'votes'}`;
 }
 
-export function verdictText(yourPercent: number, total: number, accepted: boolean): string {
-  if (!accepted) return `You already voted on this one — ${yourPercent}% agree with you.`;
+export function verdictText(selectedPercent: number, total: number): string {
   if (total === 1) return "You're the first to vote on this question!";
-  return yourPercent >= 50
-    ? `You're with the majority — ${yourPercent}% chose the same answer.`
-    : `Bold choice — only ${yourPercent}% picked that answer.`;
+  return selectedPercent >= 50
+    ? `That option currently has ${selectedPercent}% of the votes.`
+    : `That option currently has ${selectedPercent}% of the votes.`;
 }
