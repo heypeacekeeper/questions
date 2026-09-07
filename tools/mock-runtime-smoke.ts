@@ -1,7 +1,7 @@
 /** Exercise the built Worker with only tracked mock configuration. */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const port = 8790;
@@ -16,8 +16,9 @@ const mockVars = [
 ];
 
 function startWorker(): ChildProcess {
-  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   const workspace = resolve(import.meta.dirname, '..');
+  const wranglerCli = resolve(workspace, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+  if (!existsSync(wranglerCli)) throw new Error(`Local Wrangler CLI not found: ${wranglerCli}. Run npm install before npm run test:runtime:mock.`);
   const runtimeDirectory = resolve(workspace, '.mock-runtime');
   mkdirSync(runtimeDirectory, { recursive: true });
   const environment = {
@@ -28,9 +29,10 @@ function startWorker(): ChildProcess {
     PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
     TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
     VOTER_HASH_SECRET: 'mock-runtime-voter-secret-at-least-32-characters',
+    CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false',
   };
-  return spawn(command, [
-    '--prefix', '..', 'wrangler', 'dev', '--config', '../dist/server/wrangler.json', '--env-file', '../.env.mock',
+  return spawn(process.execPath, [
+    wranglerCli, 'dev', '--config', '../dist/server/wrangler.json', '--env-file', '../.env.mock',
     '--ip', '127.0.0.1', '--port', String(port), '--local', '--log-level', 'warn',
     ...mockVars.flatMap((value) => ['--var', value]),
   ], { cwd: runtimeDirectory, env: environment, stdio: ['ignore', 'pipe', 'pipe'], shell: false, detached: process.platform !== 'win32' });

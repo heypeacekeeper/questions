@@ -12,7 +12,7 @@
     "dev": "astro dev",
     "dev:mock": "npm run build:mock && tsx tools/mock-worker.ts",
     "build": "npm run validate:content && astro build && npm run budget",
-    "build:mock": "cross-env DATA_PROVIDER=mock ALLOW_MOCK_IN_PRODUCTION=true ALLOW_DEMO_CONTENT=true PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run validate:content && cross-env DATA_PROVIDER=mock ALLOW_MOCK_IN_PRODUCTION=true ALLOW_DEMO_CONTENT=true PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA VOTER_HASH_SECRET=mock-build-voter-secret-at-least-32-characters astro build --mode mock && npm run budget",
+    "build:mock": "cross-env DATA_PROVIDER=mock ALLOW_MOCK_IN_PRODUCTION=true ALLOW_DEMO_CONTENT=true CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run validate:content && cross-env DATA_PROVIDER=mock ALLOW_MOCK_IN_PRODUCTION=true ALLOW_DEMO_CONTENT=true CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA VOTER_HASH_SECRET=mock-build-voter-secret-at-least-32-characters astro build --mode mock && npm run budget",
     "build:no-budget": "npm run validate:content && astro build",
     "preview": "wrangler dev",
     "check": "astro check && tsc --noEmit -p tsconfig.node.json",
