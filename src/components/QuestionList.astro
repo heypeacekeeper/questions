@@ -20,7 +20,7 @@ const { questions, startIndex = 1, long = false, id, ariaLabel } = Astro.props;
 <ol class:list={['question-list', { 'long-list': long }]} id={id} aria-label={ariaLabel} style={startIndex > 1 ? `--list-start:${startIndex - 1}` : undefined} start={startIndex}>
   {questions.map((q) => (
     <li class="question-row">
-      <p>Would you rather <b>{q.optionA}</b> or <b>{q.optionB}</b>?</p>
+        <p>Would you rather <strong class="question-option">{q.optionA}</strong> or <strong class="question-option">{q.optionB}</strong>?</p>
     </li>
   ))}
 </ol>

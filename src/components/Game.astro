@@ -87,27 +87,65 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
       <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''} aria-busy="false">
         {initial ? (
           <>
-            <button class="choice choice-a" id="choice-a" type="button" aria-describedby="game-instructions">
+            <button
+              class="choice choice-a"
+              id="choice-a"
+              type="button"
+              aria-describedby="game-instructions"
+            >
               <span class="choice-content">
                 <span class="option-label">OPTION A</span>
                 <span class="choice-text" id="text-a">{initial.a}</span>
+
                 <span class="result" id="result-a">
                   <strong class="result-percent" id="percent-a"></strong>
                 </span>
+
                 <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               </span>
+
+                <span class="result-fill" id="fill-a" aria-hidden="true">
+                  <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
+                  <path class="water-wave-fill" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"></path>
+                  <path class="water-wave-line" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"></path>
+                  </svg>
+
+                </span>
             </button>
 
-            <button class="choice choice-b" id="choice-b" type="button" aria-describedby="game-instructions">
-              <span class="choice-content">
-                <span class="option-label">OPTION B</span>
-                <span class="choice-text" id="text-b">{initial.b}</span>
-                <span class="result" id="result-b">
-                  <strong class="result-percent" id="percent-b"></strong>
+            <button
+                class="choice choice-b"
+                id="choice-b"
+                type="button"
+                aria-describedby="game-instructions"
+              >
+                <span class="choice-content">
+                  <span class="option-label">OPTION B</span>
+                  <span class="choice-text" id="text-b">{initial.b}</span>
+
+                  <span class="result" id="result-b">
+                    <strong class="result-percent" id="percent-b"></strong>
+                  </span>
+
+                  <span class="your-pick" aria-hidden="true">YOUR PICK</span>
                 </span>
-                <span class="your-pick" aria-hidden="true">YOUR PICK</span>
+
+                <span class="result-fill" id="fill-b" aria-hidden="true">
+                <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
+                  <path
+                    class="water-wave-fill"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"
+                  ></path>
+                  <path
+                    class="water-wave-line"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"
+                  ></path>
+                </svg>
               </span>
-            </button>
+
+              </button>
+
+
 
             <div class="game-pivot">
               <div class="or-badge" aria-hidden="true">OR</div>
