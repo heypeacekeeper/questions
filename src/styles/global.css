@@ -470,30 +470,14 @@ svg{display:block}
   font-weight:700;
 }
 
-.result-fill{
-  position:absolute;
-  right:0;
-  bottom:0;
-  left:0;
-  z-index:1;
-  height:0;
-  background:rgba(255,255,255,.18);
-  border-top:2px solid rgba(255,255,255,.72);
-  transition:height .45s ease;
-}
-
 .your-pick{
-  position:absolute;
-  top:66px;
-  left:50%;
-  z-index:4;
+  display:none;
+  align-self:center;
   padding:6px 12px;
   color:var(--ink);
   background:#fff;
   border-radius:999px;
   box-shadow:var(--shadow-sm);
-  opacity:0;
-  transform:translateX(-50%);
   font-size:11px;
   font-weight:800;
   letter-spacing:.75px;
@@ -504,7 +488,7 @@ svg{display:block}
   opacity:1;
 }
 
-.game-stage.voted .picked .your-pick{opacity:1}
+.game-stage.voted .picked .your-pick{display:inline-flex}
 
 .game-stage.voted .not-picked{
   filter:saturate(.55) brightness(.87);
@@ -621,10 +605,11 @@ svg{display:block}
 
 /* ================= PACK DIALOG ================= */
 .pack-dialog{
-  width:min(calc(100% - 28px),480px);
-  max-height:calc(100svh - 28px);
+  width:min(calc(100% - 24px),480px);
+  max-height:calc(100svh - 24px);
   margin:auto;
   padding:0;
+  overflow:auto;
   color:var(--ink);
   background:#fff;
   border:0;
@@ -636,10 +621,14 @@ svg{display:block}
 .dialog-content{padding:19px}
 
 .dialog-header{
+  position:sticky;
+  top:0;
+  z-index:1;
   display:flex;
   align-items:flex-start;
   gap:15px;
   margin-bottom:15px;
+  background:#fff;
 }
 
 .dialog-copy{margin-right:auto}
@@ -1008,13 +997,13 @@ svg{display:block}
   margin:0;
   color:var(--ink);
   font-size:16px;
-  font-weight:600;
+  font-weight:500;
   line-height:1.5;
 }
 
 .question-row b{
-  color:var(--pink-dark);
-  font-weight:800;
+  color:var(--ink);
+  font-weight:600;
 }
 
 .section-action{
@@ -1412,16 +1401,21 @@ svg{display:block}
   }
 
   .choice{padding:48px 18px 36px}
+  .game-stage.voted{
+    height:auto;
+    min-height:0;
+    max-height:none;
+    grid-template-rows:minmax(280px,auto) minmax(320px,auto);
+  }
+  .game-stage.voted .choice-a{padding-bottom:84px}
+  .game-stage.voted .choice-b{padding-top:84px;padding-bottom:72px}
 
   .choice-text{
     max-width:18em;
     font-size:clamp(24px,6vw,33px);
   }
 
-  .your-pick{
-    top:auto;
-    bottom:10px;
-  }
+  .your-pick{margin-top:2px}
 
   .result-percent{
     font-size:clamp(38px,10vw,53px);
@@ -1493,10 +1487,10 @@ svg{display:block}
   }
 
   .pack-dialog{
-    width:100%;
-    max-height:90svh;
-    margin:auto 0 0;
-    border-radius:21px 21px 0 0;
+    width:calc(100% - 24px);
+    max-height:calc(100svh - 24px);
+    margin:auto;
+    border-radius:21px;
   }
 
   .pack-grid{grid-template-columns:1fr}

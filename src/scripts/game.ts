@@ -28,7 +28,7 @@ export function initGame(): void {
   let config: GameConfig;
   try { config = JSON.parse(shell.dataset.gameConfig ?? '{}') as GameConfig; } catch { return; }
   const stage = $('game-stage'); const choiceA = $<HTMLButtonElement>('choice-a'); const choiceB = $<HTMLButtonElement>('choice-b');
-  const textA = $('text-a'); const textB = $('text-b'); const percentA = $('percent-a'); const percentB = $('percent-b'); const voteCount = $('vote-count'); const fillA = $('fill-a'); const fillB = $('fill-b'); const verdict = $('verdict-text'); const nextButton = $<HTMLButtonElement>('next-button'); const live = $('game-live'); const shareButton = $<HTMLButtonElement>('share-button'); const fullscreenButton = $<HTMLButtonElement>('fullscreen-button'); const packButton = $<HTMLButtonElement>('pack-button'); const packLabel = $('pack-label'); const packDialog = $<HTMLDialogElement>('pack-dialog'); const packGrid = $('pack-grid'); const packPicker = $('pack-picker'); const ageGate = $('age-gate'); const ageGatePack = $('age-gate-pack');
+  const textA = $('text-a'); const textB = $('text-b'); const percentA = $('percent-a'); const percentB = $('percent-b'); const voteCount = $('vote-count'); const verdict = $('verdict-text'); const nextButton = $<HTMLButtonElement>('next-button'); const live = $('game-live'); const shareButton = $<HTMLButtonElement>('share-button'); const fullscreenButton = $<HTMLButtonElement>('fullscreen-button'); const packButton = $<HTMLButtonElement>('pack-button'); const packLabel = $('pack-label'); const packDialog = $<HTMLDialogElement>('pack-dialog'); const packGrid = $('pack-grid'); const packPicker = $('pack-picker'); const ageGate = $('age-gate'); const ageGatePack = $('age-gate-pack');
   if (!stage) return;
   const gameStage = stage;
   const local = safeStorage('local'); const session = safeStorage('session');
@@ -45,7 +45,7 @@ export function initGame(): void {
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a; if (textB) textB.textContent = question.b;
     [percentA, percentB, voteCount, verdict].forEach((element) => { if (element) element.textContent = ''; });
-    if (fillA) fillA.style.height = '0'; if (fillB) fillB.style.height = '0'; announce(`Would you rather ${question.a}, or ${question.b}?`);
+    announce(`Would you rather ${question.a}, or ${question.b}?`);
   }
   function choose(choice: 'A' | 'B'): void {
     if (!current || busy) return;
@@ -56,7 +56,6 @@ export function initGame(): void {
     const result = generatedDisplayResult(current.id);
     if (percentA) percentA.textContent = formatGeneratedPercent(result.percentA); if (percentB) percentB.textContent = formatGeneratedPercent(result.percentB);
     if (voteCount) voteCount.textContent = `${current.d.toLocaleString('en-US')} votes`;
-    requestAnimationFrame(() => { if (fillA) fillA.style.height = `${result.percentA}%`; if (fillB) fillB.style.height = `${result.percentB}%`; });
     announce(`Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. ${current.d.toLocaleString('en-US')} votes.`);
   }
   async function nextQuestion(): Promise<void> { if (busy || config.mode === 'single') return; busy = true; try { const question = await engine.next(current?.id ?? null); if (question) renderQuestion(question); else setNotice(engine.totalInSet <= 1 ? 'That is the only question in this collection right now.' : 'You have seen every question in this collection. Nice work!'); } finally { busy = false; } }

@@ -88,29 +88,25 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         {initial ? (
           <>
             <button class="choice choice-a" id="choice-a" type="button" aria-describedby="game-instructions">
-              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               <span class="choice-content">
                 <span class="option-label">OPTION A</span>
                 <span class="choice-text" id="text-a">{initial.a}</span>
                 <span class="result" id="result-a">
                   <strong class="result-percent" id="percent-a"></strong>
-
                 </span>
+                <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               </span>
-              <span class="result-fill" id="fill-a" aria-hidden="true"></span>
             </button>
 
             <button class="choice choice-b" id="choice-b" type="button" aria-describedby="game-instructions">
-              <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               <span class="choice-content">
                 <span class="option-label">OPTION B</span>
                 <span class="choice-text" id="text-b">{initial.b}</span>
                 <span class="result" id="result-b">
                   <strong class="result-percent" id="percent-b"></strong>
-
                 </span>
+                <span class="your-pick" aria-hidden="true">YOUR PICK</span>
               </span>
-              <span class="result-fill" id="fill-b" aria-hidden="true"></span>
             </button>
 
             <div class="game-pivot">
