@@ -15,7 +15,7 @@ export const POST: APIRoute = async (ctx) => {
   const secret = mc.env.voterHashSecret; if (!secret) return fail(503, 'Voting is temporarily unavailable.');
   let token = readCookie(ctx.request, VOTING.cookieName); const issued = !token || !/^[A-Za-z0-9_-]{32,64}$/.test(token);
   if (issued) token = generateVoterToken();
-  const outcome = await new VotingService(mc.votes, mc.rateLimiter, secret).castVote(parsed.body, token as string);
+  const outcome = await new VotingService(mc.votes, mc.voteRateLimiter, secret).castVote(parsed.body, token as string);
   const secure = new URL(ctx.request.url).protocol === 'https:' ? '; Secure' : '';
   const setCookie: Record<string, string> = issued
     ? { 'set-cookie': `${VOTING.cookieName}=${token}; Max-Age=${VOTING.cookieMaxAgeSeconds}; Path=/; HttpOnly; SameSite=Lax${secure}` }

@@ -160,8 +160,8 @@ export class SupabaseWorkerCategoryRepository implements CategoryRepository {
 export class SupabaseVoteRepository implements VoteRepository {
   constructor(private readonly client: TypedSupabaseClient) {}
 
-  async submitVote(questionId: string, choice: VoteChoice, voterHash: string): Promise<VoteSubmitOutcome> {
-    const { data, error } = await this.client.rpc('cast_vote', { p_question_id: questionId, p_choice: choice, p_voter_hash: voterHash });
+  async submitVote(questionId: string, choice: VoteChoice): Promise<VoteSubmitOutcome> {
+    const { data, error } = await this.client.rpc('cast_vote', { p_question_id: questionId, p_choice: choice });
     if (error) return { kind: 'error', message: error.message };
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return { kind: 'error', message: 'empty response' };
@@ -170,17 +170,11 @@ export class SupabaseVoteRepository implements VoteRepository {
     return { kind: 'ok', result: mapCastVote(questionId, row) };
   }
 
-  async getVoteResult(questionId: string, voterHash: string | null): Promise<VoteResult | null> {
+  async getVoteResult(questionId: string): Promise<VoteResult | null> {
     const { data, error } = await this.client.rpc('get_vote_totals', { p_question_id: questionId });
     if (error) return null;
     const row = Array.isArray(data) ? data[0] : data;
-    if (!row) return null;
-    let yourChoice: VoteChoice = 'A';
-    if (voterHash) {
-      const { data: v } = await this.client.from('votes').select('choice').eq('question_id', questionId).eq('voter_hash', voterHash).maybeSingle();
-      if (v?.choice) yourChoice = v.choice;
-    }
-    return buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) }, yourChoice, false);
+    return row ? buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) }) : null;
   }
 }
 

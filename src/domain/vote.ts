@@ -2,13 +2,6 @@
 
 export type VoteChoice = 'A' | 'B';
 
-export interface Vote {
-  readonly questionId: string;
-  readonly choice: VoteChoice;
-  /** Server-side HMAC of the anonymous voter token. Never the raw token. */
-  readonly voterHash: string;
-}
-
 export interface VoteTotals {
   readonly votesA: number;
   readonly votesB: number;
@@ -20,10 +13,6 @@ export interface VoteResult extends VoteTotals {
   /** Integer percentages that always sum to 100 when total > 0, else 0/0. */
   readonly percentA: number;
   readonly percentB: number;
-  /** True when this request created a new vote; false for a repeat vote. */
-  readonly accepted: boolean;
-  /** Choice this voter has on record (existing or new). */
-  readonly yourChoice: VoteChoice;
 }
 
 export function isVoteChoice(value: unknown): value is VoteChoice {
@@ -45,7 +34,6 @@ export function calculatePercentages(totals: VoteTotals): { percentA: number; pe
   let percentB = Math.floor((votesB / total) * 100);
   const remainder = 100 - (percentA + percentB);
   if (remainder > 0) {
-    // Give the leftover point to the side with the larger fractional part.
     const fracA = rawA - percentA;
     const fracB = (votesB / total) * 100 - percentB;
     if (fracA >= fracB) percentA += remainder;
@@ -54,21 +42,10 @@ export function calculatePercentages(totals: VoteTotals): { percentA: number; pe
   return { percentA, percentB, total };
 }
 
-export function buildVoteResult(
-  questionId: string,
-  totals: VoteTotals,
-  yourChoice: VoteChoice,
-  accepted: boolean,
-): VoteResult {
-  const { percentA, percentB, total } = calculatePercentages(totals);
-  return {
-    questionId,
-    votesA: Math.max(0, totals.votesA),
-    votesB: Math.max(0, totals.votesB),
-    total,
-    percentA,
-    percentB,
-    accepted,
-    yourChoice,
-  };
+/** Build a normalized result from aggregate totals. */
+export function buildVoteResult(questionId: string, totals: VoteTotals): VoteResult {
+  const votesA = Math.max(0, Math.floor(totals.votesA));
+  const votesB = Math.max(0, Math.floor(totals.votesB));
+  const { percentA, percentB, total } = calculatePercentages({ votesA, votesB });
+  return { questionId, votesA, votesB, total, percentA, percentB };
 }

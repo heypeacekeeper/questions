@@ -52,13 +52,10 @@ export type VoteSubmitOutcome =
   | { readonly kind: 'error'; readonly message: string };
 
 export interface VoteRepository {
-  /**
-   * Atomically record a vote (if the voter hasn't voted on this question) and
-   * return current totals. Must be safe under concurrency.
-   */
-  submitVote(questionId: string, choice: VoteChoice, voterHash: string): Promise<VoteSubmitOutcome>;
-  /** Current totals without voting (used sparingly, e.g. tests). */
-  getVoteResult(questionId: string, voterHash: string | null): Promise<VoteResult | null>;
+  /** Atomically increment the selected aggregate total and return current totals. */
+  submitVote(questionId: string, choice: VoteChoice): Promise<VoteSubmitOutcome>;
+  /** Current aggregate totals without voting (used sparingly, e.g. tests). */
+  getVoteResult(questionId: string): Promise<VoteResult | null>;
 }
 
 export type WriteOutcome<T> =

@@ -110,7 +110,8 @@ export function __resetContentContext(): void {
 export interface MutationContext extends MutationRepositories {
   readonly env: AppEnv;
   readonly verifier: HumanVerificationService;
-  readonly rateLimiter: RateLimiter;
+  readonly voteRateLimiter: RateLimiter;
+  readonly formRateLimiter: RateLimiter;
 }
 
 let mockMutationSingleton: MutationRepositories | undefined;
@@ -130,7 +131,9 @@ export function selectVerifier(env: AppEnv): HumanVerificationService {
 
 export function createMutationContext(bindings: RawEnv | undefined): MutationContext {
   const env = getWorkerEnv(bindings);
-  const rateLimiter = createRateLimiter((bindings as Record<string, unknown> | undefined)?.FORM_RATE_LIMITER);
+  const runtimeBindings = bindings as (Record<string, unknown> | undefined);
+  const voteRateLimiter = createRateLimiter(runtimeBindings?.VOTE_RATE_LIMITER);
+  const formRateLimiter = createRateLimiter(runtimeBindings?.FORM_RATE_LIMITER);
 
   const verifier: HumanVerificationService = selectVerifier(env);
 
@@ -144,7 +147,14 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
         categories: new MockCategoryRepository(data),
       };
     }
-    return { env, ...mockMutationSingleton, verifier, rateLimiter: env.isProduction ? rateLimiter : new InMemoryRateLimiter() };
+    const fallback = new InMemoryRateLimiter();
+    return {
+      env,
+      ...mockMutationSingleton,
+      verifier,
+      voteRateLimiter: env.isProduction ? voteRateLimiter : fallback,
+      formRateLimiter: env.isProduction ? formRateLimiter : fallback,
+    };
   }
 
   if (!env.supabaseUrl || !env.supabaseSecretKey) {
@@ -158,6 +168,7 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
     contact: new SupabaseContactRepository(client),
     categories: new SupabaseWorkerCategoryRepository(client),
     verifier,
-    rateLimiter,
+    voteRateLimiter,
+    formRateLimiter,
   };
 }

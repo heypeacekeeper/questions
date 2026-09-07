@@ -52,5 +52,5 @@ export function mapQuestion(row: QuestionRow, categoryIds: readonly string[]): Q
 
 export function mapCastVote(questionId: string, row: CastVoteRow): VoteResult {
   // Recompute percentages domain-side to keep a single source of truth for rounding.
-  return buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) }, row.your_choice, row.accepted);
+  return buildVoteResult(questionId, { votesA: Number(row.votes_a), votesB: Number(row.votes_b) });
 }

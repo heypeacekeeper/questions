@@ -44,7 +44,7 @@ test('API methods, vote cookie, contact, and submission flows work', async ({ pa
     data: { questionId, choice: 'A' },
   });
   expect(vote.status()).toBe(200);
-  expect((await vote.json()).result.accepted).toBe(true);
+  expect((await vote.json()).result.total).toBe(1);
   expect(vote.headers()['set-cookie']).toContain('wyr_voter=');
 
   const duplicate = await page.request.post('/api/vote/', {
@@ -52,7 +52,7 @@ test('API methods, vote cookie, contact, and submission flows work', async ({ pa
     data: { questionId, choice: 'B' },
   });
   expect(duplicate.status()).toBe(200);
-  expect((await duplicate.json()).result.accepted).toBe(false);
+  expect((await duplicate.json()).result).toMatchObject({ votesA: 1, votesB: 1, total: 2 });
 
   const suffix = testInfo.project.name.replace(/[^a-z0-9]/gi, '-');
   const contact = await page.request.post('/api/contact/', {

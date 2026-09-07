@@ -61,6 +61,13 @@ export type VoteRow = {
   created_at: string;
 }
 
+export type QuestionVoteTotalsRow = {
+  question_id: string;
+  votes_a: number;
+  votes_b: number;
+  updated_at: string;
+}
+
 export type QuestionSubmissionRow = {
   id: string;
   option_a: string;
@@ -94,8 +101,6 @@ export type CategoryQuestionCountRow = {
 
 export type CastVoteRow = {
   status: 'ok' | 'not_found' | 'not_published';
-  accepted: boolean;
-  your_choice: VoteChoiceRow;
   votes_a: number;
   votes_b: number;
   total: number;
@@ -133,6 +138,12 @@ export type Database = {
         Update: Partial<VoteRow>;
         Relationships: [];
       };
+      question_vote_totals: {
+        Row: QuestionVoteTotalsRow;
+        Insert: Insertable<QuestionVoteTotalsRow, 'votes_a' | 'votes_b' | 'updated_at'>;
+        Update: Partial<QuestionVoteTotalsRow>;
+        Relationships: [];
+      };
       question_submissions: {
         Row: QuestionSubmissionRow;
         Insert: Insertable<QuestionSubmissionRow, 'id' | 'created_at' | 'updated_at' | 'status' | 'reviewer_notes' | 'agreed_to_terms' | 'submitter_name' | 'submitter_email'>;
@@ -154,7 +165,7 @@ export type Database = {
     };
     Functions: {
       cast_vote: {
-        Args: { p_question_id: string; p_choice: VoteChoiceRow; p_voter_hash: string };
+        Args: { p_question_id: string; p_choice: VoteChoiceRow };
         Returns: CastVoteRow[];
       };
       get_vote_totals: {
