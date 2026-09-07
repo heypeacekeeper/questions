@@ -1,7 +1,7 @@
 ---
 /**
  * Site header: text logo, Categories dropdown (data-driven), About, Contact,
- * Submit CTA, mobile hamburger + scrim. Behaviour in src/scripts/navigation.ts.
+ * Submit CTA, mobile hamburger + scrim. Behaviour in public/navigation.js.
  */
 import type { CategoryWithCount } from '@/domain/category';
 import { BRAND_SHORT, BRAND_DOMAIN_SUFFIX, BRAND_NAME, ROUTES } from '@/config/site';
@@ -55,7 +55,4 @@ const { categories } = Astro.props;
 
 <div class="nav-scrim" id="nav-scrim"></div>
 
-<script>
-  import { initNavigation } from '@/scripts/navigation';
-  initNavigation();
-</script>
+<script is:inline src="/navigation.js" defer></script>
