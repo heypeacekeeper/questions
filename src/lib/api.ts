@@ -16,21 +16,42 @@ export function fail(status: number, message: string, extra: Record<string, unkn
 export async function readJsonBody(ctx: APIContext, maxBytes: number): Promise<{ body: unknown } | { error: Response }> {
   const { request } = ctx;
   if (request.method !== 'POST') return { error: fail(405, 'Method not allowed') };
+
   const ct = request.headers.get('content-type') ?? '';
-  if (!ct.toLowerCase().startsWith('application/json')) return { error: fail(415, 'Unsupported content type') };
+  if (!ct.toLowerCase().startsWith('application/json')) {
+    return { error: fail(415, 'Unsupported content type') };
+  }
+
   const origin = request.headers.get('origin');
   const site = new URL(request.url).origin;
   const allowed = new Set([site, workerBindings().PUBLIC_SITE_URL?.replace(/\/+$/, '') ?? site]);
-  if (origin && !allowed.has(origin)) return { error: fail(403, 'Forbidden origin') };
+
+  if (origin && !allowed.has(origin)) {
+    return { error: fail(403, 'Forbidden origin') };
+  }
+
   if (!origin) {
     const fetchSite = request.headers.get('sec-fetch-site');
-    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') return { error: fail(403, 'Forbidden') };
+    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+      return { error: fail(403, 'Forbidden') };
+    }
   }
+
   const len = Number(request.headers.get('content-length') ?? '0');
-  if (len > maxBytes) return { error: fail(413, 'Request too large') };
+  if (len > maxBytes) {
+    return { error: fail(413, 'Request too large') };
+  }
+
   const text = await request.text();
-  if (text.length > maxBytes) return { error: fail(413, 'Request too large') };
-  try { return { body: JSON.parse(text) }; } catch { return { error: fail(400, 'Invalid JSON') }; }
+  if (new TextEncoder().encode(text).byteLength > maxBytes) {
+    return { error: fail(413, 'Request too large') };
+  }
+
+  try {
+    return { body: JSON.parse(text) };
+  } catch {
+    return { error: fail(400, 'Invalid JSON') };
+  }
 }
 
 /** Opaque per-client key for rate limiting: hashed CF connecting IP (never stored raw), or a fallback. */

@@ -43,7 +43,6 @@ export default defineConfig({
       filter: isSitemapEligible,
       changefreq: 'weekly',
       priority: 0.7,
-      lastmod: new Date(),
     }),
     buildArtifacts(),
   ],
