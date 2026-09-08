@@ -127,8 +127,7 @@ export class SupabaseCategoryRepository implements CategoryRepository {
  */
 export class SupabaseWorkerCategoryRepository implements CategoryRepository {
   constructor(private readonly client: TypedSupabaseClient) {}
-  private async rows(filter?: (q: ReturnType<TypedSupabaseClient['from']>['select']) => unknown): Promise<CategoryWithCount[]> {
-    void filter;
+  private async rows(): Promise<CategoryWithCount[]> {
     const { data, error } = await this.client.from('categories').select('*').eq('status', 'published').order('sort_order');
     if (error) throw new SupabaseContentError(error.message, error);
     return (data ?? []).map((row) => mapCategoryWithCount(row as CategoryRow, 0));
