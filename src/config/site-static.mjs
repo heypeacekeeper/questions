@@ -14,7 +14,7 @@ export const SITE_URL = (process.env.PUBLIC_SITE_URL || 'https://wouldyouratherq
 export const SITEMAP_EXCLUDED_PREFIXES = ['/s/', '/api/', '/__', '/preview/', '/mock/', '/test/'];
 
 /** Exact paths excluded from the sitemap. */
-export const SITEMAP_EXCLUDED_PATHS = ['/404/', '/404.html', '/blog/'];
+export const SITEMAP_EXCLUDED_PATHS = ['/404/', '/404.html'];
 
 /**
  * Sitemap filter used by @astrojs/sitemap. Receives absolute page URLs.

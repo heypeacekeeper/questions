@@ -43,8 +43,6 @@ export interface FeatureFlags {
   readonly FEATURE_ADS: boolean;
   readonly FEATURE_GA4: boolean;
   readonly FEATURE_CLOUDFLARE_ANALYTICS: boolean;
-  readonly FEATURE_BLOG: boolean;
-  readonly FEATURE_SEARCH: boolean;
 }
 
 export type RawEnv = Record<string, string | undefined>;
@@ -55,8 +53,6 @@ const FEATURE_DEFAULTS: FeatureFlags = {
   FEATURE_ADS: false,
   FEATURE_GA4: false,
   FEATURE_CLOUDFLARE_ANALYTICS: false,
-  FEATURE_BLOG: false,
-  FEATURE_SEARCH: false,
 };
 
 export class EnvValidationError extends Error {
@@ -109,8 +105,6 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
     FEATURE_ADS: parseBool(raw.FEATURE_ADS, FEATURE_DEFAULTS.FEATURE_ADS),
     FEATURE_GA4: parseBool(raw.FEATURE_GA4, FEATURE_DEFAULTS.FEATURE_GA4),
     FEATURE_CLOUDFLARE_ANALYTICS: parseBool(raw.FEATURE_CLOUDFLARE_ANALYTICS, FEATURE_DEFAULTS.FEATURE_CLOUDFLARE_ANALYTICS),
-    FEATURE_BLOG: parseBool(raw.FEATURE_BLOG, FEATURE_DEFAULTS.FEATURE_BLOG),
-    FEATURE_SEARCH: parseBool(raw.FEATURE_SEARCH, FEATURE_DEFAULTS.FEATURE_SEARCH),
   };
 
   const supabaseUrl = trimOrUndefined(raw.SUPABASE_URL);
@@ -203,8 +197,6 @@ export function readImportMetaEnv(): RawEnv {
     FEATURE_ADS: env.FEATURE_ADS,
     FEATURE_GA4: env.FEATURE_GA4,
     FEATURE_CLOUDFLARE_ANALYTICS: env.FEATURE_CLOUDFLARE_ANALYTICS,
-    FEATURE_BLOG: env.FEATURE_BLOG,
-    FEATURE_SEARCH: env.FEATURE_SEARCH,
     PUBLIC_GA4_MEASUREMENT_ID: env.PUBLIC_GA4_MEASUREMENT_ID,
     PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN: env.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN,
     PUBLIC_SEARCH_CONSOLE_VERIFICATION: env.PUBLIC_SEARCH_CONSOLE_VERIFICATION,

@@ -32,7 +32,6 @@ export const ROUTES = {
   dmca: '/dmca/',
   sharePrefix: '/s/',
   gameDataPrefix: '/game-data/',
-  blog: '/blog/',
 } as const;
 
 export const PAGINATION = {
