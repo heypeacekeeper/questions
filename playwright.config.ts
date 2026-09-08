@@ -17,7 +17,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: `npm run build:mock && npx wrangler dev --config dist/server/wrangler.json --ip 127.0.0.1 --port ${port} --var DATA_PROVIDER:mock --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
+    command: `npm run build:mock && npx wrangler dev --config dist/server/wrangler.json --ip 127.0.0.1 --port ${port} --var DATA_PROVIDER:mock --var ALLOW_MOCK_IN_PRODUCTION:true --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
