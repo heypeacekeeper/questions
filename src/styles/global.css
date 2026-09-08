@@ -544,31 +544,10 @@ svg{display:block}
   font-weight:700;
 }
 
-.your-pick{
-  display:inline-flex;
-  visibility:hidden;
-  opacity:0;
-  align-self:center;
-  padding:6px 12px;
-  color:var(--ink);
-  background:#fff;
-  border-radius:999px;
-  box-shadow:var(--shadow-sm);
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.75px;
-}
 
 .game-stage.voted .result{
   visibility:visible;
   opacity:1;
-}
-
-
-.game-stage.voted .picked .your-pick{
-  visibility:visible;
-  opacity:1;
-  animation:pick-badge-pop .38s cubic-bezier(.2,.9,.25,1.15) both;
 }
 
 
@@ -579,10 +558,6 @@ svg{display:block}
 /* Result reveal animations — transform/opacity only, so layout stays fixed. */
 .game-stage.voted .result-percent{
   animation:result-pop .48s cubic-bezier(.2,.85,.25,1.2) both;
-}
-
-.game-stage.voted .picked .your-pick{
-  animation:pick-badge-pop .38s cubic-bezier(.2,.9,.25,1.25) both;
 }
 
 .game-stage.voted .picked{
@@ -1563,6 +1538,24 @@ svg{display:block}
 
   .choice{padding:48px 18px 36px}
 
+  .choice-content{
+  transition:transform .45s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .game-stage:not(.voted) .choice-content{
+    transform:translateY(42px);
+  }
+
+  .game-stage.voted .choice-content{
+    transform:translateY(0);
+  }
+
+  /* Keep the upper result below the category and action buttons. */
+  .game-stage.voted .choice-a .choice-content{
+    transform:translateY(20px);
+  }
+
+
   /* .game-stage.voted{
     height:auto;
     min-height:0;
@@ -1577,7 +1570,6 @@ svg{display:block}
     font-size:clamp(24px,6vw,33px);
   }
 
-  .your-pick{margin-top:2px}
 
   .result-percent{
     font-size:clamp(38px,10vw,53px);
