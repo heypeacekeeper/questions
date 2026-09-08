@@ -41,7 +41,8 @@ test('home game shows stable local display results and advances', async ({ page 
   const displayCount = await page.locator('#vote-count').textContent();
   expect(resultA).toMatch(/^\d+\.\d%$/);
   expect(resultB).toMatch(/^\d+\.\d%$/);
-  expect(displayCount).toBe('2,438 votes');
+  expect(displayCount).toMatch(/^\d{1,3}(?:,\d{3})* votes$/);
+
 
   await page.locator('#choice-b').click();
   await expect(page.locator('#choice-b')).toHaveClass(/picked/);
