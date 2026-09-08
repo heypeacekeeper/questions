@@ -69,7 +69,6 @@ export class GameEngine {
   private loadedPacks = new Set<string>();
   private entry: PackSetManifestEntry | null = null;
   private loading: Promise<void> | null = null;
-  private exhausted = false;
 
   constructor(
     private seen: SeenStore,
@@ -93,7 +92,6 @@ export class GameEngine {
     this.entry = entry;
     this.pool = [];
     this.loadedPacks.clear();
-    this.exhausted = false;
     if (entry) await this.ensureSupply();
   }
 
@@ -135,7 +133,7 @@ export class GameEngine {
 
   /**
    * Next unseen question. When every question in the set has been seen, the
-   * session memory for this set is cleared once and selection restarts (still
+   * session memory for this set is cleared and selection restarts (still
    * never repeating the current question back-to-back).
    */
   async next(currentId: string | null): Promise<GameQuestion | null> {
@@ -143,11 +141,9 @@ export class GameEngine {
     let seen = this.seen.get();
     let candidate = pickNextUnseen(this.pool.filter((q) => q.id !== currentId), seen, this.rng);
     if (!candidate && this.remainingPacks.length === 0 && this.pool.length > 0) {
-      if (this.exhausted || this.pool.length === 1) {
-        // Only one question exists: nothing else to show.
-        if (this.pool.length === 1) return null;
-      }
-      this.exhausted = true;
+      // Only one question exists: nothing else can be shown.
+      if (this.pool.length === 1) return null;
+
       this.seen.clear();
       seen = this.seen.get();
       candidate = pickNextUnseen(this.pool.filter((q) => q.id !== currentId), seen, this.rng);
