@@ -1,0 +1,7 @@
+
+> would-you-rather-questions@0.1.0 validate:content
+> tsx tools/validate-content.ts
+
+✔ Content validation passed with no issues.
+
+Provider: mock · 133 published questions · 11 visible categories
