@@ -7,7 +7,6 @@
  */
 import type { AppEnv } from '@/config/env';
 import { getBuildEnv, getWorkerEnv, type RawEnv } from '@/config/env';
-import { TURNSTILE } from '@/config/site';
 import type {
   ContentRepositories,
   HumanVerificationService,
@@ -122,7 +121,7 @@ let mockMutationSingleton: MutationRepositories | undefined;
 export function selectVerifier(env: AppEnv): HumanVerificationService {
   const secret = env.turnstileSecretKey;
   if (secret && !isTurnstileTestSecret(secret)) return new TurnstileVerifier(secret);
-  if (secret === TURNSTILE.testSecretKey || (secret && isTurnstileTestSecret(secret))) return new AlwaysPassHumanVerification();
+  if (secret && isTurnstileTestSecret(secret)) return new AlwaysPassHumanVerification();
   return env.isProduction ? new TurnstileVerifier('') : new AlwaysPassHumanVerification();
 }
 

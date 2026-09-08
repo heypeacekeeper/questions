@@ -24,6 +24,7 @@ test('home game shows stable local display results and advances', async ({ page 
     /wouldyouratherquestions\.org\/$/,
   );
   await expect(page.locator('#choice-a')).toBeVisible();
+  await expect(page.locator('#verdict-text')).toHaveCount(1);
 
   await page.locator('#pack-button').click();
   await expect(page.locator('#pack-dialog')).toBeVisible();

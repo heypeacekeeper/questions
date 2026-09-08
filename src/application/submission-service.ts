@@ -175,7 +175,7 @@ export class SubmissionService {
     const parsed = validateSubmission(body);
     if (!parsed.ok) return { kind: 'invalid', issues: parsed.issues };
 
-    if (!(await this.rateLimiter.allow(`submit:${ctx.clientKey}`, FORM_LIMITS.rateLimitPerHour, 3600))) return { kind: 'rate_limited' };
+    if (!(await this.rateLimiter.allow(`submit:${ctx.clientKey}`, FORM_LIMITS.rateLimitMaxRequests, FORM_LIMITS.rateLimitWindowSeconds))) return { kind: 'rate_limited' };
 
     const verification = await this.verifier.verify({
       token: parsed.value.turnstileToken,
@@ -210,7 +210,7 @@ export class ContactService {
     const parsed = validateContact(body);
     if (!parsed.ok) return { kind: 'invalid', issues: parsed.issues };
 
-    if (!(await this.rateLimiter.allow(`contact:${ctx.clientKey}`, FORM_LIMITS.rateLimitPerHour, 3600))) return { kind: 'rate_limited' };
+    if (!(await this.rateLimiter.allow(`contact:${ctx.clientKey}`, FORM_LIMITS.rateLimitMaxRequests, FORM_LIMITS.rateLimitWindowSeconds))) return { kind: 'rate_limited' };
 
     const verification = await this.verifier.verify({
       token: parsed.value.turnstileToken,

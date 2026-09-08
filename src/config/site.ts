@@ -32,7 +32,6 @@ export const ROUTES = {
   dmca: '/dmca/',
   sharePrefix: '/s/',
   gameDataPrefix: '/game-data/',
-  blog: '/blog/',
 } as const;
 
 export const PAGINATION = {
@@ -86,8 +85,9 @@ export const FORM_LIMITS = {
   minTimeToSubmitMs: 3000,
   /** Max request body accepted by form endpoints (bytes). */
   maxBodyBytes: 16 * 1024,
-  /** Per-IP-hash request cap for form endpoints per rolling hour. */
-  rateLimitPerHour: 10,
+  /** Per-IP-hash request cap for form endpoints per configured window. */
+  rateLimitMaxRequests: 10,
+  rateLimitWindowSeconds: 60,
 } as const;
 
 export const TURNSTILE = {
