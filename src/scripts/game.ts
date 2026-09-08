@@ -40,10 +40,11 @@ const fillB = $('fill-b');
   if (shareButton && current) shareButton.hidden = false;
   if (fullscreenButton && (document.fullscreenEnabled || (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled)) fullscreenButton.hidden = false;
   const announce = (message: string) => { if (live) { live.textContent = ''; requestAnimationFrame(() => { if (live) live.textContent = message; }); } };
-  const setNotice = (message: string) => { if (verdict) verdict.textContent = message; gameStage.classList.add('notice'); };
+  const setNotice = (message: string) => { if (verdict) verdict.textContent = message; gameStage.classList.add('has-notice'); };
+
 
   function renderQuestion(question: GameQuestion): void {
-    current = question; hasVoted = false; gameStage.classList.remove('voted', 'notice'); gameStage.dataset.questionId = question.id; gameStage.dataset.shareCode = question.s;
+    current = question; hasVoted = false; gameStage.classList.remove('voted', 'has-notice'); gameStage.dataset.questionId = question.id; gameStage.dataset.shareCode = question.s;
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a; if (textB) textB.textContent = question.b;
     [percentA, percentB, voteCount, verdict].forEach((element) => { if (element) element.textContent = ''; });
