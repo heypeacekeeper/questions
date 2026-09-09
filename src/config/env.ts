@@ -210,7 +210,6 @@ export function buildAppEnv(
 
 /** Collect raw variables from `process.env` (Node build/tools). */
 export function readProcessEnv(): RawEnv {
-  // eslint-disable-next-line no-restricted-globals
   const p = typeof process !== 'undefined' ? process.env : {};
   return { ...p } as RawEnv;
 }
