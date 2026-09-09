@@ -36,7 +36,10 @@ import {
   SupabaseSubmissionRepository,
   loadContentGraph,
 } from '@/infrastructure/supabase/repositories';
-import { TurnstileVerifier, isTurnstileTestSecret } from '@/infrastructure/turnstile/turnstile-verifier';
+import {
+  TurnstileVerifier,
+  isTurnstileTestSecret,
+} from '@/infrastructure/turnstile/turnstile-verifier';
 import { createRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
 
 // ---------------------------------------------------------------------------
@@ -61,16 +64,24 @@ export function getMockDataset(): MockDataset {
 export function createContentRepositories(env: AppEnv): ContentRepositories {
   if (env.dataProvider === 'mock') {
     const data = getMockDataset();
-    return { questions: new MockQuestionRepository(data), categories: new MockCategoryRepository(data) };
+    return {
+      questions: new MockQuestionRepository(data),
+      categories: new MockCategoryRepository(data),
+    };
   }
   if (!env.supabaseUrl || !env.supabaseSecretKey) {
-    throw new Error('Supabase content provider selected but SUPABASE_URL / SUPABASE_SECRET_KEY are missing.');
+    throw new Error(
+      'Supabase content provider selected but SUPABASE_URL / SUPABASE_SECRET_KEY are missing.',
+    );
   }
   const client = createBuildClient(env.supabaseUrl, env.supabaseSecretKey);
   // Load once; every repository call reuses the same promise. Failure throws → build fails.
   let graph: ReturnType<typeof loadContentGraph> | undefined;
   const getGraph = () => (graph ??= loadContentGraph(client));
-  return { questions: new SupabaseQuestionRepository(getGraph), categories: new SupabaseCategoryRepository(getGraph) };
+  return {
+    questions: new SupabaseQuestionRepository(getGraph),
+    categories: new SupabaseCategoryRepository(getGraph),
+  };
 }
 
 /** Memoized build-time context used by every Astro page during prerendering. */
@@ -80,7 +91,9 @@ export function getContentContext(): Promise<ContentContext> {
     const repos = createContentRepositories(env);
     if (env.dataProvider === 'mock') {
       // Loud, unmissable notice: mock data is never a silent substitute.
-      console.warn('\n⚠️  DATA_PROVIDER=mock — building with DEMO fixtures, not production content.\n');
+      console.warn(
+        '\n⚠️  DATA_PROVIDER=mock — building with DEMO fixtures, not production content.\n',
+      );
     }
     return {
       env,
@@ -125,7 +138,7 @@ export function selectVerifier(env: AppEnv): HumanVerificationService {
 
 export function createMutationContext(bindings: RawEnv | undefined): MutationContext {
   const env = getWorkerEnv(bindings);
-  const runtimeBindings = bindings as (Record<string, unknown> | undefined);
+  const runtimeBindings = bindings as Record<string, unknown> | undefined;
   const formRateLimiter = createRateLimiter(runtimeBindings?.FORM_RATE_LIMITER);
 
   const verifier: HumanVerificationService = selectVerifier(env);
@@ -147,7 +160,9 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
   }
 
   if (!env.supabaseUrl || !env.supabaseSecretKey) {
-    throw new Error('Supabase mutation provider selected but SUPABASE_URL / SUPABASE_SECRET_KEY are missing.');
+    throw new Error(
+      'Supabase mutation provider selected but SUPABASE_URL / SUPABASE_SECRET_KEY are missing.',
+    );
   }
   const client = createWorkerClient(env.supabaseUrl, env.supabaseSecretKey);
   return {

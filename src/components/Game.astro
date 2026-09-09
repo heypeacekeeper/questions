@@ -36,7 +36,14 @@ interface Props {
   category?: CategoryWithCount | null;
 }
 
-const { mode, initial, setSlug = MIXED_PACK_SLUG, packLabel = 'Mixed', packs = [], category = null } = Astro.props;
+const {
+  mode,
+  initial,
+  setSlug = MIXED_PACK_SLUG,
+  packLabel = 'Mixed',
+  packs = [],
+  category = null,
+} = Astro.props;
 
 const config = {
   mode,
@@ -47,44 +54,114 @@ const config = {
   keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, seen: STORAGE_KEYS.seen },
   initial,
 };
-const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', icon: '🎲', description: 'A little bit of everything', requiresAgeGate: false }, ...packs] : [];
+const packOptions =
+  mode === 'mixed'
+    ? [
+        {
+          slug: MIXED_PACK_SLUG,
+          name: 'Mixed',
+          icon: '🎲',
+          description: 'A little bit of everything',
+          requiresAgeGate: false,
+        },
+        ...packs,
+      ]
+    : [];
 ---
 
 <section class="game-section" id="game" aria-labelledby="game-heading">
-  <h2 class="sr-only" id="game-heading">Play Would You Rather</h2>
+  <h2 class="sr-only" id="game-heading">
+    Play Would You Rather
+  </h2>
 
   <div class="game-wrap">
     <div class="game-shell" id="game-shell" data-game-config={JSON.stringify(config)}>
       <div class="game-toolbar">
         {mode === 'mixed' ? (
-          <button class="tool-button" id="pack-button" type="button" aria-haspopup="dialog" aria-controls="pack-dialog">
+          <button
+            class="tool-button"
+            id="pack-button"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="pack-dialog"
+          >
             <span id="pack-label">{packLabel}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
               <path d="m5 8 7 8 7-8" />
             </svg>
           </button>
         ) : mode === 'category' && category ? (
-          <span class="tool-button" id="pack-label" aria-label={`Playing ${category.name} questions`}>{category.icon} {category.name}</span>
+          <span
+            class="tool-button"
+            id="pack-label"
+            aria-label={`Playing ${category.name} questions`}
+          >
+            {category.icon} {category.name}
+          </span>
         ) : (
-          <a class="tool-button" href={category?.canonicalPath ?? ROUTES.home}>{category ? `More ${category.name}` : 'Play more'} →</a>
+          <a class="tool-button" href={category?.canonicalPath ?? ROUTES.home}>
+            {category ? `More ${category.name}` : 'Play more'} →
+          </a>
         )}
 
         <span class="toolbar-spacer"></span>
 
-        <button class="tool-button icon-button" id="share-button" type="button" aria-label="Share this question" title="Share" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button
+          class="tool-button icon-button"
+          id="share-button"
+          type="button"
+          aria-label="Share this question"
+          title="Share"
+          hidden
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" />
           </svg>
         </button>
 
-        <button class="tool-button icon-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+        <button
+          class="tool-button icon-button"
+          id="fullscreen-button"
+          type="button"
+          aria-label="Enter fullscreen"
+          title="Fullscreen"
+          hidden
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
             <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
           </svg>
         </button>
       </div>
 
-      <div class="game-stage" id="game-stage" data-question-id={initial?.id ?? ''} data-share-code={initial?.s ?? ''} aria-busy="false">
+      <div
+        class="game-stage"
+        id="game-stage"
+        data-question-id={initial?.id ?? ''}
+        data-share-code={initial?.s ?? ''}
+        aria-busy="false"
+      >
         {initial ? (
           <>
             <button
@@ -95,39 +172,16 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
             >
               <span class="choice-content">
                 <span class="option-label">OPTION A</span>
-                <span class="choice-text" id="text-a">{initial.a}</span>
+                <span class="choice-text" id="text-a">
+                  {initial.a}
+                </span>
 
                 <span class="result" id="result-a">
                   <strong class="result-percent" id="percent-a"></strong>
                 </span>
-
               </span>
 
-                <span class="result-fill" id="fill-a" aria-hidden="true">
-                  <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
-                  <path class="water-wave-fill" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"></path>
-                  <path class="water-wave-line" d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"></path>
-                  </svg>
-
-                </span>
-            </button>
-
-            <button
-                class="choice choice-b"
-                id="choice-b"
-                type="button"
-                aria-describedby="game-instructions"
-              >
-                <span class="choice-content">
-                  <span class="option-label">OPTION B</span>
-                  <span class="choice-text" id="text-b">{initial.b}</span>
-
-                  <span class="result" id="result-b">
-                    <strong class="result-percent" id="percent-b"></strong>
-                  </span>
-                </span>
-
-                <span class="result-fill" id="fill-b" aria-hidden="true">
+              <span class="result-fill" id="fill-a" aria-hidden="true">
                 <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
                   <path
                     class="water-wave-fill"
@@ -139,17 +193,54 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
                   ></path>
                 </svg>
               </span>
+            </button>
 
-              </button>
+            <button
+              class="choice choice-b"
+              id="choice-b"
+              type="button"
+              aria-describedby="game-instructions"
+            >
+              <span class="choice-content">
+                <span class="option-label">OPTION B</span>
+                <span class="choice-text" id="text-b">
+                  {initial.b}
+                </span>
 
+                <span class="result" id="result-b">
+                  <strong class="result-percent" id="percent-b"></strong>
+                </span>
+              </span>
 
+              <span class="result-fill" id="fill-b" aria-hidden="true">
+                <svg class="water-wave" viewBox="0 0 120 300" preserveAspectRatio="none">
+                  <path
+                    class="water-wave-fill"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8 V300 H0 Z"
+                  ></path>
+                  <path
+                    class="water-wave-line"
+                    d="M0 8 Q10 0 20 8 T40 8 T60 8 T80 8 T100 8 T120 8"
+                  ></path>
+                </svg>
+              </span>
+            </button>
 
             <div class="game-pivot">
-              <div class="or-badge" aria-hidden="true">OR</div>
+              <div class="or-badge" aria-hidden="true">
+                OR
+              </div>
               {mode !== 'single' && (
                 <button class="next-button" id="next-button" type="button">
                   Next question
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3.2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
                     <path d="M5 12h13M13 6l6 6-6 6" />
                   </svg>
                 </button>
@@ -163,18 +254,25 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
 
             <noscript>
               <div class="game-nojs">
-                <span class="verdict-text">Enable JavaScript to choose an option and see the next question. The question lists below work without it.</span>
+                <span class="verdict-text">
+                  Enable JavaScript to choose an option and see the next question. The question
+                  lists below work without it.
+                </span>
               </div>
             </noscript>
           </>
         ) : (
           <div class="game-empty" id="game-empty">
-            <p>No questions are available in this collection yet. Try another category from the menu.</p>
+            <p>
+              No questions are available in this collection yet. Try another category from the menu.
+            </p>
           </div>
         )}
       </div>
 
-      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B.</p>
+      <p class="sr-only" id="game-instructions">
+        Would you rather… choose Option A or Option B.
+      </p>
       <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
     </div>
   </div>
@@ -188,13 +286,29 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
               <h2 id="pack-dialog-title">Pick a question pack</h2>
               <p>Choose what kind of questions you want to play.</p>
             </div>
-            <button class="close-button" id="close-pack-dialog" type="button" aria-label="Close question packs">×</button>
+            <button
+              class="close-button"
+              id="close-pack-dialog"
+              type="button"
+              aria-label="Close question packs"
+            >
+              ×
+            </button>
           </div>
 
           <div class="pack-grid" id="pack-grid">
             {packOptions.map((p) => (
-              <button type="button" class="pack-button" data-pack={p.slug} data-gated={p.requiresAgeGate ? '1' : '0'} data-name={p.name} aria-current="false">
-                <span class="pack-emoji" aria-hidden="true">{p.icon}</span>
+              <button
+                type="button"
+                class="pack-button"
+                data-pack={p.slug}
+                data-gated={p.requiresAgeGate ? '1' : '0'}
+                data-name={p.name}
+                aria-current="false"
+              >
+                <span class="pack-emoji" aria-hidden="true">
+                  {p.icon}
+                </span>
                 <span class="pack-copy">
                   <strong>{p.name}</strong>
                   <small>{p.description}</small>
@@ -208,15 +322,31 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         <div class="age-gate" id="age-gate" hidden role="group" aria-labelledby="age-gate-title">
           <div class="dialog-header">
             <div class="dialog-copy">
-              <h2 id="age-gate-title"><span id="age-gate-pack">This pack</span> — 18+</h2>
+              <h2 id="age-gate-title">
+                <span id="age-gate-pack">This pack</span> — 18+
+              </h2>
               <p>Please confirm you are an adult before continuing.</p>
             </div>
-            <button class="close-button" id="close-age-gate" type="button" aria-label="Close age confirmation">×</button>
+            <button
+              class="close-button"
+              id="close-age-gate"
+              type="button"
+              aria-label="Close age confirmation"
+            >
+              ×
+            </button>
           </div>
-          <p>This pack contains suggestive, grown-up questions. It is not intended for children or classrooms. Your confirmation is remembered on this device only.</p>
+          <p>
+            This pack contains suggestive, grown-up questions. It is not intended for children or
+            classrooms. Your confirmation is remembered on this device only.
+          </p>
           <div class="gate-actions">
-            <button id="age-back-button" type="button">Go back</button>
-            <button class="confirm-age" id="confirm-age-button" type="button">I am 18 or older</button>
+            <button id="age-back-button" type="button">
+              Go back
+            </button>
+            <button class="confirm-age" id="confirm-age-button" type="button">
+              I am 18 or older
+            </button>
           </div>
         </div>
       </div>

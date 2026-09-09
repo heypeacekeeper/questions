@@ -3,7 +3,11 @@
  * Checks success, hostname, action, token errors, and network/timeouts.
  * The secret never leaves the Worker.
  */
-import type { HumanVerificationInput, HumanVerificationOutcome, HumanVerificationService } from '@/repositories/interfaces';
+import type {
+  HumanVerificationInput,
+  HumanVerificationOutcome,
+  HumanVerificationService,
+} from '@/repositories/interfaces';
 import { TURNSTILE } from '@/config/site';
 
 interface SiteverifyResponse {
@@ -51,12 +55,14 @@ export class TurnstileVerifier implements HumanVerificationService {
       const codes = json['error-codes'] ?? [];
       if (codes.includes('timeout-or-duplicate')) return { ok: false, reason: 'duplicate' };
       if (codes.includes('invalid-input-response')) return { ok: false, reason: 'invalid' };
-      if (codes.includes('missing-input-secret') || codes.includes('invalid-input-secret')) return { ok: false, reason: 'misconfigured' };
+      if (codes.includes('missing-input-secret') || codes.includes('invalid-input-secret'))
+        return { ok: false, reason: 'misconfigured' };
       return { ok: false, reason: 'invalid' };
     }
 
     if (json.action !== input.expectedAction) return { ok: false, reason: 'action' };
-    if (!hostnameMatches(json.hostname, input.expectedHostname)) return { ok: false, reason: 'hostname' };
+    if (!hostnameMatches(json.hostname, input.expectedHostname))
+      return { ok: false, reason: 'hostname' };
 
     // Tokens are valid for 5 minutes; reject stale ones defensively.
     if (json.challenge_ts) {
@@ -80,5 +86,9 @@ export function hostnameMatches(actual: string | undefined, expected: string): b
 
 /** Dev/test verifier: accepts anything when the documented test secret is configured. */
 export function isTurnstileTestSecret(secret: string | undefined): boolean {
-  return secret === TURNSTILE.testSecretKey || secret === '2x0000000000000000000000000000000AA' || secret === '3x0000000000000000000000000000000AA';
+  return (
+    secret === TURNSTILE.testSecretKey ||
+    secret === '2x0000000000000000000000000000000AA' ||
+    secret === '3x0000000000000000000000000000000AA'
+  );
 }

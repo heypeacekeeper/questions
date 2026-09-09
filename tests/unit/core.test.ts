@@ -158,12 +158,12 @@ describe('content helpers', () => {
     const data = createDefaultMockDataset(20);
     const categories = await new MockCategoryRepository(data).getAllCategories();
     const questions = await new MockQuestionRepository(data).getAllQuestions();
-    expect(
-      hasErrors(validateContent(categories, questions, { allowDemoContent: true })),
-    ).toBe(false);
-    expect(
-      (await new MockQuestionRepository(data).getQuestionByShareCode('demq22a'))?.id,
-    ).toBe(DEMO_QUESTIONS[0]!.id);
+    expect(hasErrors(validateContent(categories, questions, { allowDemoContent: true }))).toBe(
+      false,
+    );
+    expect((await new MockQuestionRepository(data).getQuestionByShareCode('demq22a'))?.id).toBe(
+      DEMO_QUESTIONS[0]!.id,
+    );
   });
 });
 
@@ -216,20 +216,14 @@ describe('supabase mapping and environment', () => {
 
   it('keeps build environment and sitemap safeguards', () => {
     expect(isSitemapEligible('https://x.org/s/abc/')).toBe(false);
-    expect(() =>
-      buildAppEnv({ DATA_PROVIDER: 'supabase' }, { mode: 'production' }),
-    ).toThrow();
+    expect(() => buildAppEnv({ DATA_PROVIDER: 'supabase' }, { mode: 'production' })).toThrow();
   });
 });
 
 describe('client-only game helpers', () => {
   it('normalizes Windows and POSIX asset paths', () => {
-    expect(normalizePath('dist\\client\\_astro\\game.js')).toBe(
-      'dist/client/_astro/game.js',
-    );
-    expect(normalizePath('dist/client/_astro/game.js')).toBe(
-      'dist/client/_astro/game.js',
-    );
+    expect(normalizePath('dist\\client\\_astro\\game.js')).toBe('dist/client/_astro/game.js');
+    expect(normalizePath('dist/client/_astro/game.js')).toBe('dist/client/_astro/game.js');
   });
 
   it('keeps seen question ids in session storage', () => {
@@ -349,9 +343,7 @@ describe('game engine pack loading', () => {
   it('returns null when a pack only contains the current question', async () => {
     const engine = new GameEngine(
       new SessionSeenStore('single-seen', null),
-      async () => [
-        { id: 'only-question', a: 'Option A', b: 'Option B', s: 'only001', d: 100 },
-      ],
+      async () => [{ id: 'only-question', a: 'Option A', b: 'Option B', s: 'only001', d: 100 }],
       1,
       () => 0,
     );
@@ -393,8 +385,8 @@ describe('generated display results', () => {
 
   it('produces more than one split across several question ids', () => {
     const splits = new Set(
-      ['question-a', 'question-b', 'question-c', 'question-d', 'question-e'].map(
-        (id) => formatGeneratedPercent(generatedDisplayResult(id).percentA),
+      ['question-a', 'question-b', 'question-c', 'question-d', 'question-e'].map((id) =>
+        formatGeneratedPercent(generatedDisplayResult(id).percentA),
       ),
     );
     expect(splits.size).toBeGreaterThan(1);
@@ -408,19 +400,18 @@ describe('generated display results', () => {
   });
 
   it('ships the owner-managed display count in compact game data', () => {
-    expect(toGameQuestion(DEMO_QUESTIONS[0]!).d).toBe(
-      DEMO_QUESTIONS[0]!.displayVoteCount,
-    );
+    expect(toGameQuestion(DEMO_QUESTIONS[0]!).d).toBe(DEMO_QUESTIONS[0]!.displayVoteCount);
   });
 });
 
 describe('display vote count validation', () => {
   const questionId = 'display-count-validation-question';
-  const categoriesWithNoPublishedQuestions: readonly CategoryWithCount[] =
-    LAUNCH_CATEGORIES.map((category) => ({
+  const categoriesWithNoPublishedQuestions: readonly CategoryWithCount[] = LAUNCH_CATEGORIES.map(
+    (category) => ({
       ...category,
       publishedQuestionCount: 0,
-    }));
+    }),
+  );
   const questionWithCount = (displayVoteCount: number): Question => ({
     ...DEMO_QUESTIONS[0]!,
     id: questionId,
@@ -430,11 +421,9 @@ describe('display vote count validation', () => {
     displayVoteCount,
   });
   const issuesFor = (displayVoteCount: number) =>
-    validateContent(
-      categoriesWithNoPublishedQuestions,
-      [questionWithCount(displayVoteCount)],
-      { allowDemoContent: true },
-    );
+    validateContent(categoriesWithNoPublishedQuestions, [questionWithCount(displayVoteCount)], {
+      allowDemoContent: true,
+    });
   const displayCountIssues = (displayVoteCount: number) =>
     issuesFor(displayVoteCount).filter(
       (issue) => issue.code === 'QUESTION_INVALID_DISPLAY_VOTE_COUNT',

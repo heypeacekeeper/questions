@@ -16,12 +16,29 @@ function lit(value: string | null | boolean | number): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-const categoryRows = ALL_CATEGORIES.map((c) =>
-  `  (${[
-    lit(c.id), lit(c.name), lit(c.slug), lit(c.canonicalPath), lit(c.h1), lit(c.seoTitle), lit(c.metaDescription),
-    lit(c.introduction), lit(c.shortDescription), lit(c.icon), lit(c.status), lit(c.navFeatured), lit(c.includeInMixedGame),
-    lit(c.requiresAgeGate), lit(c.isChildSafe), lit(c.isMature), lit(c.seasonalStart), lit(c.seasonalEnd), lit(c.sortOrder),
-  ].join(', ')})`,
+const categoryRows = ALL_CATEGORIES.map(
+  (c) =>
+    `  (${[
+      lit(c.id),
+      lit(c.name),
+      lit(c.slug),
+      lit(c.canonicalPath),
+      lit(c.h1),
+      lit(c.seoTitle),
+      lit(c.metaDescription),
+      lit(c.introduction),
+      lit(c.shortDescription),
+      lit(c.icon),
+      lit(c.status),
+      lit(c.navFeatured),
+      lit(c.includeInMixedGame),
+      lit(c.requiresAgeGate),
+      lit(c.isChildSafe),
+      lit(c.isMature),
+      lit(c.seasonalStart),
+      lit(c.seasonalEnd),
+      lit(c.sortOrder),
+    ].join(', ')})`,
 );
 
 const categorySql = `-- ============================================================================
@@ -62,9 +79,12 @@ on conflict (id) do update set
 `;
 
 const demoQuestionRows = DEMO_QUESTIONS.map(
-  (q) => `  (${lit(q.id)}, ${lit(q.optionA)}, ${lit(q.optionB)}, 'published', ${lit(q.shareCode)}, ${q.sortOrder}, true, now())`,
+  (q) =>
+    `  (${lit(q.id)}, ${lit(q.optionA)}, ${lit(q.optionB)}, 'published', ${lit(q.shareCode)}, ${q.sortOrder}, true, now())`,
 );
-const demoLinkRows = DEMO_QUESTIONS.flatMap((q) => q.categoryIds.map((c) => `  (${lit(q.id)}, ${lit(c)})`));
+const demoLinkRows = DEMO_QUESTIONS.flatMap((q) =>
+  q.categoryIds.map((c) => `  (${lit(q.id)}, ${lit(c)})`),
+);
 
 const demoSql = `-- ============================================================================
 -- DEMO QUESTIONS — optional. Three clearly labelled fixtures so the game,
@@ -90,4 +110,6 @@ const root = resolve(import.meta.dirname ?? '.', '..');
 mkdirSync(resolve(root, 'supabase/seed'), { recursive: true });
 writeFileSync(resolve(root, 'supabase/migrations/0002_seed_categories.sql'), categorySql);
 writeFileSync(resolve(root, 'supabase/seed/demo_questions.sql'), demoSql);
-console.log('Wrote supabase/migrations/0002_seed_categories.sql and supabase/seed/demo_questions.sql');
+console.log(
+  'Wrote supabase/migrations/0002_seed_categories.sql and supabase/seed/demo_questions.sql',
+);

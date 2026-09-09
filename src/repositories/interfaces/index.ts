@@ -6,7 +6,12 @@
  */
 import type { Category, CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
-import type { ContactMessage, QuestionSubmission, StoredContactMessage, StoredQuestionSubmission } from '@/domain/forms';
+import type {
+  ContactMessage,
+  QuestionSubmission,
+  StoredContactMessage,
+  StoredQuestionSubmission,
+} from '@/domain/forms';
 
 // ---------------------------------------------------------------------------
 // Content (read at build time)
@@ -45,13 +50,19 @@ export type WriteOutcome<T> =
   | { readonly kind: 'error'; readonly message: string };
 
 export interface SubmissionRepository {
-  createSubmission(submission: QuestionSubmission, fingerprint: string): Promise<WriteOutcome<StoredQuestionSubmission>>;
+  createSubmission(
+    submission: QuestionSubmission,
+    fingerprint: string,
+  ): Promise<WriteOutcome<StoredQuestionSubmission>>;
   /** Category must be published to accept a submission for it. */
   isCategoryAcceptingSubmissions(categoryId: string): Promise<boolean>;
 }
 
 export interface ContactRepository {
-  createMessage(message: ContactMessage, fingerprint: string): Promise<WriteOutcome<StoredContactMessage>>;
+  createMessage(
+    message: ContactMessage,
+    fingerprint: string,
+  ): Promise<WriteOutcome<StoredContactMessage>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +79,11 @@ export interface HumanVerificationInput {
 
 export type HumanVerificationOutcome =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'invalid' | 'expired' | 'duplicate' | 'hostname' | 'action' | 'network' | 'misconfigured' };
+  | {
+      readonly ok: false;
+      readonly reason:
+        'invalid' | 'expired' | 'duplicate' | 'hostname' | 'action' | 'network' | 'misconfigured';
+    };
 
 export interface HumanVerificationService {
   verify(input: HumanVerificationInput): Promise<HumanVerificationOutcome>;

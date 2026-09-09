@@ -27,13 +27,19 @@ export class QuestionService {
   async getForCategory(category: Pick<CategoryWithCount, 'id'>): Promise<readonly Question[]> {
     const cached = this.byCategory.get(category.id);
     if (cached) return cached;
-    const questions = (await this.questions.getQuestionsByCategory(category.id)).filter(isPublished).sort(byOrder);
+    const questions = (await this.questions.getQuestionsByCategory(category.id))
+      .filter(isPublished)
+      .sort(byOrder);
     this.byCategory.set(category.id, questions);
     return questions;
   }
 
   /** Paged questions for a category; page numbering continues across pages. */
-  async getPage(category: Pick<CategoryWithCount, 'id'>, page: number, pageSize: number = PAGINATION.questionsPerPage): Promise<PaginationResult<Question>> {
+  async getPage(
+    category: Pick<CategoryWithCount, 'id'>,
+    page: number,
+    pageSize: number = PAGINATION.questionsPerPage,
+  ): Promise<PaginationResult<Question>> {
     const all = await this.getForCategory(category);
     return paginate(all, page, pageSize);
   }
@@ -44,13 +50,19 @@ export class QuestionService {
   }
 
   /** Compact homepage section: a stable "sample" of N published questions. */
-  async getHomepageSample(category: Pick<CategoryWithCount, 'id' | 'slug'>, count: number = HOMEPAGE.questionsPerSection): Promise<readonly Question[]> {
+  async getHomepageSample(
+    category: Pick<CategoryWithCount, 'id' | 'slug'>,
+    count: number = HOMEPAGE.questionsPerSection,
+  ): Promise<readonly Question[]> {
     const all = await this.getForCategory(category);
     return all.slice(0, count);
   }
 
   /** Mixed game questions: union of the given categories, de-duplicated, shuffled. */
-  async getMixedGameQuestions(categories: readonly Pick<CategoryWithCount, 'id' | 'slug'>[], rng?: Rng): Promise<readonly Question[]> {
+  async getMixedGameQuestions(
+    categories: readonly Pick<CategoryWithCount, 'id' | 'slug'>[],
+    rng?: Rng,
+  ): Promise<readonly Question[]> {
     const seen = new Set<string>();
     const out: Question[] = [];
     for (const c of categories) {
@@ -73,7 +85,10 @@ export class QuestionService {
   }
 
   /** Choose the primary (first, lowest sort order) visible category for a question. */
-  static primaryCategory(question: Question, categories: readonly CategoryWithCount[]): CategoryWithCount | null {
+  static primaryCategory(
+    question: Question,
+    categories: readonly CategoryWithCount[],
+  ): CategoryWithCount | null {
     const matches = categories.filter((c) => question.categoryIds.includes(c.id));
     if (matches.length === 0) return null;
     return matches.slice().sort((a, b) => a.sortOrder - b.sortOrder)[0] ?? null;
@@ -81,11 +96,17 @@ export class QuestionService {
 }
 
 export function byOrder(a: Question, b: Question): number {
-  return a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
+  return (
+    a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
+  );
 }
 
 /** Randomization with session repeat prevention — pure, used by the client game engine and tests. */
-export function pickNextUnseen<T extends { id: string }>(pool: readonly T[], seen: ReadonlySet<string>, rng: Rng = Math.random): T | null {
+export function pickNextUnseen<T extends { id: string }>(
+  pool: readonly T[],
+  seen: ReadonlySet<string>,
+  rng: Rng = Math.random,
+): T | null {
   const unseen = pool.filter((q) => !seen.has(q.id));
   if (unseen.length === 0) return null;
   return unseen[Math.floor(rng() * unseen.length)] ?? null;

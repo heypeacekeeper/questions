@@ -57,7 +57,11 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return out;
 }
 
-export async function buildPackSet(source: PackSource, perPack: number = GAME_DATA.questionsPerPack, maxPacks?: number): Promise<{ files: GamePackFile[]; entry: PackSetManifestEntry }> {
+export async function buildPackSet(
+  source: PackSource,
+  perPack: number = GAME_DATA.questionsPerPack,
+  maxPacks?: number,
+): Promise<{ files: GamePackFile[]; entry: PackSetManifestEntry }> {
   const ordered = shuffle(source.questions, seededRng(seedFromString(`pack:${source.slug}`)));
   let chunks = chunk(ordered.map(toGameQuestion), perPack);
   if (maxPacks !== undefined) chunks = chunks.slice(0, maxPacks);
@@ -93,7 +97,13 @@ export async function buildGameData(
   const sets: Record<string, PackSetManifestEntry> = {};
 
   const mixed = await buildPackSet(
-    { slug: MIXED_PACK_SLUG, name: 'Mixed', icon: '🎲', requiresAgeGate: false, questions: mixedQuestions },
+    {
+      slug: MIXED_PACK_SLUG,
+      name: 'Mixed',
+      icon: '🎲',
+      requiresAgeGate: false,
+      questions: mixedQuestions,
+    },
     GAME_DATA.questionsPerPack,
     GAME_DATA.maxMixedPacks,
   );
@@ -102,7 +112,13 @@ export async function buildGameData(
 
   for (const { category, questions } of categories) {
     if (questions.length === 0) continue;
-    const set = await buildPackSet({ slug: category.slug, name: category.name, icon: category.icon, requiresAgeGate: category.requiresAgeGate, questions });
+    const set = await buildPackSet({
+      slug: category.slug,
+      name: category.name,
+      icon: category.icon,
+      requiresAgeGate: category.requiresAgeGate,
+      questions,
+    });
     files.push(...set.files);
     sets[category.slug] = set.entry;
   }

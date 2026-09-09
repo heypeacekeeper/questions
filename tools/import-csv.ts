@@ -15,10 +15,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import {
-  createBuildClient,
-  type TypedSupabaseClient,
-} from '../src/infrastructure/supabase/client';
+import { createBuildClient, type TypedSupabaseClient } from '../src/infrastructure/supabase/client';
 
 import type {
   CategoryRow,
@@ -26,10 +23,7 @@ import type {
   QuestionRow,
 } from '../src/infrastructure/supabase/database.types';
 
-import {
-  normalizeForComparison,
-  questionPairFingerprint,
-} from '../src/lib/text';
+import { normalizeForComparison, questionPairFingerprint } from '../src/lib/text';
 
 export interface ImportRow {
   optionA: string;
@@ -89,20 +83,14 @@ export function parseCsv(input: string): string[][] {
     rows.push(row);
   }
 
-  return rows.filter((cells) =>
-    cells.some((cell) => cell.trim() !== ''),
-  );
+  return rows.filter((cells) => cells.some((cell) => cell.trim() !== ''));
 }
 
-function requiredEnv(
-  name: 'SUPABASE_URL' | 'SUPABASE_SECRET_KEY',
-): string {
+function requiredEnv(name: 'SUPABASE_URL' | 'SUPABASE_SECRET_KEY'): string {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(
-      `${name} is required. Add it to .env or the command environment.`,
-    );
+    throw new Error(`${name} is required. Add it to .env or the command environment.`);
   }
 
   return value;
@@ -124,30 +112,19 @@ function parseBoolean(value: string, line: number): boolean {
 
 export function parseRows(csv: string): ImportRow[] {
   const records = parseCsv(csv);
-  const header = records
-    .shift()
-    ?.map((value) => value.trim().toLowerCase());
+  const header = records.shift()?.map((value) => value.trim().toLowerCase());
 
   if (!header) {
     throw new Error('CSV is empty.');
   }
 
-  for (const required of [
-    'option_a',
-    'option_b',
-    'categories',
-  ]) {
+  for (const required of ['option_a', 'option_b', 'categories']) {
     if (!header.includes(required)) {
-      throw new Error(
-        `Missing required CSV column: ${required}`,
-      );
+      throw new Error(`Missing required CSV column: ${required}`);
     }
   }
 
-  const read = (
-    cells: string[],
-    key: string,
-  ): string => {
+  const read = (cells: string[], key: string): string => {
     return cells[header.indexOf(key)]?.trim() ?? '';
   };
 
@@ -163,59 +140,30 @@ export function parseRows(csv: string): ImportRow[] {
 
     const statusRaw = read(cells, 'status') || 'draft';
 
-    if (
-      optionA.length < 2 ||
-      optionA.length > 200 ||
-      optionB.length < 2 ||
-      optionB.length > 200
-    ) {
-      throw new Error(
-        `Line ${line}: options must contain 2–200 characters.`,
-      );
+    if (optionA.length < 2 || optionA.length > 200 || optionB.length < 2 || optionB.length > 200) {
+      throw new Error(`Line ${line}: options must contain 2–200 characters.`);
     }
 
-    if (
-      normalizeForComparison(optionA) ===
-      normalizeForComparison(optionB)
-    ) {
-      throw new Error(
-        `Line ${line}: options must be different.`,
-      );
+    if (normalizeForComparison(optionA) === normalizeForComparison(optionB)) {
+      throw new Error(`Line ${line}: options must be different.`);
     }
 
     if (categorySlugs.length === 0) {
-      throw new Error(
-        `Line ${line}: at least one category slug is required.`,
-      );
+      throw new Error(`Line ${line}: at least one category slug is required.`);
     }
 
-    if (
-      !['draft', 'published', 'archived'].includes(statusRaw)
-    ) {
-      throw new Error(
-        `Line ${line}: invalid status "${statusRaw}".`,
-      );
+    if (!['draft', 'published', 'archived'].includes(statusRaw)) {
+      throw new Error(`Line ${line}: invalid status "${statusRaw}".`);
     }
 
     const sortOrderRaw = read(cells, 'sort_order');
-    const sortOrder = sortOrderRaw
-      ? Number(sortOrderRaw)
-      : 1000;
+    const sortOrder = sortOrderRaw ? Number(sortOrderRaw) : 1000;
 
-    if (
-      !Number.isInteger(sortOrder) ||
-      sortOrder < 0 ||
-      sortOrder > 10_000_000
-    ) {
-      throw new Error(
-        `Line ${line}: invalid sort_order.`,
-      );
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10_000_000) {
+      throw new Error(`Line ${line}: invalid sort_order.`);
     }
 
-    const displayVoteCountRaw = read(
-      cells,
-      'display_vote_count',
-    );
+    const displayVoteCountRaw = read(cells, 'display_vote_count');
 
     let displayVoteCount: number | undefined;
 
@@ -242,18 +190,13 @@ export function parseRows(csv: string): ImportRow[] {
       status: statusRaw as ContentStatus,
       sortOrder,
       displayVoteCount,
-      isDemo: parseBoolean(
-        read(cells, 'is_demo'),
-        line,
-      ),
+      isDemo: parseBoolean(read(cells, 'is_demo'), line),
       line,
     };
   });
 }
 
-export async function fetchAllQuestions(
-  client: TypedSupabaseClient,
-): Promise<QuestionRow[]> {
+export async function fetchAllQuestions(client: TypedSupabaseClient): Promise<QuestionRow[]> {
   const questions: QuestionRow[] = [];
   const pageSize = 500;
 
@@ -265,9 +208,7 @@ export async function fetchAllQuestions(
       .range(from, from + pageSize - 1);
 
     if (error) {
-      throw new Error(
-        `Could not load questions: ${error.message}`,
-      );
+      throw new Error(`Could not load questions: ${error.message}`);
     }
 
     const page = (data ?? []) as QuestionRow[];
@@ -281,82 +222,49 @@ export async function fetchAllQuestions(
 
 async function main(): Promise<void> {
   const file =
-    argument('--file') ??
-    process.argv.find(
-      (value, index) =>
-        index > 1 && !value.startsWith('--'),
-    );
+    argument('--file') ?? process.argv.find((value, index) => index > 1 && !value.startsWith('--'));
 
   if (!file) {
-    throw new Error(
-      'Usage: npm run import:csv -- --file ./questions.csv [--dry-run]',
-    );
+    throw new Error('Usage: npm run import:csv -- --file ./questions.csv [--dry-run]');
   }
 
   const dryRun = process.argv.includes('--dry-run');
 
-  const rows = parseRows(
-    readFileSync(resolve(file), 'utf8'),
-  );
+  const rows = parseRows(readFileSync(resolve(file), 'utf8'));
 
-  const client = createBuildClient(
-    requiredEnv('SUPABASE_URL'),
-    requiredEnv('SUPABASE_SECRET_KEY'),
-  );
+  const client = createBuildClient(requiredEnv('SUPABASE_URL'), requiredEnv('SUPABASE_SECRET_KEY'));
 
-  const [
-    { data: categories, error: categoryError },
-    questions,
-  ] = await Promise.all([
+  const [{ data: categories, error: categoryError }, questions] = await Promise.all([
     client.from('categories').select('*'),
     fetchAllQuestions(client),
   ]);
 
   if (categoryError) {
-    throw new Error(
-      `Could not load categories: ${categoryError.message}`,
-    );
+    throw new Error(`Could not load categories: ${categoryError.message}`);
   }
 
   const categoryBySlug = new Map(
-    (categories as CategoryRow[]).map((category) => [
-      category.slug,
-      category,
-    ]),
+    (categories as CategoryRow[]).map((category) => [category.slug, category]),
   );
 
   const fingerprints = new Set(
-    questions.map((question) =>
-      questionPairFingerprint(
-        question.option_a,
-        question.option_b,
-      ),
-    ),
+    questions.map((question) => questionPairFingerprint(question.option_a, question.option_b)),
   );
 
   const accepted: ImportRow[] = [];
   let skipped = 0;
 
   for (const row of rows) {
-    const missing = row.categorySlugs.filter(
-      (slug) => !categoryBySlug.has(slug),
-    );
+    const missing = row.categorySlugs.filter((slug) => !categoryBySlug.has(slug));
 
     if (missing.length > 0) {
-      throw new Error(
-        `Line ${row.line}: unknown categories: ${missing.join(', ')}`,
-      );
+      throw new Error(`Line ${row.line}: unknown categories: ${missing.join(', ')}`);
     }
 
-    const fingerprint = questionPairFingerprint(
-      row.optionA,
-      row.optionB,
-    );
+    const fingerprint = questionPairFingerprint(row.optionA, row.optionB);
 
     if (fingerprints.has(fingerprint)) {
-      console.warn(
-        `Skip line ${row.line}: duplicate question pair.`,
-      );
+      console.warn(`Skip line ${row.line}: duplicate question pair.`);
       skipped += 1;
       continue;
     }
@@ -384,8 +292,7 @@ async function main(): Promise<void> {
       ...(row.displayVoteCount === undefined
         ? {}
         : {
-            display_vote_count:
-              row.displayVoteCount,
+            display_vote_count: row.displayVoteCount,
           }),
     };
 
@@ -396,29 +303,20 @@ async function main(): Promise<void> {
       .single();
 
     if (error) {
-      throw new Error(
-        `Line ${row.line}: question insert failed: ${error.message}`,
-      );
+      throw new Error(`Line ${row.line}: question insert failed: ${error.message}`);
     }
 
-    const questionId = (
-      data as Pick<QuestionRow, 'id'>
-    ).id;
+    const questionId = (data as Pick<QuestionRow, 'id'>).id;
 
     const links = row.categorySlugs.map((slug) => ({
       question_id: questionId,
       category_id: categoryBySlug.get(slug)!.id,
     }));
 
-    const { error: linkError } = await client
-      .from('question_categories')
-      .insert(links);
+    const { error: linkError } = await client.from('question_categories').insert(links);
 
     if (linkError) {
-      await client
-        .from('questions')
-        .delete()
-        .eq('id', questionId);
+      await client.from('questions').delete().eq('id', questionId);
 
       throw new Error(
         `Line ${row.line}: category links failed and question was rolled back: ${linkError.message}`,
@@ -428,22 +326,14 @@ async function main(): Promise<void> {
     imported += 1;
   }
 
-  console.log(
-    `Import complete: ${imported} questions added, ${skipped} duplicates skipped.`,
-  );
+  console.log(`Import complete: ${imported} questions added, ${skipped} duplicates skipped.`);
 }
 
 const entryPath = process.argv[1];
 
-if (
-  entryPath &&
-  import.meta.url ===
-    pathToFileURL(resolve(entryPath)).href
-) {
+if (entryPath && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   main().catch((error: unknown) => {
-    console.error(
-      error instanceof Error ? error.message : error,
-    );
+    console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   });
 }

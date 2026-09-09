@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  fetchAllQuestions,
-  parseRows,
-} from '../../tools/import-csv';
-import {
-  asCsv,
-  type ExportQuestion,
-} from '../../tools/export-questions';
+import { fetchAllQuestions, parseRows } from '../../tools/import-csv';
+import { asCsv, type ExportQuestion } from '../../tools/export-questions';
 import type { TypedSupabaseClient } from '@/infrastructure/supabase/client';
 import type { QuestionRow } from '@/infrastructure/supabase/database.types';
 
@@ -41,22 +35,19 @@ describe('CSV question importer', () => {
   );
 
   it('fetches more than 3000 existing questions in pages', async () => {
-    const databaseRows: QuestionRow[] = Array.from(
-      { length: 3005 },
-      (_, index) => ({
-        id: `question-${index}`,
-        option_a: `option a ${index}`,
-        option_b: `option b ${index}`,
-        status: 'draft',
-        share_code: `share-${index}`,
-        sort_order: index,
-        display_vote_count: 2000 + index,
-        is_demo: false,
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-        published_at: null,
-      }),
-    );
+    const databaseRows: QuestionRow[] = Array.from({ length: 3005 }, (_, index) => ({
+      id: `question-${index}`,
+      option_a: `option a ${index}`,
+      option_b: `option b ${index}`,
+      status: 'draft',
+      share_code: `share-${index}`,
+      sort_order: index,
+      display_vote_count: 2000 + index,
+      is_demo: false,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+      published_at: null,
+    }));
 
     const requestedRanges: Array<[number, number]> = [];
 

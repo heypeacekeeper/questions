@@ -1,9 +1,6 @@
 /** Progressive enhancement controller for the static first game question. */
 import type { GameQuestion } from '@/domain/question';
-import type {
-  GameDataManifest,
-  PackSetManifestEntry,
-} from '@/application/game-data-service';
+import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
 import {
   formatGeneratedPercent,
   GameEngine,
@@ -88,8 +85,7 @@ export function initGame(): void {
   if (
     fullscreenButton &&
     (document.fullscreenEnabled ||
-      (document as unknown as { webkitFullscreenEnabled?: boolean })
-        .webkitFullscreenEnabled)
+      (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled)
   )
     fullscreenButton.hidden = false;
   const announce = (message: string) => {
@@ -112,9 +108,7 @@ export function initGame(): void {
     gameStage.classList.remove('voted', 'has-notice');
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
-    [choiceA, choiceB].forEach((button) =>
-      button?.classList.remove('picked', 'not-picked'),
-    );
+    [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a;
     if (textB) textB.textContent = question.b;
     [percentA, percentB, voteCount, verdict].forEach((element) => {
@@ -133,18 +127,13 @@ export function initGame(): void {
     gameStage.classList.add('voted');
     const picked = choice === 'A' ? choiceA : choiceB;
     const other = choice === 'A' ? choiceB : choiceA;
-    [choiceA, choiceB].forEach((button) =>
-      button?.classList.remove('picked', 'not-picked'),
-    );
+    [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     picked?.classList.add('picked');
     other?.classList.add('not-picked');
     const result = generatedDisplayResult(current.id);
-    if (percentA)
-      percentA.textContent = formatGeneratedPercent(result.percentA);
-    if (percentB)
-      percentB.textContent = formatGeneratedPercent(result.percentB);
-    if (voteCount)
-      voteCount.textContent = `${current.d.toLocaleString('en-US')} votes`;
+    if (percentA) percentA.textContent = formatGeneratedPercent(result.percentA);
+    if (percentB) percentB.textContent = formatGeneratedPercent(result.percentB);
+    if (voteCount) voteCount.textContent = `${current.d.toLocaleString('en-US')} votes`;
     requestAnimationFrame(() => {
       if (fillA) fillA.style.height = `${result.percentA}%`;
       if (fillB) fillB.style.height = `${result.percentB}%`;
@@ -175,21 +164,15 @@ export function initGame(): void {
     return manifest;
   }
   async function activateSet(slug: string, label?: string): Promise<void> {
-    const entry: PackSetManifestEntry | null =
-      (await ensureManifest())?.sets[slug] ?? null;
+    const entry: PackSetManifestEntry | null = (await ensureManifest())?.sets[slug] ?? null;
     if (packLabel && label) packLabel.textContent = label;
-    engine.setSeenStore(
-      new SessionSeenStore(`${config.keys.seen}:${slug}`, session),
-    );
+    engine.setSeenStore(new SessionSeenStore(`${config.keys.seen}:${slug}`, session));
     await engine.useSet(entry);
     if (current && slug === config.set) engine.primeWith(current);
     packGrid
       ?.querySelectorAll<HTMLButtonElement>('.pack-button')
       .forEach((button) =>
-        button.setAttribute(
-          'aria-current',
-          button.dataset.pack === slug ? 'true' : 'false',
-        ),
+        button.setAttribute('aria-current', button.dataset.pack === slug ? 'true' : 'false'),
       );
   }
   function openDialog(): void {
@@ -205,11 +188,7 @@ export function initGame(): void {
     else packDialog.removeAttribute('open');
     packButton?.focus();
   }
-  async function choosePack(
-    slug: string,
-    name: string,
-    gated: boolean,
-  ): Promise<void> {
+  async function choosePack(slug: string, name: string, gated: boolean): Promise<void> {
     if (gated && local?.getItem(config.keys.adult) !== '1') {
       pendingGatedPack = { slug, name };
       if (packPicker) packPicker.hidden = true;
@@ -247,8 +226,7 @@ export function initGame(): void {
   const isFullscreen = () =>
     Boolean(
       document.fullscreenElement ||
-        (document as unknown as { webkitFullscreenElement?: Element })
-          .webkitFullscreenElement,
+      (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement,
     );
   const toggleFullscreen = () => {
     if (isFullscreen()) {
@@ -284,9 +262,7 @@ export function initGame(): void {
     if (pack) void choosePack(pack.slug, pack.name, false);
   });
   packGrid?.addEventListener('click', (event) => {
-    const button = (event.target as Element).closest<HTMLButtonElement>(
-      '.pack-button',
-    );
+    const button = (event.target as Element).closest<HTMLButtonElement>('.pack-button');
     if (button)
       void choosePack(
         button.dataset.pack ?? config.set,
@@ -315,10 +291,7 @@ export function initGame(): void {
     if ('requestIdleCallback' in window) {
       (
         window as Window & {
-          requestIdleCallback: (
-            callback: () => void,
-            options?: { timeout: number },
-          ) => number;
+          requestIdleCallback: (callback: () => void, options?: { timeout: number }) => number;
         }
       ).requestIdleCallback(warm, { timeout: 1500 });
     } else {

@@ -7,21 +7,32 @@ import { getContentContext } from '@/repositories/factory';
 
 const { env } = await getContentContext();
 const ga4 = env.features.FEATURE_GA4 && env.ga4MeasurementId ? env.ga4MeasurementId : null;
-const cf = env.features.FEATURE_CLOUDFLARE_ANALYTICS && env.cloudflareAnalyticsToken ? env.cloudflareAnalyticsToken : null;
+const cf =
+  env.features.FEATURE_CLOUDFLARE_ANALYTICS && env.cloudflareAnalyticsToken
+    ? env.cloudflareAnalyticsToken
+    : null;
 const enabled = env.isProduction && (ga4 || cf);
 ---
 
 {enabled && (
-  <div id="analytics-config" hidden data-ga4={ga4 ?? ''} data-cf={cf ?? ''} data-cf-consent="false"></div>
-  <script>
-    import { initAnalytics } from '@/scripts/analytics';
-    const host = document.getElementById('analytics-config');
-    if (host) {
-      initAnalytics({
-        ga4Id: host.dataset.ga4 || null,
-        cfToken: host.dataset.cf || null,
-        cfRequiresConsent: host.dataset.cfConsent === 'true',
-      });
-    }
-  </script>
+  <>
+    <div
+      id="analytics-config"
+      hidden
+      data-ga4={ga4 ?? ''}
+      data-cf={cf ?? ''}
+      data-cf-consent="false"
+    ></div>
+    <script>
+      import { initAnalytics } from '@/scripts/analytics';
+      const host = document.getElementById('analytics-config');
+      if (host) {
+        initAnalytics({
+          ga4Id: host.dataset.ga4 || null,
+          cfToken: host.dataset.cf || null,
+          cfRequiresConsent: host.dataset.cfConsent === 'true',
+        });
+      }
+    </script>
+  </>
 )}

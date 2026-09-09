@@ -16,11 +16,7 @@ import type {
   WriteOutcome,
 } from '@/repositories/interfaces';
 import { SEASONAL_WINDOWS } from '@/config/site';
-import {
-  ALL_CATEGORIES,
-  DEMO_QUESTIONS,
-  generateMockFillerQuestions,
-} from './fixtures';
+import { ALL_CATEGORIES, DEMO_QUESTIONS, generateMockFillerQuestions } from './fixtures';
 
 export interface MockDataset {
   categories: readonly Category[];
@@ -52,17 +48,12 @@ export class MockQuestionRepository implements QuestionRepository {
   async getPublishedQuestions(): Promise<readonly Question[]> {
     return this.data.questions.filter((q) => q.status === 'published');
   }
-  async getQuestionsByCategory(
-    categoryId: string,
-  ): Promise<readonly Question[]> {
-    return (await this.getPublishedQuestions()).filter((q) =>
-      q.categoryIds.includes(categoryId),
-    );
+  async getQuestionsByCategory(categoryId: string): Promise<readonly Question[]> {
+    return (await this.getPublishedQuestions()).filter((q) => q.categoryIds.includes(categoryId));
   }
   async getQuestionByShareCode(shareCode: string): Promise<Question | null> {
     return this.data.questions.find((q) => q.shareCode === shareCode) ?? null;
   }
-
 }
 export class MockCategoryRepository implements CategoryRepository {
   constructor(private readonly data: MockDataset) {}
@@ -90,16 +81,13 @@ export class MockSubmissionRepository implements SubmissionRepository {
   readonly stored: StoredQuestionSubmission[] = [];
   constructor(private readonly data: MockDataset) {}
   async isCategoryAcceptingSubmissions(categoryId: string): Promise<boolean> {
-    return this.data.categories.some(
-      (c) => c.id === categoryId && c.status === 'published',
-    );
+    return this.data.categories.some((c) => c.id === categoryId && c.status === 'published');
   }
   async createSubmission(
     submission: QuestionSubmission,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredQuestionSubmission>> {
-    if (this.stored.some((s) => s.fingerprint === fingerprint))
-      return { kind: 'duplicate' };
+    if (this.stored.some((s) => s.fingerprint === fingerprint)) return { kind: 'duplicate' };
     const value: StoredQuestionSubmission = {
       ...submission,
       id: crypto.randomUUID(),
@@ -117,8 +105,7 @@ export class MockContactRepository implements ContactRepository {
     message: ContactMessage,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredContactMessage>> {
-    if (this.stored.some((s) => s.fingerprint === fingerprint))
-      return { kind: 'duplicate' };
+    if (this.stored.some((s) => s.fingerprint === fingerprint)) return { kind: 'duplicate' };
     const value = {
       ...message,
       id: crypto.randomUUID(),

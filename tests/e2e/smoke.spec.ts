@@ -17,12 +17,12 @@ test('home game shows stable local display results and advances', async ({ page 
   });
 
   await page.addInitScript(() => {
-  localStorage.setItem('wyr_pack', 'for-couples');
-});
+    localStorage.setItem('wyr_pack', 'for-couples');
+  });
 
-const manifestLoaded = page.waitForResponse(
-  (response) => new URL(response.url()).pathname === '/game-data/manifest.json',
-);
+  const manifestLoaded = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/game-data/manifest.json',
+  );
 
   await page.goto('/');
   await manifestLoaded;
@@ -63,7 +63,9 @@ const manifestLoaded = page.waitForResponse(
   await page.locator('#choice-a').click();
   await expect(page.locator('#game-stage')).toHaveClass(/voted/);
   await expect(page.locator('#choice-a')).toHaveClass(/picked/);
-  expect(await page.locator('#choice-b').evaluate((element) => element.classList.contains('picked'))).toBe(false);
+  expect(
+    await page.locator('#choice-b').evaluate((element) => element.classList.contains('picked')),
+  ).toBe(false);
   await expect(page.locator('#choice-b')).toHaveClass(/not-picked/);
   const resultA = await page.locator('#percent-a').textContent();
   const resultB = await page.locator('#percent-b').textContent();
@@ -72,10 +74,11 @@ const manifestLoaded = page.waitForResponse(
   expect(resultB).toMatch(/^\d+\.\d%$/);
   expect(displayCount).toMatch(/^\d{1,3}(?:,\d{3})* votes$/);
 
-
   await page.locator('#choice-b').click();
   await expect(page.locator('#choice-b')).toHaveClass(/picked/);
-  expect(await page.locator('#choice-a').evaluate((element) => element.classList.contains('picked'))).toBe(false);
+  expect(
+    await page.locator('#choice-a').evaluate((element) => element.classList.contains('picked')),
+  ).toBe(false);
   await expect(page.locator('#choice-a')).toHaveClass(/not-picked/);
   await expect(page.locator('#percent-a')).toHaveText(resultA ?? '');
   await expect(page.locator('#percent-b')).toHaveText(resultB ?? '');
@@ -84,7 +87,10 @@ const manifestLoaded = page.waitForResponse(
 
   await page.locator('#next-button').click();
   await expect(page.locator('#game-stage')).not.toHaveClass(/voted/);
-  await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstQuestionId ?? '');
+  await expect(page.locator('#game-stage')).not.toHaveAttribute(
+    'data-question-id',
+    firstQuestionId ?? '',
+  );
 });
 
 test('single question page does not render a next button', async ({ page }) => {
@@ -109,7 +115,9 @@ test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => 
   await expect(navScrim).toBeVisible();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
   await expect(menuButton).toHaveAttribute('aria-label', 'Close menu');
-  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).toBe('hidden');
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).toBe(
+    'hidden',
+  );
 
   await categoryButton.click();
   await expect(categoryButton).toHaveAttribute('aria-expanded', 'true');
@@ -127,7 +135,9 @@ test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => 
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
   await expect(menuButton).toBeFocused();
-  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe('hidden');
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe(
+    'hidden',
+  );
 
   await menuButton.click();
   await menuButton.click();
@@ -143,7 +153,9 @@ test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => 
   await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
   await expect(navLinks).not.toHaveClass(/open/);
   await expect(navScrim).not.toHaveClass(/open/);
-  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe('hidden');
+  expect(await page.locator('body').evaluate((body) => getComputedStyle(body).overflow)).not.toBe(
+    'hidden',
+  );
 
   for (const path of ['/funny-would-you-rather-questions/', '/about-us/']) {
     await page.setViewportSize({ width: 390, height: 844 });

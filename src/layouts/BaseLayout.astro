@@ -10,7 +10,15 @@ import ConsentManager from '@/components/ConsentManager.astro';
 import Analytics from '@/components/Analytics.astro';
 import { getContentContext } from '@/repositories/factory';
 import { BRAND_NAME, PUBLIC_EMAIL, SOCIAL, absoluteUrl } from '@/config/site';
-import { breadcrumbJsonLd, defaultImage, jsonLdString, organizationJsonLd, websiteJsonLd, type BreadcrumbItem, type PageMeta } from '@/lib/seo';
+import {
+  breadcrumbJsonLd,
+  defaultImage,
+  jsonLdString,
+  organizationJsonLd,
+  websiteJsonLd,
+  type BreadcrumbItem,
+  type PageMeta,
+} from '@/lib/seo';
 
 interface Props {
   meta: PageMeta;
@@ -27,14 +35,22 @@ const { env } = ctx;
 const siteUrl = env.siteUrl;
 
 const canonical = absoluteUrl(meta.path, siteUrl);
-const ogImage = meta.image ? (meta.image.startsWith('http') ? meta.image : absoluteUrl(meta.image, siteUrl)) : defaultImage(siteUrl);
+const ogImage = meta.image
+  ? meta.image.startsWith('http')
+    ? meta.image
+    : absoluteUrl(meta.image, siteUrl)
+  : defaultImage(siteUrl);
 const robots = meta.robots ?? 'index,follow,max-image-preview:large';
-const title = meta.title.includes(BRAND_NAME) || meta.title.length > 55 ? meta.title : `${meta.title} – ${BRAND_NAME}`;
+// Titles from the CMS are authored complete; only bare titles get the brand suffix.
+const title = meta.title.includes(BRAND_NAME) ? meta.title : `${meta.title} – ${BRAND_NAME}`;
 
 const navCategories = await ctx.categoryService.getNavigationCategories();
 
 const structuredData: Record<string, unknown>[] = [
-  websiteJsonLd(siteUrl, 'Free Would You Rather questions for kids, teens, adults, couples, friends, family, work and classrooms.'),
+  websiteJsonLd(
+    siteUrl,
+    'Free Would You Rather questions for kids, teens, adults, couples, friends, family, work and classrooms.',
+  ),
   organizationJsonLd(siteUrl, PUBLIC_EMAIL),
   ...(breadcrumbs.length > 1 ? [breadcrumbJsonLd(siteUrl, breadcrumbs)] : []),
   ...jsonLd,
@@ -54,7 +70,9 @@ const structuredData: Record<string, unknown>[] = [
     <link rel="canonical" href={canonical} />
     {meta.prev && <link rel="prev" href={absoluteUrl(meta.prev, siteUrl)} />}
     {meta.next && <link rel="next" href={absoluteUrl(meta.next, siteUrl)} />}
-    {env.searchConsoleVerification && <meta name="google-site-verification" content={env.searchConsoleVerification} />}
+    {env.searchConsoleVerification && (
+      <meta name="google-site-verification" content={env.searchConsoleVerification} />
+    )}
 
     <meta property="og:type" content={meta.ogType ?? 'website'} />
     <meta property="og:title" content={title} />
@@ -78,12 +96,16 @@ const structuredData: Record<string, unknown>[] = [
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="sitemap" href="/sitemap-index.xml" />
 
-    {structuredData.map((block) => <script is:inline type="application/ld+json" set:html={jsonLdString(block)} />)}
+    {structuredData.map((block) => (
+      <script is:inline type="application/ld+json" set:html={jsonLdString(block)}></script>
+    ))}
     <slot name="head" />
   </head>
 
   <body class={bodyClass}>
-    <a class="skip-link" href="#main-content">Skip to content</a>
+    <a class="skip-link" href="#main-content">
+      Skip to content
+    </a>
 
     <Header categories={navCategories} />
 

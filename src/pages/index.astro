@@ -10,21 +10,34 @@ import { initialGameQuestion, sidebarData } from '@/lib/page-data';
 
 const ctx = await getContentContext();
 const visible = await ctx.categoryService.getVisibleCategories();
-const packs = (await ctx.categoryService.getGamePackCategories()).map((c) => ({ slug: c.slug, name: c.name, icon: c.icon, description: c.shortDescription, requiresAgeGate: c.requiresAgeGate }));
+const packs = (await ctx.categoryService.getGamePackCategories()).map((c) => ({
+  slug: c.slug,
+  name: c.name,
+  icon: c.icon,
+  description: c.shortDescription,
+  requiresAgeGate: c.requiresAgeGate,
+}));
 const initial = await initialGameQuestion(null);
-const sections = (await Promise.all(HOMEPAGE.sectionSlugs.map(async (slug) => {
-  const c = visible.find((x) => x.slug === slug); if (!c) return null;
-  return { category: c, questions: await ctx.questionService.getHomepageSample(c) };
-}))).filter((s): s is NonNullable<typeof s> => s !== null && s.questions.length > 0);
+const sections = (
+  await Promise.all(
+    HOMEPAGE.sectionSlugs.map(async (slug) => {
+      const c = visible.find((x) => x.slug === slug);
+      if (!c) return null;
+      return { category: c, questions: await ctx.questionService.getHomepageSample(c) };
+    }),
+  )
+).filter((s): s is NonNullable<typeof s> => s !== null && s.questions.length > 0);
 const quickLinks = visible.filter((c) => c.navFeatured).slice(0, NAVIGATION.quickLinkLimit);
 const totalQuestions = (await ctx.questionService.getPublished()).length;
 const { popular, seasonal } = await sidebarData();
 const meta = {
   title: 'Would You Rather Questions – Play Free Online',
-  description: 'Play Would You Rather questions online. Funny, kids, teens, adults, couples, family and hard questions for parties, road trips, classrooms and game nights.',
+  description:
+    'Play Would You Rather questions online. Funny, kids, teens, adults, couples, family and hard questions for parties, road trips, classrooms and game nights.',
   path: ROUTES.home,
 };
 ---
+
 <BaseLayout meta={meta}>
   <Game mode="mixed" initial={initial} packs={packs} />
   <AdSlot slot="belowGame" />
@@ -32,34 +45,70 @@ const meta = {
     <div class="wrap">
       <h1>Would You Rather Questions</h1>
       <div class="intro-copy">
-        <p>Would You Rather is the simplest party game there is: two options, one choice, and no "neither" allowed. Play the game above, or browse {totalQuestions > 0 ? `our ${totalQuestions} ` : 'our '}questions sorted into categories for kids, teens, adults, couples, friends, family and work.</p>
-        <p>Use them at parties, in classrooms, on road trips or at the dinner table. Pick a category, take turns answering, and — most importantly — make everyone explain their choice.</p>
+        <p>
+          Would You Rather is the simplest party game there is: two options, one choice, and no
+          "neither" allowed. Play the game above, or browse{' '}
+          {totalQuestions > 0 ? `our ${totalQuestions} ` : 'our '}questions sorted into categories
+          for kids, teens, adults, couples, friends, family and work.
+        </p>
+        <p>
+          Use them at parties, in classrooms, on road trips or at the dinner table. Pick a category,
+          take turns answering, and — most importantly — make everyone explain their choice.
+        </p>
       </div>
-      {quickLinks.length > 0 && (<nav class="quick-links" aria-label="Popular question categories">{quickLinks.map((c) => <a href={c.canonicalPath}>{c.name}</a>)}</nav>)}
+      {quickLinks.length > 0 && (
+        <nav class="quick-links" aria-label="Popular question categories">
+          {quickLinks.map((c) => (
+            <a href={c.canonicalPath}>{c.name}</a>
+          ))}
+        </nav>
+      )}
     </div>
   </section>
   <div class="wrap page-layout">
     <div class="content-column">
       {sections.map((s, i) => (
         <>
-          <section class="question-section" id={s.category.slug} aria-labelledby={`${s.category.slug}-heading`}>
+          <section
+            class="question-section"
+            id={s.category.slug}
+            aria-labelledby={`${s.category.slug}-heading`}
+          >
             <header class="section-header">
               <span class="section-tag">{s.category.shortDescription}</span>
               <h2 id={`${s.category.slug}-heading`}>{s.category.h1}</h2>
               <p>{s.category.metaDescription}</p>
             </header>
             <QuestionList questions={s.questions} />
-            <a class="section-action" href={s.category.canonicalPath}>See all {s.category.publishedQuestionCount} {s.category.name.toLowerCase()} questions →</a>
+            <a class="section-action" href={s.category.canonicalPath}>
+              See all {s.category.publishedQuestionCount} {s.category.name.toLowerCase()} questions
+              →
+            </a>
           </section>
           {i === 0 && <AdSlot slot="inContent" class="inline-ad" />}
         </>
       ))}
       <section class="how-to" aria-labelledby="how-to-heading">
-        <header class="how-to-header"><h2 id="how-to-heading">How to Play Would You Rather</h2><p>No downloads, accounts, equipment or complicated rules are required.</p></header>
+        <header class="how-to-header">
+          <h2 id="how-to-heading">How to Play Would You Rather</h2>
+          <p>No downloads, accounts, equipment or complicated rules are required.</p>
+        </header>
         <div class="steps">
-          <article class="step"><span class="step-number">1</span><h3>Read the choices</h3><p>Everyone gets the same two funny, strange or difficult options.</p></article>
-          <article class="step"><span class="step-number">2</span><h3>Pick one answer</h3><p>You must choose option A or option B. "Neither" is not allowed.</p></article>
-          <article class="step"><span class="step-number">3</span><h3>Explain your choice</h3><p>The best conversations happen when everyone explains their answer.</p></article>
+          <article class="step">
+            <span class="step-number">1</span>
+            <h3>Read the choices</h3>
+            <p>Everyone gets the same two funny, strange or difficult options.</p>
+          </article>
+          <article class="step">
+            <span class="step-number">2</span>
+            <h3>Pick one answer</h3>
+            <p>You must choose option A or option B. "Neither" is not allowed.</p>
+          </article>
+          <article class="step">
+            <span class="step-number">3</span>
+            <h3>Explain your choice</h3>
+            <p>The best conversations happen when everyone explains their answer.</p>
+          </article>
         </div>
       </section>
     </div>

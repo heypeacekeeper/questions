@@ -20,11 +20,17 @@ const links = [
     <div class="footer-copy">
       <span class="footer-brand">{BRAND_DISPLAY_DOMAIN}</span>
       <p>© {year} · Made for difficult decisions.</p>
-      <p><button type="button" class="consent-manage-link" data-consent-open>Cookie preferences</button></p>
+      <p>
+        <button type="button" class="consent-manage-link" data-consent-open>
+          Cookie preferences
+        </button>
+      </p>
     </div>
 
     <nav class="footer-links" aria-label="Footer navigation">
-      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+      {links.map((l) => (
+        <a href={l.href}>{l.label}</a>
+      ))}
     </nav>
   </div>
 </footer>

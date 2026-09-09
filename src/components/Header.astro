@@ -15,19 +15,47 @@ const { categories } = Astro.props;
 <header class="site-nav" id="site-header">
   <div class="wrap nav-inner">
     <a class="brand" href={ROUTES.home} aria-label={`${BRAND_NAME} home`}>
-      <span class="brand-mark" aria-hidden="true">?</span>
-      <span>{BRAND_SHORT}<span class="brand-domain">{BRAND_DOMAIN_SUFFIX}</span></span>
+      <span class="brand-mark" aria-hidden="true">
+        ?
+      </span>
+      <span>
+        {BRAND_SHORT}
+        <span class="brand-domain">{BRAND_DOMAIN_SUFFIX}</span>
+      </span>
     </a>
 
-    <button class="menu-button" id="menu-button" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-      <span></span><span></span><span></span>
+    <button
+      class="menu-button"
+      id="menu-button"
+      type="button"
+      aria-label="Open menu"
+      aria-expanded="false"
+      aria-controls="nav-links"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
     </button>
 
     <nav class="nav-links" id="nav-links" aria-label="Main navigation">
       <div class="category-dropdown">
-        <button class="category-button" id="category-button" type="button" aria-expanded="false" aria-controls="category-menu" aria-haspopup="true">
+        <button
+          class="category-button"
+          id="category-button"
+          type="button"
+          aria-expanded="false"
+          aria-controls="category-menu"
+          aria-haspopup="true"
+        >
           <span>Categories</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
             <path d="m5 8 7 8 7-8" />
           </svg>
         </button>
@@ -35,20 +63,30 @@ const { categories } = Astro.props;
         <div class="category-menu" id="category-menu" hidden>
           {categories.map((c) => (
             <a href={c.canonicalPath}>
-              <span class="category-icon" aria-hidden="true">{c.icon}</span>
+              <span class="category-icon" aria-hidden="true">
+                {c.icon}
+              </span>
               <span class="category-copy">
                 <strong>{c.name}</strong>
                 <small>{c.shortDescription}</small>
               </span>
             </a>
           ))}
-          <a class="view-all" href={ROUTES.categories}>View all categories →</a>
+          <a class="view-all" href={ROUTES.categories}>
+            View all categories →
+          </a>
         </div>
       </div>
 
-      <a class="nav-link" href={ROUTES.about}>About Us</a>
-      <a class="nav-link" href={ROUTES.contact}>Contact Us</a>
-      <a class="submit-link" href={ROUTES.submit}>＋ Submit a Question</a>
+      <a class="nav-link" href={ROUTES.about}>
+        About Us
+      </a>
+      <a class="nav-link" href={ROUTES.contact}>
+        Contact Us
+      </a>
+      <a class="submit-link" href={ROUTES.submit}>
+        ＋ Submit a Question
+      </a>
     </nav>
   </div>
 </header>

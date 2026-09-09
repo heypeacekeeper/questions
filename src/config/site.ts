@@ -124,10 +124,30 @@ export const SOCIAL = {
  * the seeded seasonal categories. Windows may cross a year boundary.
  */
 export const SEASONAL_WINDOWS: readonly SeasonalWindow[] = [
-  { slug: 'valentines', label: "Valentine's Day", start: { month: 1, day: 1 }, end: { month: 2, day: 28 } },
-  { slug: 'halloween', label: 'Halloween', start: { month: 9, day: 1 }, end: { month: 10, day: 31 } },
-  { slug: 'thanksgiving', label: 'Thanksgiving', start: { month: 10, day: 1 }, end: { month: 11, day: 30 } },
-  { slug: 'christmas', label: 'Christmas', start: { month: 11, day: 1 }, end: { month: 12, day: 31 } },
+  {
+    slug: 'valentines',
+    label: "Valentine's Day",
+    start: { month: 1, day: 1 },
+    end: { month: 2, day: 28 },
+  },
+  {
+    slug: 'halloween',
+    label: 'Halloween',
+    start: { month: 9, day: 1 },
+    end: { month: 10, day: 31 },
+  },
+  {
+    slug: 'thanksgiving',
+    label: 'Thanksgiving',
+    start: { month: 10, day: 1 },
+    end: { month: 11, day: 30 },
+  },
+  {
+    slug: 'christmas',
+    label: 'Christmas',
+    start: { month: 11, day: 1 },
+    end: { month: 12, day: 31 },
+  },
 ];
 
 export const ADS = {

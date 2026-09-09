@@ -11,12 +11,13 @@ import 'dotenv/config';
 import { pathToFileURL } from 'node:url';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import {
-  createBuildClient,
-  type TypedSupabaseClient,
-} from '../src/infrastructure/supabase/client';
+import { createBuildClient, type TypedSupabaseClient } from '../src/infrastructure/supabase/client';
 
-import type { CategoryRow, QuestionCategoryRow, QuestionRow } from '../src/infrastructure/supabase/database.types';
+import type {
+  CategoryRow,
+  QuestionCategoryRow,
+  QuestionRow,
+} from '../src/infrastructure/supabase/database.types';
 import { questionPairFingerprint } from '../src/lib/text';
 
 export interface ExportQuestion {
@@ -53,7 +54,7 @@ function csvCell(value: string | number | boolean | null): string {
 }
 
 export function asCsv(rows: ExportQuestion[]): string {
-    const columns: (keyof ExportQuestion)[] = [
+  const columns: (keyof ExportQuestion)[] = [
     'id',
     'option_a',
     'option_b',
@@ -72,9 +73,7 @@ export function asCsv(rows: ExportQuestion[]): string {
   return `${columns.join(',')}\n${rows.map((row) => columns.map((column) => csvCell(row[column])).join(',')).join('\n')}\n`;
 }
 
-async function fetchAllQuestions(
-  client: TypedSupabaseClient,
-): Promise<QuestionRow[]> {
+async function fetchAllQuestions(client: TypedSupabaseClient): Promise<QuestionRow[]> {
   const questions: QuestionRow[] = [];
   const pageSize = 500;
 
@@ -100,9 +99,7 @@ async function fetchAllQuestions(
   }
 }
 
-async function fetchAllLinks(
-  client: TypedSupabaseClient,
-): Promise<QuestionCategoryRow[]> {
+async function fetchAllLinks(client: TypedSupabaseClient): Promise<QuestionCategoryRow[]> {
   const links: QuestionCategoryRow[] = [];
   const pageSize = 500;
 
@@ -115,9 +112,7 @@ async function fetchAllLinks(
       .range(from, from + pageSize - 1);
 
     if (error) {
-      throw new Error(
-        `Could not export question-category links: ${error.message}`,
-      );
+      throw new Error(`Could not export question-category links: ${error.message}`);
     }
 
     const page = (data ?? []) as QuestionCategoryRow[];
@@ -129,26 +124,22 @@ async function fetchAllLinks(
   }
 }
 
-
 async function main(): Promise<void> {
   const format = argument('--format') ?? 'json';
   if (format !== 'json' && format !== 'csv') throw new Error('--format must be json or csv.');
   const client = createBuildClient(requiredEnv('SUPABASE_URL'), requiredEnv('SUPABASE_SECRET_KEY'));
 
-    const [questions, categoryResult, links] = await Promise.all([
+  const [questions, categoryResult, links] = await Promise.all([
     fetchAllQuestions(client),
     client.from('categories').select('*'),
     fetchAllLinks(client),
   ]);
 
   if (categoryResult.error) {
-    throw new Error(
-      `Could not export categories: ${categoryResult.error.message}`,
-    );
+    throw new Error(`Could not export categories: ${categoryResult.error.message}`);
   }
 
   const categories = (categoryResult.data ?? []) as CategoryRow[];
-
 
   const slugById = new Map(categories.map((category) => [category.id, category.slug]));
   const categoryIdsByQuestion = new Map<string, string[]>();
@@ -158,11 +149,14 @@ async function main(): Promise<void> {
     categoryIdsByQuestion.set(link.question_id, values);
   }
 
-    const rows: ExportQuestion[] = questions.map((question) => ({
+  const rows: ExportQuestion[] = questions.map((question) => ({
     id: question.id,
     option_a: question.option_a,
     option_b: question.option_b,
-    categories: (categoryIdsByQuestion.get(question.id) ?? []).map((id) => slugById.get(id) ?? id).sort().join('|'),
+    categories: (categoryIdsByQuestion.get(question.id) ?? [])
+      .map((id) => slugById.get(id) ?? id)
+      .sort()
+      .join('|'),
     status: question.status,
     share_code: question.share_code,
     sort_order: question.sort_order,
@@ -184,10 +178,7 @@ async function main(): Promise<void> {
 
 const entryPath = process.argv[1];
 
-if (
-  entryPath &&
-  import.meta.url === pathToFileURL(resolve(entryPath)).href
-) {
+if (entryPath && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   main().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

@@ -7,14 +7,29 @@
  */
 import { getContentContext } from '@/repositories/factory';
 import { ADS } from '@/config/site';
-interface Props { slot: keyof typeof ADS.slots; class?: string }
+interface Props {
+  slot: keyof typeof ADS.slots;
+  class?: string;
+}
 const { slot, class: className } = Astro.props;
 const { env } = await getContentContext();
 const enabled = env.features.FEATURE_ADS && Boolean(env.adsensePublisherId);
 const def = ADS.slots[slot];
 ---
+
 {enabled && (
-  <div class:list={['ad-unit', `ad-${def.width}x${def.height}`, className]} style={`min-height:${def.height}px`} data-ad-slot={def.id} data-ad-lazy={def.lazy ? '1' : '0'} aria-label="Advertisement">
-    <ins class="adsbygoogle" style={`display:inline-block;width:${def.width}px;height:${def.height}px`} data-ad-client={env.adsensePublisherId} data-ad-slot={`REPLACE_WITH_SLOT_ID_${def.id}`}></ins>
+  <div
+    class:list={['ad-unit', `ad-${def.width}x${def.height}`, className]}
+    style={`min-height:${def.height}px`}
+    data-ad-slot={def.id}
+    data-ad-lazy={def.lazy ? '1' : '0'}
+    aria-label="Advertisement"
+  >
+    <ins
+      class="adsbygoogle"
+      style={`display:inline-block;width:${def.width}px;height:${def.height}px`}
+      data-ad-client={env.adsensePublisherId}
+      data-ad-slot={`REPLACE_WITH_SLOT_ID_${def.id}`}
+    ></ins>
   </div>
 )}

@@ -4,8 +4,16 @@
  * injected via data-* attributes on the <script> host element so no IDs are
  * hardcoded and nothing loads in development.
  */
-import { CONSENT_EVENT, CookieConsentStore, type ConsentState } from '@/infrastructure/consent/consent-store';
-import { CloudflareWebAnalyticsProvider, CompositeAnalytics, GoogleAnalytics4Provider } from '@/infrastructure/analytics/providers';
+import {
+  CONSENT_EVENT,
+  CookieConsentStore,
+  type ConsentState,
+} from '@/infrastructure/consent/consent-store';
+import {
+  CloudflareWebAnalyticsProvider,
+  CompositeAnalytics,
+  GoogleAnalytics4Provider,
+} from '@/infrastructure/analytics/providers';
 import type { AnalyticsEventName } from '@/repositories/interfaces';
 
 export interface AnalyticsConfig {
@@ -26,7 +34,18 @@ export function track(event: AnalyticsEventName, params: Params = {}): void {
 
 /** Whitelist parameter keys and clamp values so PII can't leak by accident. */
 function sanitize(params: Params): Params {
-  const allowed = new Set(['category', 'choice', 'status', 'endpoint', 'ms', 'name', 'value', 'rating', 'code', 'source']);
+  const allowed = new Set([
+    'category',
+    'choice',
+    'status',
+    'endpoint',
+    'ms',
+    'name',
+    'value',
+    'rating',
+    'code',
+    'source',
+  ]);
   const out: Params = {};
   for (const [k, v] of Object.entries(params)) {
     if (!allowed.has(k)) continue;
@@ -63,24 +82,42 @@ function installMonitoring(): void {
   window.addEventListener('error', (e) => {
     track('js_error', { name: String(e.message ?? 'error').slice(0, 60) });
   });
-  window.addEventListener('unhandledrejection', () => track('js_error', { name: 'unhandledrejection' }));
+  window.addEventListener('unhandledrejection', () =>
+    track('js_error', { name: 'unhandledrejection' }),
+  );
 
   // Core Web Vitals via PerformanceObserver (no library).
   try {
     const po = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.entryType === 'largest-contentful-paint') track('web_vital', { name: 'LCP', value: Math.round(entry.startTime) });
-        if (entry.entryType === 'layout-shift' && !(entry as PerformanceEntry & { hadRecentInput?: boolean }).hadRecentInput) {
-          track('web_vital', { name: 'CLS', value: Math.round(((entry as PerformanceEntry & { value: number }).value ?? 0) * 1000) / 1000 });
+        if (entry.entryType === 'largest-contentful-paint')
+          track('web_vital', { name: 'LCP', value: Math.round(entry.startTime) });
+        if (
+          entry.entryType === 'layout-shift' &&
+          !(entry as PerformanceEntry & { hadRecentInput?: boolean }).hadRecentInput
+        ) {
+          track('web_vital', {
+            name: 'CLS',
+            value:
+              Math.round(((entry as PerformanceEntry & { value: number }).value ?? 0) * 1000) /
+              1000,
+          });
         }
-        if (entry.entryType === 'event' && (entry as PerformanceEntry & { interactionId?: number }).interactionId) {
+        if (
+          entry.entryType === 'event' &&
+          (entry as PerformanceEntry & { interactionId?: number }).interactionId
+        ) {
           track('web_vital', { name: 'INP', value: Math.round(entry.duration) });
         }
       }
     });
     po.observe({ type: 'largest-contentful-paint', buffered: true });
     po.observe({ type: 'layout-shift', buffered: true });
-    po.observe({ type: 'event', buffered: true, durationThreshold: 200 } as PerformanceObserverInit);
+    po.observe({
+      type: 'event',
+      buffered: true,
+      durationThreshold: 200,
+    } as PerformanceObserverInit);
   } catch {
     /* unsupported browser */
   }

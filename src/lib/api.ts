@@ -3,17 +3,28 @@ import type { APIContext } from 'astro';
 import { workerBindings } from '@/lib/worker-env';
 import { sha256Hex } from '@/lib/crypto';
 
-export const NO_STORE = { 'cache-control': 'no-store, max-age=0', 'content-type': 'application/json; charset=utf-8', 'x-content-type-options': 'nosniff' } as const;
+export const NO_STORE = {
+  'cache-control': 'no-store, max-age=0',
+  'content-type': 'application/json; charset=utf-8',
+  'x-content-type-options': 'nosniff',
+} as const;
 
 export function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { ...NO_STORE, ...extra } });
 }
-export function fail(status: number, message: string, extra: Record<string, unknown> = {}): Response {
+export function fail(
+  status: number,
+  message: string,
+  extra: Record<string, unknown> = {},
+): Response {
   return json({ ok: false, message, ...extra }, status);
 }
 
 /** POST-only, JSON content type, same-origin, bounded body. Returns parsed body or an error Response. */
-export async function readJsonBody(ctx: APIContext, maxBytes: number): Promise<{ body: unknown } | { error: Response }> {
+export async function readJsonBody(
+  ctx: APIContext,
+  maxBytes: number,
+): Promise<{ body: unknown } | { error: Response }> {
   const { request } = ctx;
   if (request.method !== 'POST') return { error: fail(405, 'Method not allowed') };
 
@@ -56,6 +67,9 @@ export async function readJsonBody(ctx: APIContext, maxBytes: number): Promise<{
 
 /** Opaque per-client key for rate limiting: hashed CF connecting IP (never stored raw), or a fallback. */
 export async function clientKey(request: Request, pepper: string): Promise<string> {
-  const ip = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip =
+    request.headers.get('cf-connecting-ip') ??
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    'unknown';
   return (await sha256Hex(`${pepper}|${ip}`)).slice(0, 32);
 }

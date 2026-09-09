@@ -1,11 +1,39 @@
 ---
-import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES } from '@/config/site';
-const meta = { title: 'Editorial Policy', description: 'How Would You Rather Questions selects, categorizes, reviews and retires questions.', path: ROUTES.editorialPolicy };
+import ProseLayout from '@/layouts/ProseLayout.astro';
+import { ROUTES } from '@/config/site';
+const meta = {
+  title: 'Editorial Policy',
+  description:
+    'How Would You Rather Questions selects, categorizes, reviews and retires questions.',
+  path: ROUTES.editorialPolicy,
+};
 ---
+
 <ProseLayout meta={meta} heading="Editorial Policy">
-<h2>Selection</h2><p>Every question must offer two genuinely different options, be understandable without extra context, and suit at least one category's audience.</p>
-<h2>Category suitability</h2><p>Content suitability is controlled through category assignment. Kids, family, school and work categories contain only clean material. Mature categories are suggestive at most and never graphic. A question is never assigned to both a mature and a child-safe category.</p>
-<h2>Submissions</h2><p>Visitor submissions are stored as pending and reviewed by a person. We may edit, decline or re-categorize them. We do not publish personal information about submitters.</p>
-<h2>Corrections and removals</h2><p>Report problems via the <a href={ROUTES.contact}>contact page</a>. Retired questions are archived rather than deleted so existing share links show a helpful notice.</p>
-<h2>Trademarks</h2><p>References to third-party names (for example themed collections) are descriptive only and imply no affiliation, sponsorship or endorsement.</p>
+  <h2>Selection</h2>
+  <p>
+    Every question must offer two genuinely different options, be understandable without extra
+    context, and suit at least one category's audience.
+  </p>
+  <h2>Category suitability</h2>
+  <p>
+    Content suitability is controlled through category assignment. Kids, family, school and work
+    categories contain only clean material. Mature categories are suggestive at most and never
+    graphic. A question is never assigned to both a mature and a child-safe category.
+  </p>
+  <h2>Submissions</h2>
+  <p>
+    Visitor submissions are stored as pending and reviewed by a person. We may edit, decline or
+    re-categorize them. We do not publish personal information about submitters.
+  </p>
+  <h2>Corrections and removals</h2>
+  <p>
+    Report problems via the <a href={ROUTES.contact}>contact page</a>. Retired questions are
+    archived rather than deleted so existing share links show a helpful notice.
+  </p>
+  <h2>Trademarks</h2>
+  <p>
+    References to third-party names (for example themed collections) are descriptive only and imply
+    no affiliation, sponsorship or endorsement.
+  </p>
 </ProseLayout>

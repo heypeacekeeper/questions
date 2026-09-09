@@ -31,7 +31,7 @@ export type CategoryRow = {
   sort_order: number;
   created_at: string;
   updated_at: string;
-}
+};
 
 export type QuestionRow = {
   display_vote_count: number;
@@ -45,13 +45,13 @@ export type QuestionRow = {
   created_at: string;
   updated_at: string;
   published_at: string | null;
-}
+};
 
 export type QuestionCategoryRow = {
   question_id: string;
   category_id: string;
   created_at: string;
-}
+};
 
 export type QuestionSubmissionRow = {
   id: string;
@@ -66,7 +66,7 @@ export type QuestionSubmissionRow = {
   reviewer_notes: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
 export type ContactMessageRow = {
   id: string;
@@ -77,14 +77,15 @@ export type ContactMessageRow = {
   fingerprint: string;
   is_read: boolean;
   created_at: string;
-}
+};
 
 export type CategoryQuestionCountRow = {
   category_id: string;
   published_question_count: number;
-}
+};
 
-type Insertable<Row, Optional extends keyof Row = never> = Omit<Row, Optional> & Partial<Pick<Row, Optional>>;
+type Insertable<Row, Optional extends keyof Row = never> = Omit<Row, Optional> &
+  Partial<Pick<Row, Optional>>;
 
 /** Minimal `Database` generic compatible with supabase-js typing. */
 export type Database = {
@@ -92,13 +93,40 @@ export type Database = {
     Tables: {
       categories: {
         Row: CategoryRow;
-        Insert: Insertable<CategoryRow, 'id' | 'created_at' | 'updated_at' | 'introduction' | 'icon' | 'status' | 'nav_featured' | 'include_in_mixed_game' | 'requires_age_gate' | 'is_child_safe' | 'is_mature' | 'seasonal_start' | 'seasonal_end' | 'sort_order'>;
+        Insert: Insertable<
+          CategoryRow,
+          | 'id'
+          | 'created_at'
+          | 'updated_at'
+          | 'introduction'
+          | 'icon'
+          | 'status'
+          | 'nav_featured'
+          | 'include_in_mixed_game'
+          | 'requires_age_gate'
+          | 'is_child_safe'
+          | 'is_mature'
+          | 'seasonal_start'
+          | 'seasonal_end'
+          | 'sort_order'
+        >;
         Update: Partial<CategoryRow>;
         Relationships: [];
       };
       questions: {
         Row: QuestionRow;
-        Insert: Insertable<QuestionRow, 'id' | 'created_at' | 'updated_at' | 'published_at' | 'share_code' | 'sort_order' | 'display_vote_count' | 'is_demo' | 'status'>;
+        Insert: Insertable<
+          QuestionRow,
+          | 'id'
+          | 'created_at'
+          | 'updated_at'
+          | 'published_at'
+          | 'share_code'
+          | 'sort_order'
+          | 'display_vote_count'
+          | 'is_demo'
+          | 'status'
+        >;
         Update: Partial<QuestionRow>;
         Relationships: [];
       };
@@ -110,7 +138,17 @@ export type Database = {
       };
       question_submissions: {
         Row: QuestionSubmissionRow;
-        Insert: Insertable<QuestionSubmissionRow, 'id' | 'created_at' | 'updated_at' | 'status' | 'reviewer_notes' | 'agreed_to_terms' | 'submitter_name' | 'submitter_email'>;
+        Insert: Insertable<
+          QuestionSubmissionRow,
+          | 'id'
+          | 'created_at'
+          | 'updated_at'
+          | 'status'
+          | 'reviewer_notes'
+          | 'agreed_to_terms'
+          | 'submitter_name'
+          | 'submitter_email'
+        >;
         Update: Partial<QuestionSubmissionRow>;
         Relationships: [];
       };
@@ -139,4 +177,4 @@ export type Database = {
     };
     CompositeTypes: Record<string, never>;
   };
-}
+};

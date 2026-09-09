@@ -45,7 +45,10 @@ export function organizationJsonLd(siteUrl: string, email: string): Record<strin
   };
 }
 
-export function breadcrumbJsonLd(siteUrl: string, items: readonly BreadcrumbItem[]): Record<string, unknown> {
+export function breadcrumbJsonLd(
+  siteUrl: string,
+  items: readonly BreadcrumbItem[],
+): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
