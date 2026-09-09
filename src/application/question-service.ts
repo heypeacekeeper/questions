@@ -32,7 +32,6 @@ export class QuestionService {
     return questions;
   }
 
-
   /** Paged questions for a category; page numbering continues across pages. */
   async getPage(category: Pick<CategoryWithCount, 'id'>, page: number, pageSize: number = PAGINATION.questionsPerPage): Promise<PaginationResult<Question>> {
     const all = await this.getForCategory(category);
