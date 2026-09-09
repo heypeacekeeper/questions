@@ -87,6 +87,13 @@ const manifestLoaded = page.waitForResponse(
   await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstQuestionId ?? '');
 });
 
+test('single question page does not render a next button', async ({ page }) => {
+  await page.goto('/s/demq22a/');
+
+  await expect(page.locator('#choice-a')).toBeVisible();
+  await expect(page.locator('#next-button')).toHaveCount(0);
+});
+
 test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
