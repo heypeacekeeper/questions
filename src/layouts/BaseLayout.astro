@@ -31,6 +31,7 @@ const ogImage = meta.image ? (meta.image.startsWith('http') ? meta.image : absol
 const robots = meta.robots ?? 'index,follow,max-image-preview:large';
 // Titles from the CMS are authored complete; only bare titles get the brand suffix.
 // Titles from the CMS are authored complete; only bare titles get the brand suffix.
+// Titles from the CMS are authored complete; only bare titles get the brand suffix.
 const title = meta.title.includes(BRAND_NAME) ? meta.title : `${meta.title} – ${BRAND_NAME}`;
 
 const navCategories = await ctx.categoryService.getNavigationCategories();
