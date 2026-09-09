@@ -19,7 +19,6 @@ import { QuestionService } from '@/application/question-service';
 // --- Mock ------------------------------------------------------------------
 import {
   AlwaysPassHumanVerification,
-  InMemoryRateLimiter,
   MockCategoryRepository,
   MockContactRepository,
   MockQuestionRepository,
@@ -139,12 +138,11 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
         contact: new MockContactRepository(),
       };
     }
-    const fallback = new InMemoryRateLimiter();
     return {
       env,
       ...mockMutationSingleton,
       verifier,
-      formRateLimiter: env.isProduction ? formRateLimiter : fallback,
+      formRateLimiter,
     };
   }
 

@@ -12,7 +12,6 @@ import type {
   ContactRepository,
   HumanVerificationService,
   QuestionRepository,
-  RateLimiter,
   SubmissionRepository,
   WriteOutcome,
 } from '@/repositories/interfaces';
@@ -133,26 +132,5 @@ export class MockContactRepository implements ContactRepository {
 export class AlwaysPassHumanVerification implements HumanVerificationService {
   async verify(): Promise<{ ok: true }> {
     return { ok: true };
-  }
-}
-export class InMemoryRateLimiter implements RateLimiter {
-  private readonly buckets = new Map<
-    string,
-    { count: number; resetAt: number }
-  >();
-  constructor(private readonly now: () => number = Date.now) {}
-  async allow(
-    key: string,
-    limit: number,
-    windowSeconds: number,
-  ): Promise<boolean> {
-    const now = this.now();
-    const bucket = this.buckets.get(key);
-    if (!bucket || bucket.resetAt <= now) {
-      this.buckets.set(key, { count: 1, resetAt: now + windowSeconds * 1000 });
-      return true;
-    }
-    bucket.count += 1;
-    return bucket.count <= limit;
   }
 }
