@@ -10,6 +10,8 @@
  */
 
 export type DataProvider = 'supabase' | 'mock';
+import { SITE_URL } from './site-static.mjs';
+
 
 export interface AppEnv {
   /** 'production' | 'development' | 'test' */
@@ -91,7 +93,7 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   }
   const dataProvider = (providerRaw === 'mock' ? 'mock' : 'supabase') as DataProvider;
 
-  const siteUrl = (trimOrUndefined(raw.PUBLIC_SITE_URL) ?? 'https://wouldyouratherquestions.org').replace(/\/+$/, '');
+  const siteUrl = (trimOrUndefined(raw.PUBLIC_SITE_URL) ?? SITE_URL).replace(/\/+$/, '');
   try {
     const u = new URL(siteUrl);
     if (isProduction && u.protocol !== 'https:') problems.push('PUBLIC_SITE_URL must use https in production');

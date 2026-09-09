@@ -4,6 +4,7 @@
  * Nothing in the UI, services, or infrastructure may hardcode these values;
  * import from here instead.
  */
+import { SITE_URL } from './site-static.mjs';
 import type { SiteConfiguration, SeasonalWindow } from '@/domain/site';
 
 export const BRAND_NAME = 'Would You Rather Questions';
@@ -11,7 +12,7 @@ export const BRAND_SHORT = 'WouldYouRather';
 export const BRAND_DOMAIN_SUFFIX = 'Questions.org';
 export const BRAND_DISPLAY_DOMAIN = 'WouldYouRatherQuestions.org';
 export const PUBLIC_EMAIL = 'hello@wouldyouratherquestions.org';
-export const DEFAULT_SITE_URL = 'https://wouldyouratherquestions.org';
+export const DEFAULT_SITE_URL = SITE_URL;
 
 export const API_PATHS = {
   contact: '/api/contact/',
