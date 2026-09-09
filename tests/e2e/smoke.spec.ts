@@ -224,6 +224,16 @@ test('support pages and 404 render without blank states', async ({ page }) => {
     await page.goto(path);
     await expect(page.locator('main h1')).toBeVisible();
     await expect(page.locator('footer')).toBeVisible();
+
+    const documentTitle = await page.title();
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+      'content',
+      documentTitle,
+    );
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+      'content',
+      documentTitle,
+    );
   }
   await page.goto('/404.html');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found');
