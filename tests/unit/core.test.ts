@@ -20,6 +20,7 @@ import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import {
   formatGeneratedPercent,
+  GameEngine,
   generatedDisplayResult,
   SessionSeenStore,
 } from '@/scripts/game-engine';
@@ -244,6 +245,46 @@ describe('client-only game helpers', () => {
     expect([...seen.get()]).toEqual(['first', 'second']);
     seen.clear();
     expect(seen.get()).toEqual(new Set());
+  });
+});
+
+describe('game engine pack loading', () => {
+  it('retries a pack after a temporary fetch failure', async () => {
+    let attempts = 0;
+    const engine = new GameEngine(
+      new SessionSeenStore('retry-seen', null),
+      async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('temporary failure');
+        return [
+          {
+            id: 'question-1',
+            a: 'Option A',
+            b: 'Option B',
+            s: 'retry01',
+            d: 100,
+          },
+        ];
+      },
+      1,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'retry',
+      name: 'Retry',
+      icon: '🎲',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/game-data/retry/pack-01.json'],
+    });
+
+    expect(attempts).toBe(1);
+
+    const question = await engine.next(null);
+
+    expect(attempts).toBe(2);
+    expect(question?.id).toBe('question-1');
   });
 });
 

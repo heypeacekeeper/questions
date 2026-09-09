@@ -115,13 +115,13 @@ export class GameEngine {
       while (this.unseenCount < this.refillThreshold && this.remainingPacks.length > 0) {
         const url = this.remainingPacks[0];
         if (!url) break;
-        this.loadedPacks.add(url);
         try {
           const qs = await this.fetcher(url);
+          this.loadedPacks.add(url);
           const ids = new Set(this.pool.map((q) => q.id));
           for (const q of qs) if (!ids.has(q.id)) this.pool.push(q);
         } catch {
-          // Network failure: continue with what we have; next call retries remaining packs.
+          // Leave the pack unloaded so the next call can retry it.
           break;
         }
       }
