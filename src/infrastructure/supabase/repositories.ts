@@ -108,31 +108,6 @@ export class SupabaseCategoryRepository implements CategoryRepository {
   }
 }
 
-/**
- * Worker-side category lookups hit the database directly (a single indexed
- * row read) instead of loading the whole content graph per request.
- */
-export class SupabaseWorkerCategoryRepository implements CategoryRepository {
-  constructor(private readonly client: TypedSupabaseClient) {}
-  private async rows(): Promise<CategoryWithCount[]> {
-    const { data, error } = await this.client.from('categories').select('*').eq('status', 'published').order('sort_order');
-    if (error) throw new SupabaseContentError(error.message, error);
-    return (data ?? []).map((row) => mapCategoryWithCount(row as CategoryRow, 0));
-  }
-  getAllCategories(): Promise<readonly CategoryWithCount[]> {
-    return this.rows();
-  }
-  getPublishedCategories(): Promise<readonly CategoryWithCount[]> {
-    return this.rows();
-  }
-  async getNavigationCategories(): Promise<readonly CategoryWithCount[]> {
-    return (await this.rows()).filter((c) => c.navFeatured);
-  }
-  async getSeasonalCategories(): Promise<readonly CategoryWithCount[]> {
-    return (await this.rows()).filter((c) => c.seasonalStart && c.seasonalEnd);
-  }
-}
-
 const PG_UNIQUE_VIOLATION = '23505';
 const PG_CHECK_VIOLATION = '23514';
 const PG_FK_VIOLATION = '23503';

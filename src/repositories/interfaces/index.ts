@@ -108,7 +108,6 @@ export interface ContentRepositories {
 export interface MutationRepositories {
   readonly submissions: SubmissionRepository;
   readonly contact: ContactRepository;
-  readonly categories: CategoryRepository;
 }
 
 export type { Category, CategoryWithCount, Question };
