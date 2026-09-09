@@ -16,6 +16,7 @@ import {
   MockQuestionRepository,
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
+import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
 import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import {
@@ -245,6 +246,36 @@ describe('client-only game helpers', () => {
     expect([...seen.get()]).toEqual(['first', 'second']);
     seen.clear();
     expect(seen.get()).toEqual(new Set());
+  });
+});
+
+describe('isolate rate limiter', () => {
+  it('blocks requests over the limit and allows them after the window', async () => {
+    const realDateNow = Date.now;
+    let now = 1_000_000;
+    Date.now = () => now;
+
+    try {
+      const limiter = new IsolateRateLimiter();
+
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+      expect(await limiter.allow('client-a', 2, 60)).toBe(false);
+
+      now += 60_001;
+
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+    } finally {
+      Date.now = realDateNow;
+    }
+  });
+
+  it('tracks different client keys independently', async () => {
+    const limiter = new IsolateRateLimiter();
+
+    expect(await limiter.allow('client-a', 1, 60)).toBe(true);
+    expect(await limiter.allow('client-a', 1, 60)).toBe(false);
+    expect(await limiter.allow('client-b', 1, 60)).toBe(true);
   });
 });
 
