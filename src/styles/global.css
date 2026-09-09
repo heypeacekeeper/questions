@@ -682,7 +682,7 @@ svg{display:block}
 }
 
 .game-stage.voted .verdict,
-.game-stage.notice .verdict{opacity:1}
+.game-stage.has-notice .verdict{opacity:1}
 
 .verdict-text{
   max-width:650px;

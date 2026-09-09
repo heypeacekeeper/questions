@@ -17,6 +17,7 @@ export interface ShareLookup {
 }
 
 export class QuestionService {
+  private readonly byCategory = new Map<string, readonly Question[]>();
   constructor(private readonly questions: QuestionRepository) {}
 
   async getPublished(): Promise<readonly Question[]> {
@@ -24,7 +25,11 @@ export class QuestionService {
   }
 
   async getForCategory(category: Pick<CategoryWithCount, 'id'>): Promise<readonly Question[]> {
-    return (await this.questions.getQuestionsByCategory(category.id)).filter(isPublished).sort(byOrder);
+    const cached = this.byCategory.get(category.id);
+    if (cached) return cached;
+    const questions = (await this.questions.getQuestionsByCategory(category.id)).filter(isPublished).sort(byOrder);
+    this.byCategory.set(category.id, questions);
+    return questions;
   }
 
   /** Paged questions for a category; page numbering continues across pages. */

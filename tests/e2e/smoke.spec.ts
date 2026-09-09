@@ -16,7 +16,20 @@ test('home game shows stable local display results and advances', async ({ page 
     }
   });
 
+  await page.addInitScript(() => {
+  localStorage.setItem('wyr_pack', 'for-couples');
+});
+
+const manifestLoaded = page.waitForResponse(
+  (response) => new URL(response.url()).pathname === '/game-data/manifest.json',
+);
+
   await page.goto('/');
+  await manifestLoaded;
+
+  await expect(page.locator('#pack-label')).toHaveText('Mixed');
+  expect(await page.evaluate(() => localStorage.getItem('wyr_pack'))).toBeNull();
+
   await expect(page).toHaveTitle(/Would You Rather Questions/);
   await expect(page.locator('main h1').first()).toContainText('Would You Rather Questions');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
