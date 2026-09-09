@@ -29,7 +29,8 @@ const siteUrl = env.siteUrl;
 const canonical = absoluteUrl(meta.path, siteUrl);
 const ogImage = meta.image ? (meta.image.startsWith('http') ? meta.image : absoluteUrl(meta.image, siteUrl)) : defaultImage(siteUrl);
 const robots = meta.robots ?? 'index,follow,max-image-preview:large';
-const title = meta.title.includes(BRAND_NAME) || meta.title.length > 55 ? meta.title : `${meta.title} – ${BRAND_NAME}`;
+// Titles from the CMS are authored complete; only bare titles get the brand suffix.
+const title = meta.title.includes(BRAND_NAME) ? meta.title : `${meta.title} – ${BRAND_NAME}`;
 
 const navCategories = await ctx.categoryService.getNavigationCategories();
 
