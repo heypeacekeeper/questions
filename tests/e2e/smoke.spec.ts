@@ -43,6 +43,22 @@ const manifestLoaded = page.waitForResponse(
   await expect(page.locator('#pack-dialog')).toBeVisible();
   await page.locator('#close-pack-dialog').click();
 
+  await page.locator('#pack-button').click();
+  await page.evaluate(() => {
+    const picker = document.getElementById('pack-picker');
+    const gate = document.getElementById('age-gate');
+    if (picker) picker.hidden = true;
+    if (gate) gate.hidden = false;
+  });
+  await expect(page.locator('#age-gate')).toBeVisible();
+
+  await page.locator('#age-back-button').focus();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#pack-dialog')).toBeVisible();
+  await expect(page.locator('#pack-picker')).toBeVisible();
+  await page.locator('#close-pack-dialog').click();
+
   const firstQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
   await page.locator('#choice-a').click();
   await expect(page.locator('#game-stage')).toHaveClass(/voted/);

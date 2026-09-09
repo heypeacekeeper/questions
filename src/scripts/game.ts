@@ -83,7 +83,18 @@ if (fillB) fillB.style.height = '0';
   const toggleFullscreen = () => { if (isFullscreen()) { void document.exitFullscreen?.(); return; } void shell.requestFullscreen?.().catch(() => undefined); };
   const updateFullscreenLabel = () => fullscreenButton?.setAttribute('aria-label', isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen');
   choiceA?.addEventListener('click', () => choose('A')); choiceB?.addEventListener('click', () => choose('B')); nextButton?.addEventListener('click', () => void nextQuestion()); shareButton?.addEventListener('click', () => void share()); fullscreenButton?.addEventListener('click', toggleFullscreen); document.addEventListener('fullscreenchange', updateFullscreenLabel); document.addEventListener('webkitfullscreenchange', updateFullscreenLabel);
-  packButton?.addEventListener('click', openDialog); $('close-pack-dialog')?.addEventListener('click', closeDialog); $('close-age-gate')?.addEventListener('click', closeDialog); $('age-back-button')?.addEventListener('click', () => { if (ageGate) ageGate.hidden = true; if (packPicker) packPicker.hidden = false; pendingGatedPack = null; }); $('confirm-age-button')?.addEventListener('click', () => { local?.setItem(config.keys.adult, '1'); const pack = pendingGatedPack; pendingGatedPack = null; if (pack) void choosePack(pack.slug, pack.name, false); }); packGrid?.addEventListener('click', (event) => { const button = (event.target as Element).closest<HTMLButtonElement>('.pack-button'); if (button) void choosePack(button.dataset.pack ?? config.set, button.dataset.name ?? 'Mixed', button.dataset.gated === '1'); }); packDialog?.addEventListener('click', (event) => { const box = packDialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeDialog(); });
+  packButton?.addEventListener('click', openDialog); $('close-pack-dialog')?.addEventListener('click', closeDialog); $('close-age-gate')?.addEventListener('click', closeDialog); $('age-back-button')?.addEventListener('click', () => { if (ageGate) ageGate.hidden = true; if (packPicker) packPicker.hidden = false; pendingGatedPack = null; }); $('confirm-age-button')?.addEventListener('click', () => { local?.setItem(config.keys.adult, '1'); const pack = pendingGatedPack; pendingGatedPack = null; if (pack) void choosePack(pack.slug, pack.name, false); }); packGrid?.addEventListener('click', (event) => { const button = (event.target as Element).closest<HTMLButtonElement>('.pack-button'); if (button) void choosePack(button.dataset.pack ?? config.set, button.dataset.name ?? 'Mixed', button.dataset.gated === '1'); }); packDialog?.addEventListener('click', (event) => {
+    if (event.target !== packDialog) return;
+    const box = packDialog.getBoundingClientRect();
+    if (
+      event.clientX < box.left ||
+      event.clientX > box.right ||
+      event.clientY < box.top ||
+      event.clientY > box.bottom
+    ) {
+      closeDialog();
+    }
+  });
   if (config.mode !== 'single') {
     const warm = () => {
       if (config.mode === 'mixed') local?.removeItem(config.keys.pack);
