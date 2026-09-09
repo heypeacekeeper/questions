@@ -19,7 +19,6 @@ import { QuestionService } from '@/application/question-service';
 // --- Mock ------------------------------------------------------------------
 import {
   AlwaysPassHumanVerification,
-  InMemoryRateLimiter,
   MockCategoryRepository,
   MockContactRepository,
   MockQuestionRepository,
@@ -35,7 +34,6 @@ import {
   SupabaseContactRepository,
   SupabaseQuestionRepository,
   SupabaseSubmissionRepository,
-  SupabaseWorkerCategoryRepository,
   loadContentGraph,
 } from '@/infrastructure/supabase/repositories';
 import { TurnstileVerifier, isTurnstileTestSecret } from '@/infrastructure/turnstile/turnstile-verifier';
@@ -138,15 +136,13 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
       mockMutationSingleton = {
         submissions: new MockSubmissionRepository(data),
         contact: new MockContactRepository(),
-        categories: new MockCategoryRepository(data),
       };
     }
-    const fallback = new InMemoryRateLimiter();
     return {
       env,
       ...mockMutationSingleton,
       verifier,
-      formRateLimiter: env.isProduction ? formRateLimiter : fallback,
+      formRateLimiter,
     };
   }
 
@@ -158,7 +154,6 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
     env,
     submissions: new SupabaseSubmissionRepository(client),
     contact: new SupabaseContactRepository(client),
-    categories: new SupabaseWorkerCategoryRepository(client),
     verifier,
     formRateLimiter,
   };

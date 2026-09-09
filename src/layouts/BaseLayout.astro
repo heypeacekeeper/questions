@@ -57,7 +57,7 @@ const structuredData: Record<string, unknown>[] = [
     {env.searchConsoleVerification && <meta name="google-site-verification" content={env.searchConsoleVerification} />}
 
     <meta property="og:type" content={meta.ogType ?? 'website'} />
-    <meta property="og:title" content={meta.title} />
+    <meta property="og:title" content={title} />
     <meta property="og:description" content={meta.description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content={BRAND_NAME} />
@@ -67,7 +67,7 @@ const structuredData: Record<string, unknown>[] = [
     <meta property="og:image:alt" content={meta.imageAlt ?? BRAND_NAME} />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content={SOCIAL.twitterCard} />
-    <meta name="twitter:title" content={meta.title} />
+    <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={meta.description} />
     <meta name="twitter:image" content={ogImage} />
 

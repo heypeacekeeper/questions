@@ -16,10 +16,12 @@ import {
   MockQuestionRepository,
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
+import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
 import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import {
   formatGeneratedPercent,
+  GameEngine,
   generatedDisplayResult,
   SessionSeenStore,
 } from '@/scripts/game-engine';
@@ -244,6 +246,129 @@ describe('client-only game helpers', () => {
     expect([...seen.get()]).toEqual(['first', 'second']);
     seen.clear();
     expect(seen.get()).toEqual(new Set());
+  });
+});
+
+describe('isolate rate limiter', () => {
+  it('blocks requests over the limit and allows them after the window', async () => {
+    const realDateNow = Date.now;
+    let now = 1_000_000;
+    Date.now = () => now;
+
+    try {
+      const limiter = new IsolateRateLimiter();
+
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+      expect(await limiter.allow('client-a', 2, 60)).toBe(false);
+
+      now += 60_001;
+
+      expect(await limiter.allow('client-a', 2, 60)).toBe(true);
+    } finally {
+      Date.now = realDateNow;
+    }
+  });
+
+  it('tracks different client keys independently', async () => {
+    const limiter = new IsolateRateLimiter();
+
+    expect(await limiter.allow('client-a', 1, 60)).toBe(true);
+    expect(await limiter.allow('client-a', 1, 60)).toBe(false);
+    expect(await limiter.allow('client-b', 1, 60)).toBe(true);
+  });
+});
+
+describe('game engine pack loading', () => {
+  it('retries a pack after a temporary fetch failure', async () => {
+    let attempts = 0;
+    const engine = new GameEngine(
+      new SessionSeenStore('retry-seen', null),
+      async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('temporary failure');
+        return [
+          {
+            id: 'question-1',
+            a: 'Option A',
+            b: 'Option B',
+            s: 'retry01',
+            d: 100,
+          },
+        ];
+      },
+      1,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'retry',
+      name: 'Retry',
+      icon: '🎲',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/game-data/retry/pack-01.json'],
+    });
+
+    expect(attempts).toBe(1);
+
+    const question = await engine.next(null);
+
+    expect(attempts).toBe(2);
+    expect(question?.id).toBe('question-1');
+  });
+  it('avoids repeats and restarts after all questions are seen', async () => {
+    const engine = new GameEngine(
+      new SessionSeenStore('repeat-seen', null),
+      async () => [
+        { id: 'question-1', a: 'A1', b: 'B1', s: 'repeat1', d: 100 },
+        { id: 'question-2', a: 'A2', b: 'B2', s: 'repeat2', d: 200 },
+      ],
+      1,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'repeat',
+      name: 'Repeat',
+      icon: '🎲',
+      requiresAgeGate: false,
+      total: 2,
+      packs: ['/game-data/repeat/pack-01.json'],
+    });
+
+    const first = await engine.next(null);
+    const second = await engine.next(first?.id ?? null);
+    const restarted = await engine.next(second?.id ?? null);
+
+    expect(first?.id).toBe('question-1');
+    expect(second?.id).toBe('question-2');
+    expect(restarted?.id).toBe('question-1');
+  });
+
+  it('returns null when a pack only contains the current question', async () => {
+    const engine = new GameEngine(
+      new SessionSeenStore('single-seen', null),
+      async () => [
+        { id: 'only-question', a: 'Option A', b: 'Option B', s: 'only001', d: 100 },
+      ],
+      1,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'single',
+      name: 'Single',
+      icon: '🎲',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/game-data/single/pack-01.json'],
+    });
+
+    const question = await engine.next(null);
+    expect(question?.id).toBe('only-question');
+
+    expect(await engine.next(question?.id ?? null)).toBeNull();
   });
 });
 

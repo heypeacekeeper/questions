@@ -43,6 +43,22 @@ const manifestLoaded = page.waitForResponse(
   await expect(page.locator('#pack-dialog')).toBeVisible();
   await page.locator('#close-pack-dialog').click();
 
+  await page.locator('#pack-button').click();
+  await page.evaluate(() => {
+    const picker = document.getElementById('pack-picker');
+    const gate = document.getElementById('age-gate');
+    if (picker) picker.hidden = true;
+    if (gate) gate.hidden = false;
+  });
+  await expect(page.locator('#age-gate')).toBeVisible();
+
+  await page.locator('#age-back-button').focus();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#pack-dialog')).toBeVisible();
+  await expect(page.locator('#pack-picker')).toBeVisible();
+  await page.locator('#close-pack-dialog').click();
+
   const firstQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
   await page.locator('#choice-a').click();
   await expect(page.locator('#game-stage')).toHaveClass(/voted/);
@@ -69,6 +85,13 @@ const manifestLoaded = page.waitForResponse(
   await page.locator('#next-button').click();
   await expect(page.locator('#game-stage')).not.toHaveClass(/voted/);
   await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstQuestionId ?? '');
+});
+
+test('single question page does not render a next button', async ({ page }) => {
+  await page.goto('/s/demq22a/');
+
+  await expect(page.locator('#choice-a')).toBeVisible();
+  await expect(page.locator('#next-button')).toHaveCount(0);
 });
 
 test('mobile hamburger opens, closes, and resets reliably', async ({ page }) => {
@@ -201,6 +224,16 @@ test('support pages and 404 render without blank states', async ({ page }) => {
     await page.goto(path);
     await expect(page.locator('main h1')).toBeVisible();
     await expect(page.locator('footer')).toBeVisible();
+
+    const documentTitle = await page.title();
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+      'content',
+      documentTitle,
+    );
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+      'content',
+      documentTitle,
+    );
   }
   await page.goto('/404.html');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found');

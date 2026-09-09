@@ -44,16 +44,6 @@ export class CategoryService {
       .slice(0, limit);
   }
 
-  async getCategoryByPath(canonicalPath: string): Promise<CategoryWithCount | null> {
-    const c = await this.categories.getCategoryByPath(canonicalPath);
-    return c && isCategoryVisible(c) ? c : null;
-  }
-
-  async getCategoryBySlug(slug: string): Promise<CategoryWithCount | null> {
-    const c = await this.categories.getCategoryBySlug(slug);
-    return c && isCategoryVisible(c) ? c : null;
-  }
-
   /** Categories offered in the homepage game pack picker (visible only). */
   async getGamePackCategories(): Promise<readonly CategoryWithCount[]> {
     return this.getVisibleCategories();

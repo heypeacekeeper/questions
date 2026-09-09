@@ -146,12 +146,14 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
 
             <div class="game-pivot">
               <div class="or-badge" aria-hidden="true">OR</div>
-              <button class="next-button" id="next-button" type="button">
-                Next question
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </button>
+              {mode !== 'single' && (
+                <button class="next-button" id="next-button" type="button">
+                  Next question
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M5 12h13M13 6l6 6-6 6" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             <div class="verdict">
@@ -172,7 +174,7 @@ const packOptions = mode === 'mixed' ? [{ slug: MIXED_PACK_SLUG, name: 'Mixed', 
         )}
       </div>
 
-      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B. Use the left and right arrow keys to choose.</p>
+      <p class="sr-only" id="game-instructions">Would you rather… choose Option A or Option B.</p>
       <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
     </div>
   </div>

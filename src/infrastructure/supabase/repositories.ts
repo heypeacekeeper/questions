@@ -88,14 +88,7 @@ export class SupabaseQuestionRepository implements QuestionRepository {
   async getQuestionByShareCode(shareCode: string): Promise<Question | null> {
     return (await this.graph()).questions.find((q) => q.shareCode === shareCode) ?? null;
   }
-  async getPaginatedQuestions(categoryId: string, page: number, pageSize: number): Promise<readonly Question[]> {
-    const all = await this.getQuestionsByCategory(categoryId);
-    const start = (Math.max(1, page) - 1) * pageSize;
-    return all.slice(start, start + pageSize);
-  }
-  async getQuestionsForGamePack(categoryId: string): Promise<readonly Question[]> {
-    return this.getQuestionsByCategory(categoryId);
-  }
+
 }
 
 export class SupabaseCategoryRepository implements CategoryRepository {
@@ -106,49 +99,12 @@ export class SupabaseCategoryRepository implements CategoryRepository {
   async getPublishedCategories(): Promise<readonly CategoryWithCount[]> {
     return (await this.graph()).categories.filter((c) => c.status === 'published');
   }
-  async getCategoryByPath(canonicalPath: string): Promise<CategoryWithCount | null> {
-    return (await this.graph()).categories.find((c) => c.canonicalPath === canonicalPath) ?? null;
-  }
-  async getCategoryBySlug(slug: string): Promise<CategoryWithCount | null> {
-    return (await this.graph()).categories.find((c) => c.slug === slug) ?? null;
-  }
   async getNavigationCategories(): Promise<readonly CategoryWithCount[]> {
     return (await this.getPublishedCategories()).filter((c) => c.navFeatured);
   }
   async getSeasonalCategories(): Promise<readonly CategoryWithCount[]> {
     const slugs = new Set(SEASONAL_WINDOWS.map((w) => w.slug));
     return (await this.getPublishedCategories()).filter((c) => slugs.has(c.slug) || (c.seasonalStart && c.seasonalEnd));
-  }
-}
-
-/**
- * Worker-side category lookups hit the database directly (a single indexed
- * row read) instead of loading the whole content graph per request.
- */
-export class SupabaseWorkerCategoryRepository implements CategoryRepository {
-  constructor(private readonly client: TypedSupabaseClient) {}
-  private async rows(): Promise<CategoryWithCount[]> {
-    const { data, error } = await this.client.from('categories').select('*').eq('status', 'published').order('sort_order');
-    if (error) throw new SupabaseContentError(error.message, error);
-    return (data ?? []).map((row) => mapCategoryWithCount(row as CategoryRow, 0));
-  }
-  getAllCategories(): Promise<readonly CategoryWithCount[]> {
-    return this.rows();
-  }
-  getPublishedCategories(): Promise<readonly CategoryWithCount[]> {
-    return this.rows();
-  }
-  async getCategoryByPath(canonicalPath: string): Promise<CategoryWithCount | null> {
-    return (await this.rows()).find((c) => c.canonicalPath === canonicalPath) ?? null;
-  }
-  async getCategoryBySlug(slug: string): Promise<CategoryWithCount | null> {
-    return (await this.rows()).find((c) => c.slug === slug) ?? null;
-  }
-  async getNavigationCategories(): Promise<readonly CategoryWithCount[]> {
-    return (await this.rows()).filter((c) => c.navFeatured);
-  }
-  async getSeasonalCategories(): Promise<readonly CategoryWithCount[]> {
-    return (await this.rows()).filter((c) => c.seasonalStart && c.seasonalEnd);
   }
 }
 

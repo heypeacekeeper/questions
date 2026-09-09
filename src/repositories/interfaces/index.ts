@@ -19,10 +19,6 @@ export interface QuestionRepository {
   getQuestionsByCategory(categoryId: string): Promise<readonly Question[]>;
   /** Any status — share routes must handle archived questions gracefully. */
   getQuestionByShareCode(shareCode: string): Promise<Question | null>;
-  /** Published questions for a category, paged. */
-  getPaginatedQuestions(categoryId: string, page: number, pageSize: number): Promise<readonly Question[]>;
-  /** Published questions eligible for the given category's game (same as by-category, kept explicit). */
-  getQuestionsForGamePack(categoryId: string): Promise<readonly Question[]>;
   /** Every question regardless of status (content validation, exports). */
   getAllQuestions(): Promise<readonly Question[]>;
 }
@@ -30,8 +26,6 @@ export interface QuestionRepository {
 export interface CategoryRepository {
   /** Published categories with counts (may include zero-count categories; services filter). */
   getPublishedCategories(): Promise<readonly CategoryWithCount[]>;
-  getCategoryByPath(canonicalPath: string): Promise<CategoryWithCount | null>;
-  getCategoryBySlug(slug: string): Promise<CategoryWithCount | null>;
   /** Published categories flagged nav_featured, ordered. */
   getNavigationCategories(): Promise<readonly CategoryWithCount[]>;
   /** Published categories that have a seasonal window (config or record). */
@@ -114,7 +108,6 @@ export interface ContentRepositories {
 export interface MutationRepositories {
   readonly submissions: SubmissionRepository;
   readonly contact: ContactRepository;
-  readonly categories: CategoryRepository;
 }
 
 export type { Category, CategoryWithCount, Question };
