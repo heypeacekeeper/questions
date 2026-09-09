@@ -49,12 +49,6 @@ export class QuestionService {
     return all.slice(0, count);
   }
 
-  /** Questions eligible for a category game, in a deterministic (build-seeded) random order. */
-  async getGameQuestions(category: Pick<CategoryWithCount, 'id' | 'slug'>, rng?: Rng): Promise<readonly Question[]> {
-    const all = (await this.questions.getQuestionsForGamePack(category.id)).filter(isPublished);
-    return shuffle(all, rng ?? seededRng(seedFromString(`pack:${category.slug}`)));
-  }
-
   /** Mixed game questions: union of the given categories, de-duplicated, shuffled. */
   async getMixedGameQuestions(categories: readonly Pick<CategoryWithCount, 'id' | 'slug'>[], rng?: Rng): Promise<readonly Question[]> {
     const seen = new Set<string>();

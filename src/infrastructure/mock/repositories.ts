@@ -63,22 +63,7 @@ export class MockQuestionRepository implements QuestionRepository {
   async getQuestionByShareCode(shareCode: string): Promise<Question | null> {
     return this.data.questions.find((q) => q.shareCode === shareCode) ?? null;
   }
-  async getPaginatedQuestions(
-    categoryId: string,
-    page: number,
-    pageSize: number,
-  ): Promise<readonly Question[]> {
-    const all = await this.getQuestionsByCategory(categoryId);
-    return all.slice(
-      (Math.max(1, page) - 1) * pageSize,
-      Math.max(1, page) * pageSize,
-    );
-  }
-  async getQuestionsForGamePack(
-    categoryId: string,
-  ): Promise<readonly Question[]> {
-    return this.getQuestionsByCategory(categoryId);
-  }
+
 }
 export class MockCategoryRepository implements CategoryRepository {
   constructor(private readonly data: MockDataset) {}
@@ -90,14 +75,6 @@ export class MockCategoryRepository implements CategoryRepository {
   }
   async getPublishedCategories(): Promise<readonly CategoryWithCount[]> {
     return this.all().filter((c) => c.status === 'published');
-  }
-  async getCategoryByPath(
-    canonicalPath: string,
-  ): Promise<CategoryWithCount | null> {
-    return this.all().find((c) => c.canonicalPath === canonicalPath) ?? null;
-  }
-  async getCategoryBySlug(slug: string): Promise<CategoryWithCount | null> {
-    return this.all().find((c) => c.slug === slug) ?? null;
   }
   async getNavigationCategories(): Promise<readonly CategoryWithCount[]> {
     return (await this.getPublishedCategories()).filter((c) => c.navFeatured);
