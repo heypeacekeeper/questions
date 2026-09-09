@@ -29,7 +29,10 @@
     "export:csv": "tsx tools/export-questions.ts --format csv",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "audit": "npm audit --omit=dev"
+    "audit": "npm audit --omit=dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.0",
@@ -39,11 +42,17 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "cross-env": "^10.0.0",
     "dotenv": "^17.4.2",
+    "eslint": "^10.10.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^1.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0",
     "wrangler": "^4.129.0"
   }
