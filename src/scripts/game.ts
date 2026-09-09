@@ -35,7 +35,8 @@ const fillB = $('fill-b');
   const gameStage = stage;
   const local = safeStorage('local'); const session = safeStorage('session');
   const engine = new GameEngine(new SessionSeenStore(`${config.keys.seen}:${config.set}`, session), undefined, config.refill);
-  let current: GameQuestion | null = config.initial; let hasVoted = false; let busy = false; let manifest: GameDataManifest | null = null; let pendingGatedPack: { slug: string; name: string } | null = null;
+  let current: GameQuestion | null = config.initial; let hasVoted = false; let lastPick: 'A' | 'B' | null = null;
+  let busy = false; let manifest: GameDataManifest | null = null; let pendingGatedPack: { slug: string; name: string } | null = null;
   if (current) { engine.primeWith(current); engine.markSeen(current.id); }
   if (shareButton && current) shareButton.hidden = false;
   if (fullscreenButton && (document.fullscreenEnabled || (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled)) fullscreenButton.hidden = false;
@@ -43,7 +44,8 @@ const fillB = $('fill-b');
   const setNotice = (message: string) => { if (verdict) verdict.textContent = message; gameStage.classList.add('has-notice'); };
 
   function renderQuestion(question: GameQuestion): void {
-    current = question; hasVoted = false; gameStage.classList.remove('voted', 'has-notice'); gameStage.dataset.questionId = question.id; gameStage.dataset.shareCode = question.s;
+    current = question; hasVoted = false; lastPick = null;
+    gameStage.classList.remove('voted', 'has-notice'); gameStage.dataset.questionId = question.id; gameStage.dataset.shareCode = question.s;
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a; if (textB) textB.textContent = question.b;
     [percentA, percentB, voteCount, verdict].forEach((element) => { if (element) element.textContent = ''; });
@@ -54,7 +56,8 @@ if (fillB) fillB.style.height = '0';
   }
   function choose(choice: 'A' | 'B'): void {
     if (!current || busy) return;
-    hasVoted = true; gameStage.classList.add('voted');
+    if (hasVoted && lastPick === choice) return;
+    hasVoted = true; lastPick = choice; gameStage.classList.add('voted');
     const picked = choice === 'A' ? choiceA : choiceB; const other = choice === 'A' ? choiceB : choiceA;
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     picked?.classList.add('picked'); other?.classList.add('not-picked');
