@@ -15,29 +15,59 @@ const needed = env.features.FEATURE_GA4 || env.features.FEATURE_ADS;
 ---
 
 {needed && (
-  <aside class="consent-banner" id="consent-banner" role="region" aria-labelledby="consent-heading" hidden>
-    <h2 id="consent-heading">Cookies &amp; privacy</h2>
-    <p>
-      We use optional cookies for analytics{env.features.FEATURE_ADS ? ' and advertising' : ''}. Nothing optional loads until you choose.
-      Read the <a href={ROUTES.cookies}>Cookie Policy</a>.
-    </p>
+  <>
+    <aside
+      class="consent-banner"
+      id="consent-banner"
+      role="region"
+      aria-labelledby="consent-heading"
+      hidden
+    >
+      <h2 id="consent-heading">Cookies &amp; privacy</h2>
+      <p>
+        We use optional cookies for analytics{env.features.FEATURE_ADS ? ' and advertising' : ''}.
+        Nothing optional loads until you choose. Read the <a href={ROUTES.cookies}>Cookie Policy</a>
+        .
+      </p>
 
-    <form id="consent-prefs" class="consent-prefs" hidden>
-      <label><input type="checkbox" checked disabled /> Essential (always on)</label>
-      <label><input type="checkbox" name="analytics" /> Analytics</label>
-      {env.features.FEATURE_ADS && <label><input type="checkbox" name="advertising" /> Advertising</label>}
-    </form>
+      <form id="consent-prefs" class="consent-prefs" hidden>
+        <label>
+          <input type="checkbox" checked disabled /> Essential (always on)
+        </label>
+        <label>
+          <input type="checkbox" name="analytics" /> Analytics
+        </label>
+        {env.features.FEATURE_ADS && (
+          <label>
+            <input type="checkbox" name="advertising" /> Advertising
+          </label>
+        )}
+      </form>
 
-    <div class="consent-actions">
-      <button type="button" class="consent-accept" data-consent="accept">Accept all</button>
-      <button type="button" data-consent="reject">Reject optional</button>
-      <button type="button" data-consent="manage" aria-expanded="false" aria-controls="consent-prefs">Manage preferences</button>
-      <button type="button" data-consent="save" hidden>Save preferences</button>
-    </div>
-  </aside>
+      <div class="consent-actions">
+        <button type="button" class="consent-accept" data-consent="accept">
+          Accept all
+        </button>
+        <button type="button" data-consent="reject">
+          Reject optional
+        </button>
+        <button
+          type="button"
+          data-consent="manage"
+          aria-expanded="false"
+          aria-controls="consent-prefs"
+        >
+          Manage preferences
+        </button>
+        <button type="button" data-consent="save" hidden>
+          Save preferences
+        </button>
+      </div>
+    </aside>
 
-  <script>
-    import { initConsentBanner } from '@/scripts/consent';
-    initConsentBanner();
-  </script>
+    <script>
+      import { initConsentBanner } from '@/scripts/consent';
+      initConsentBanner();
+    </script>
+  </>
 )}

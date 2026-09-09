@@ -45,13 +45,19 @@ export function initConsentBanner(): void {
     } else if (action === 'save' && prefs) {
       const a = prefs.elements.namedItem('analytics') as HTMLInputElement | null;
       const ad = prefs.elements.namedItem('advertising') as HTMLInputElement | null;
-      store.write({ decided: true, analytics: Boolean(a?.checked), advertising: Boolean(ad?.checked) });
+      store.write({
+        decided: true,
+        analytics: Boolean(a?.checked),
+        advertising: Boolean(ad?.checked),
+      });
       hide();
     }
   });
 
   // Footer "Cookie preferences" link(s) reopen the banner.
-  document.querySelectorAll<HTMLButtonElement>('[data-consent-open]').forEach((el) => el.addEventListener('click', show));
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-consent-open]')
+    .forEach((el) => el.addEventListener('click', show));
 
   if (!store.read().decided) show();
 }

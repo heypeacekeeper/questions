@@ -49,7 +49,11 @@ export interface DeploymentManifest {
   readonly contentChecksum: string;
 }
 
-export function paginate<T>(items: readonly T[], page: number, pageSize: number): PaginationResult<T> {
+export function paginate<T>(
+  items: readonly T[],
+  page: number,
+  pageSize: number,
+): PaginationResult<T> {
   const size = Math.max(1, Math.floor(pageSize));
   const totalItems = items.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / size));

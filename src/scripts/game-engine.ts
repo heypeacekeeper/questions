@@ -15,7 +15,10 @@ export interface SeenStore {
 
 export class SessionSeenStore implements SeenStore {
   private cache: Set<string> | null = null;
-  constructor(private readonly key: string, private readonly storage: Storage | null) {}
+  constructor(
+    private readonly key: string,
+    private readonly storage: Storage | null,
+  ) {}
   get(): Set<string> {
     if (this.cache) return this.cache;
     try {
@@ -139,14 +142,22 @@ export class GameEngine {
   async next(currentId: string | null): Promise<GameQuestion | null> {
     await this.ensureSupply();
     let seen = this.seen.get();
-    let candidate = pickNextUnseen(this.pool.filter((q) => q.id !== currentId), seen, this.rng);
+    let candidate = pickNextUnseen(
+      this.pool.filter((q) => q.id !== currentId),
+      seen,
+      this.rng,
+    );
     if (!candidate && this.remainingPacks.length === 0 && this.pool.length > 0) {
       // Only one question exists: nothing else can be shown.
       if (this.pool.length === 1) return null;
 
       this.seen.clear();
       seen = this.seen.get();
-      candidate = pickNextUnseen(this.pool.filter((q) => q.id !== currentId), seen, this.rng);
+      candidate = pickNextUnseen(
+        this.pool.filter((q) => q.id !== currentId),
+        seen,
+        this.rng,
+      );
     }
     if (candidate) this.seen.add(candidate.id);
     return candidate;

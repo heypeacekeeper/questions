@@ -1,8 +1,24 @@
 ---
-import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
-const meta = { title: 'DMCA & Copyright', description: 'How to report copyright concerns about content on Would You Rather Questions.', path: ROUTES.dmca };
+import ProseLayout from '@/layouts/ProseLayout.astro';
+import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
+const meta = {
+  title: 'DMCA & Copyright',
+  description: 'How to report copyright concerns about content on Would You Rather Questions.',
+  path: ROUTES.dmca,
+};
 ---
+
 <ProseLayout meta={meta} heading="DMCA &amp; Copyright" legal>
-<p>We respect intellectual property. If you believe content on this site infringes your copyright, send a notice to <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a> (designated agent: <span class="placeholder">[NAME / ADDRESS]</span>) including: identification of the work, the URL of the material, your contact details, a good-faith statement, a statement of accuracy under penalty of perjury, and your signature.</p>
-<p>We will review notices promptly and may remove or archive material. Counter-notices follow the same process. Trademark concerns can also be sent via the <a href={ROUTES.contact}>contact form</a>.</p>
+  <p>
+    We respect intellectual property. If you believe content on this site infringes your copyright,
+    send a notice to <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a> (designated agent:{' '}
+    <span class="placeholder">[NAME / ADDRESS]</span>) including: identification of the work, the
+    URL of the material, your contact details, a good-faith statement, a statement of accuracy under
+    penalty of perjury, and your signature.
+  </p>
+  <p>
+    We will review notices promptly and may remove or archive material. Counter-notices follow the
+    same process. Trademark concerns can also be sent via the{' '}
+    <a href={ROUTES.contact}>contact form</a>.
+  </p>
 </ProseLayout>

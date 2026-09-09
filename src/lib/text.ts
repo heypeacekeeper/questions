@@ -70,7 +70,13 @@ export function lowerFirst(value: string): string {
   if (!value) return value;
   const first = value.charAt(0);
   const second = value.charAt(1);
-  if (first === first.toUpperCase() && second && second === second.toUpperCase() && /[A-Z]/.test(second)) return value;
+  if (
+    first === first.toUpperCase() &&
+    second &&
+    second === second.toUpperCase() &&
+    /[A-Z]/.test(second)
+  )
+    return value;
   return first.toLowerCase() + value.slice(1);
 }
 

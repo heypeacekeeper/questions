@@ -29,7 +29,10 @@ export function mapCategory(row: CategoryRow): Category {
   };
 }
 
-export function mapCategoryWithCount(row: CategoryRow, publishedQuestionCount: number): CategoryWithCount {
+export function mapCategoryWithCount(
+  row: CategoryRow,
+  publishedQuestionCount: number,
+): CategoryWithCount {
   return { ...mapCategory(row), publishedQuestionCount };
 }
 
@@ -49,4 +52,3 @@ export function mapQuestion(row: QuestionRow, categoryIds: readonly string[]): Q
     publishedAt: row.published_at,
   };
 }
-

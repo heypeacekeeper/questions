@@ -12,7 +12,6 @@
 export type DataProvider = 'supabase' | 'mock';
 import { SITE_URL } from './site-static.mjs';
 
-
 export interface AppEnv {
   /** 'production' | 'development' | 'test' */
   readonly mode: string;
@@ -81,13 +80,18 @@ function trimOrUndefined(value: string | undefined): string | undefined {
  * Build a typed, validated `AppEnv` from a raw key/value record.
  * Pure function — easy to unit test.
  */
-export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'build' | 'worker' | 'tool' } = {}): AppEnv {
+export function buildAppEnv(
+  raw: RawEnv,
+  options: { mode?: string; context?: 'build' | 'worker' | 'tool' } = {},
+): AppEnv {
   const mode = options.mode ?? raw.NODE_ENV ?? raw.MODE ?? 'production';
   const isProduction = mode === 'production';
   const context = options.context ?? 'build';
   const problems: string[] = [];
 
-  const providerRaw = (raw.DATA_PROVIDER ?? (isProduction ? 'supabase' : 'mock')).trim().toLowerCase();
+  const providerRaw = (raw.DATA_PROVIDER ?? (isProduction ? 'supabase' : 'mock'))
+    .trim()
+    .toLowerCase();
   if (providerRaw !== 'supabase' && providerRaw !== 'mock') {
     problems.push(`DATA_PROVIDER must be "supabase" or "mock" (received "${providerRaw}")`);
   }
@@ -96,17 +100,24 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   const siteUrl = (trimOrUndefined(raw.PUBLIC_SITE_URL) ?? SITE_URL).replace(/\/+$/, '');
   try {
     const u = new URL(siteUrl);
-    if (isProduction && u.protocol !== 'https:') problems.push('PUBLIC_SITE_URL must use https in production');
+    if (isProduction && u.protocol !== 'https:')
+      problems.push('PUBLIC_SITE_URL must use https in production');
   } catch {
     problems.push(`PUBLIC_SITE_URL is not a valid URL: "${siteUrl}"`);
   }
 
   const features: FeatureFlags = {
     FEATURE_SUBMISSIONS: parseBool(raw.FEATURE_SUBMISSIONS, FEATURE_DEFAULTS.FEATURE_SUBMISSIONS),
-    FEATURE_CONTACT_FORM: parseBool(raw.FEATURE_CONTACT_FORM, FEATURE_DEFAULTS.FEATURE_CONTACT_FORM),
+    FEATURE_CONTACT_FORM: parseBool(
+      raw.FEATURE_CONTACT_FORM,
+      FEATURE_DEFAULTS.FEATURE_CONTACT_FORM,
+    ),
     FEATURE_ADS: parseBool(raw.FEATURE_ADS, FEATURE_DEFAULTS.FEATURE_ADS),
     FEATURE_GA4: parseBool(raw.FEATURE_GA4, FEATURE_DEFAULTS.FEATURE_GA4),
-    FEATURE_CLOUDFLARE_ANALYTICS: parseBool(raw.FEATURE_CLOUDFLARE_ANALYTICS, FEATURE_DEFAULTS.FEATURE_CLOUDFLARE_ANALYTICS),
+    FEATURE_CLOUDFLARE_ANALYTICS: parseBool(
+      raw.FEATURE_CLOUDFLARE_ANALYTICS,
+      FEATURE_DEFAULTS.FEATURE_CLOUDFLARE_ANALYTICS,
+    ),
   };
 
   const supabaseUrl = trimOrUndefined(raw.SUPABASE_URL);
@@ -122,15 +133,28 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   // --- Provider requirements -------------------------------------------------
   if (dataProvider === 'supabase') {
     if (!supabaseUrl) problems.push('SUPABASE_URL is required when DATA_PROVIDER=supabase');
-    else if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|red)$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(supabaseUrl)) {
+    else if (
+      !/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|red)$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
+        supabaseUrl,
+      )
+    ) {
       problems.push(`SUPABASE_URL does not look like a Supabase project URL: "${supabaseUrl}"`);
     }
     if (!supabaseSecretKey) {
-      problems.push('SUPABASE_SECRET_KEY is required when DATA_PROVIDER=supabase (build-time content + Worker writes)');
+      problems.push(
+        'SUPABASE_SECRET_KEY is required when DATA_PROVIDER=supabase (build-time content + Worker writes)',
+      );
     }
   }
-  if (dataProvider === 'mock' && isProduction && context !== 'tool' && !parseBool(raw.ALLOW_MOCK_IN_PRODUCTION, false)) {
-    problems.push('DATA_PROVIDER=mock is not allowed in a production build. Set ALLOW_MOCK_IN_PRODUCTION=true only for deliberate test deployments.');
+  if (
+    dataProvider === 'mock' &&
+    isProduction &&
+    context !== 'tool' &&
+    !parseBool(raw.ALLOW_MOCK_IN_PRODUCTION, false)
+  ) {
+    problems.push(
+      'DATA_PROVIDER=mock is not allowed in a production build. Set ALLOW_MOCK_IN_PRODUCTION=true only for deliberate test deployments.',
+    );
   }
 
   // --- Runtime secrets (Worker) ----------------------------------------------
@@ -141,16 +165,27 @@ export function buildAppEnv(raw: RawEnv, options: { mode?: string; context?: 'bu
   }
 
   // --- Feature-dependent public IDs -----------------------------------------
-  if (features.FEATURE_GA4 && !ga4MeasurementId) problems.push('PUBLIC_GA4_MEASUREMENT_ID is required when FEATURE_GA4=true');
+  if (features.FEATURE_GA4 && !ga4MeasurementId)
+    problems.push('PUBLIC_GA4_MEASUREMENT_ID is required when FEATURE_GA4=true');
   if (features.FEATURE_CLOUDFLARE_ANALYTICS && !cloudflareAnalyticsToken) {
-    problems.push('PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN is required when FEATURE_CLOUDFLARE_ANALYTICS=true');
+    problems.push(
+      'PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN is required when FEATURE_CLOUDFLARE_ANALYTICS=true',
+    );
   }
-  if (features.FEATURE_ADS && !adsensePublisherId) problems.push('PUBLIC_ADSENSE_PUBLISHER_ID is required when FEATURE_ADS=true');
+  if (features.FEATURE_ADS && !adsensePublisherId)
+    problems.push('PUBLIC_ADSENSE_PUBLISHER_ID is required when FEATURE_ADS=true');
   if (adsensePublisherId && !/^ca-pub-\d{10,20}$/.test(adsensePublisherId)) {
     problems.push('PUBLIC_ADSENSE_PUBLISHER_ID must look like ca-pub-XXXXXXXXXXXXXXXX');
   }
-  if ((features.FEATURE_SUBMISSIONS || features.FEATURE_CONTACT_FORM) && isProduction && context === 'build' && !turnstileSiteKey) {
-    problems.push('PUBLIC_TURNSTILE_SITE_KEY is required to render forms when FEATURE_SUBMISSIONS/FEATURE_CONTACT_FORM are enabled');
+  if (
+    (features.FEATURE_SUBMISSIONS || features.FEATURE_CONTACT_FORM) &&
+    isProduction &&
+    context === 'build' &&
+    !turnstileSiteKey
+  ) {
+    problems.push(
+      'PUBLIC_TURNSTILE_SITE_KEY is required to render forms when FEATURE_SUBMISSIONS/FEATURE_CONTACT_FORM are enabled',
+    );
   }
 
   if (problems.length > 0) throw new EnvValidationError(problems);
@@ -204,7 +239,9 @@ export function readImportMetaEnv(): RawEnv {
     PUBLIC_SEARCH_CONSOLE_VERIFICATION: env.PUBLIC_SEARCH_CONSOLE_VERIFICATION,
     PUBLIC_ADSENSE_PUBLISHER_ID: env.PUBLIC_ADSENSE_PUBLISHER_ID,
   };
-  return Object.fromEntries(Object.entries(values).filter((entry): entry is [string, string] => entry[1] !== undefined));
+  return Object.fromEntries(
+    Object.entries(values).filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
 }
 
 let cachedBuildEnv: AppEnv | undefined;

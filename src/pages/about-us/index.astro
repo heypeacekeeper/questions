@@ -1,9 +1,32 @@
 ---
-import ProseLayout from '@/layouts/ProseLayout.astro'; import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
-const meta = { title: 'About Us', description: 'Who makes Would You Rather Questions, how the questions are chosen, and how to get in touch.', path: ROUTES.about };
+import ProseLayout from '@/layouts/ProseLayout.astro';
+import { ROUTES, PUBLIC_EMAIL } from '@/config/site';
+const meta = {
+  title: 'About Us',
+  description:
+    'Who makes Would You Rather Questions, how the questions are chosen, and how to get in touch.',
+  path: ROUTES.about,
+};
 ---
+
 <ProseLayout meta={meta} heading="About Would You Rather Questions">
-<p>Would You Rather Questions is a free website for playing and browsing either-or questions with friends, family, classmates and colleagues. Every question is written or reviewed by the site's editors, sorted into clearly labelled categories, and published only when it fits the audience of that category.</p>
-<h2>What we publish</h2><p>Categories for kids, teens, adults, couples, friends, family, work and icebreakers, plus funny, hard and deep collections. Mature categories stay flirty rather than explicit and never mix with children's collections. Read our <a href={ROUTES.editorialPolicy}>Editorial Policy</a> for the details.</p>
-<h2>Contribute</h2><p>Have a great question? <a href={ROUTES.submit}>Submit it</a> and we may add it after review. Questions or corrections: <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a> or the <a href={ROUTES.contact}>contact form</a>.</p>
+  <p>
+    Would You Rather Questions is a free website for playing and browsing either-or questions with
+    friends, family, classmates and colleagues. Every question is written or reviewed by the site's
+    editors, sorted into clearly labelled categories, and published only when it fits the audience
+    of that category.
+  </p>
+  <h2>What we publish</h2>
+  <p>
+    Categories for kids, teens, adults, couples, friends, family, work and icebreakers, plus funny,
+    hard and deep collections. Mature categories stay flirty rather than explicit and never mix with
+    children's collections. Read our <a href={ROUTES.editorialPolicy}>Editorial Policy</a> for the
+    details.
+  </p>
+  <h2>Contribute</h2>
+  <p>
+    Have a great question? <a href={ROUTES.submit}>Submit it</a> and we may add it after review.
+    Questions or corrections: <a href={`mailto:${PUBLIC_EMAIL}`}>{PUBLIC_EMAIL}</a> or the{' '}
+    <a href={ROUTES.contact}>contact form</a>.
+  </p>
 </ProseLayout>

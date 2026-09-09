@@ -12,7 +12,9 @@ const { pagination: p, basePath, label = 'Question list pages' } = Astro.props;
 
 function pageNumbers(current: number, total: number): (number | 'gap')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const set = new Set<number>([1, total, current - 1, current, current + 1].filter((n) => n >= 1 && n <= total));
+  const set = new Set<number>(
+    [1, total, current - 1, current, current + 1].filter((n) => n >= 1 && n <= total),
+  );
   const sorted = [...set].sort((a, b) => a - b);
   const out: (number | 'gap')[] = [];
   for (let i = 0; i < sorted.length; i++) {
@@ -27,19 +29,37 @@ function pageNumbers(current: number, total: number): (number | 'gap')[] {
 
 {p.totalPages > 1 && (
   <nav class="pagination-nav" aria-label={label}>
-    <p class="pagination-summary">Showing questions {p.startIndex}–{p.endIndex} of {p.totalItems}</p>
+    <p class="pagination-summary">
+      Showing questions {p.startIndex}–{p.endIndex} of {p.totalItems}
+    </p>
     <div class="pagination">
-      {p.hasPrevious ? <a href={categoryPagePath(basePath, p.page - 1)} rel="prev">← Previous</a> : <span aria-disabled="true">← Previous</span>}
+      {p.hasPrevious ? (
+        <a href={categoryPagePath(basePath, p.page - 1)} rel="prev">
+          ← Previous
+        </a>
+      ) : (
+        <span aria-disabled="true">← Previous</span>
+      )}
       {pageNumbers(p.page, p.totalPages).map((n) =>
         n === 'gap' ? (
-          <span class="ellipsis" aria-hidden="true">…</span>
+          <span class="ellipsis" aria-hidden="true">
+            …
+          </span>
         ) : n === p.page ? (
           <span aria-current="page">{n}</span>
         ) : (
-          <a href={categoryPagePath(basePath, n)} aria-label={`Page ${n}`}>{n}</a>
+          <a href={categoryPagePath(basePath, n)} aria-label={`Page ${n}`}>
+            {n}
+          </a>
         ),
       )}
-      {p.hasNext ? <a href={categoryPagePath(basePath, p.page + 1)} rel="next">Next →</a> : <span aria-disabled="true">Next →</span>}
+      {p.hasNext ? (
+        <a href={categoryPagePath(basePath, p.page + 1)} rel="next">
+          Next →
+        </a>
+      ) : (
+        <span aria-disabled="true">Next →</span>
+      )}
     </div>
   </nav>
 )}

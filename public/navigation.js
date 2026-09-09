@@ -52,7 +52,11 @@
       if (event.target.closest('.nav-link') || event.target.closest('.submit-link')) closeMenu();
     });
     document.addEventListener('click', (event) => {
-      if (categoriesOpen() && !categoryMenu.contains(event.target) && !categoryButton.contains(event.target)) {
+      if (
+        categoriesOpen() &&
+        !categoryMenu.contains(event.target) &&
+        !categoryButton.contains(event.target)
+      ) {
         closeCategories();
       }
     });

@@ -4,26 +4,47 @@ import type { CategoryWithCount } from '@/domain/category';
 import { ROUTES } from '@/config/site';
 import SeasonalLinks from './SeasonalLinks.astro';
 import AdSlot from './AdSlot.astro';
-interface Props { popular: readonly CategoryWithCount[]; seasonal: CategoryWithCount | null }
+interface Props {
+  popular: readonly CategoryWithCount[];
+  seasonal: CategoryWithCount | null;
+}
 const { popular, seasonal } = Astro.props;
 ---
+
 <aside class="sidebar" aria-label="Sidebar">
   <section class="side-card" aria-labelledby="popular-heading">
     <h2 id="popular-heading">Popular categories</h2>
     <ul>
-      {popular.map((c) => (<li><a href={c.canonicalPath}><span>{c.icon} {c.name}</span><span class="count">{c.publishedQuestionCount}</span></a></li>))}
-      <li><a href={ROUTES.categories}><span>View all categories →</span></a></li>
+      {popular.map((c) => (
+        <li>
+          <a href={c.canonicalPath}>
+            <span>
+              {c.icon} {c.name}
+            </span>
+            <span class="count">{c.publishedQuestionCount}</span>
+          </a>
+        </li>
+      ))}
+      <li>
+        <a href={ROUTES.categories}>
+          <span>View all categories →</span>
+        </a>
+      </li>
     </ul>
   </section>
   <section class="side-card" aria-labelledby="random-heading">
     <h2 id="random-heading">Random game</h2>
     <p>Jump into a mixed round of questions from every family-friendly category.</p>
-    <a class="side-cta side-cta-yellow" href={`${ROUTES.home}#game`}>🎲 Play a random game</a>
+    <a class="side-cta side-cta-yellow" href={`${ROUTES.home}#game`}>
+      🎲 Play a random game
+    </a>
   </section>
   <section class="side-card" aria-labelledby="submit-heading">
     <h2 id="submit-heading">Got a great question?</h2>
     <p>Send us your best dilemma and we may add it to the site.</p>
-    <a class="side-cta side-cta-mint" href={ROUTES.submit}>＋ Submit your question</a>
+    <a class="side-cta side-cta-mint" href={ROUTES.submit}>
+      ＋ Submit your question
+    </a>
   </section>
   <SeasonalLinks category={seasonal} />
   <AdSlot slot="sidebarTall" />

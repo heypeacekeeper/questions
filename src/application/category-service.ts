@@ -18,13 +18,20 @@ export class CategoryService {
   }
 
   /** Header dropdown: featured & visible, capped. */
-  async getNavigationCategories(limit: number = NAVIGATION.navCategoryLimit): Promise<readonly CategoryWithCount[]> {
-    const featured = (await this.categories.getNavigationCategories()).filter(isCategoryVisible).sort(bySortOrder);
+  async getNavigationCategories(
+    limit: number = NAVIGATION.navCategoryLimit,
+  ): Promise<readonly CategoryWithCount[]> {
+    const featured = (await this.categories.getNavigationCategories())
+      .filter(isCategoryVisible)
+      .sort(bySortOrder);
     return featured.slice(0, limit);
   }
 
   /** Sidebar "popular" block: visible categories ordered by question count then sort order. */
-  async getPopularCategories(limit: number = NAVIGATION.popularCategoryLimit, excludeId?: string): Promise<readonly CategoryWithCount[]> {
+  async getPopularCategories(
+    limit: number = NAVIGATION.popularCategoryLimit,
+    excludeId?: string,
+  ): Promise<readonly CategoryWithCount[]> {
     const visible = await this.getVisibleCategories();
     return visible
       .filter((c) => c.id !== excludeId)
@@ -34,7 +41,10 @@ export class CategoryService {
   }
 
   /** Related categories for a category page: other visible categories, featured first. */
-  async getRelatedCategories(current: CategoryWithCount, limit: number = NAVIGATION.relatedCategoryLimit): Promise<readonly CategoryWithCount[]> {
+  async getRelatedCategories(
+    current: CategoryWithCount,
+    limit: number = NAVIGATION.relatedCategoryLimit,
+  ): Promise<readonly CategoryWithCount[]> {
     const visible = await this.getVisibleCategories();
     // Prefer categories with a compatible audience: never suggest mature next to child-safe and vice versa.
     return visible
@@ -51,7 +61,9 @@ export class CategoryService {
 
   /** Categories whose questions form the homepage mixed game. */
   async getMixedGameCategories(): Promise<readonly CategoryWithCount[]> {
-    return (await this.getVisibleCategories()).filter((c) => c.includeInMixedGame && !c.requiresAgeGate && !c.isMature);
+    return (await this.getVisibleCategories()).filter(
+      (c) => c.includeInMixedGame && !c.requiresAgeGate && !c.isMature,
+    );
   }
 
   /**

@@ -9,11 +9,11 @@
   "assets": {
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
   },
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 0.05
+    "head_sampling_rate": 0.05,
   },
   // Protected forms share one global rate-limit binding.
   // namespace_id values only need to be unique within this Cloudflare account.
@@ -21,20 +21,20 @@
     {
       "name": "FORM_RATE_LIMITER",
       "namespace_id": "1001",
-      "simple": { "limit": 10, "period": 60 }
-    }
+      "simple": { "limit": 10, "period": 60 },
+    },
   ],
   // Non-secret runtime variables. Server-only secrets are set with
   // `wrangler secret put` and never committed here.
   "vars": {
     "PUBLIC_SITE_URL": "https://wouldyouratherquestions.org",
     "FEATURE_SUBMISSIONS": "true",
-    "FEATURE_CONTACT_FORM": "true"
+    "FEATURE_CONTACT_FORM": "true",
   },
   // Custom domain routing. Enable after the zone is on Cloudflare (see README).
   // "routes": [
   //   { "pattern": "wouldyouratherquestions.org", "custom_domain": true },
   //   { "pattern": "www.wouldyouratherquestions.org", "custom_domain": true }
   // ],
-  "placement": { "mode": "smart" }
+  "placement": { "mode": "smart" },
 }

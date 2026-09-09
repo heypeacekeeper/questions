@@ -14,7 +14,13 @@ export interface ConsentState {
   readonly version: 1;
 }
 
-export const DEFAULT_CONSENT: ConsentState = { decided: false, analytics: false, advertising: false, updatedAt: null, version: 1 };
+export const DEFAULT_CONSENT: ConsentState = {
+  decided: false,
+  analytics: false,
+  advertising: false,
+  updatedAt: null,
+  version: 1,
+};
 
 export interface ConsentStore {
   read(): ConsentState;
@@ -24,13 +30,18 @@ export interface ConsentStore {
 export const CONSENT_EVENT = 'wyr:consent';
 
 export class CookieConsentStore implements ConsentStore {
-  constructor(private readonly cookieName: string = COOKIES.consent, private readonly maxAge: number = COOKIES.consentMaxAgeSeconds) {}
+  constructor(
+    private readonly cookieName: string = COOKIES.consent,
+    private readonly maxAge: number = COOKIES.consentMaxAgeSeconds,
+  ) {}
 
   read(): ConsentState {
     try {
       const raw = document.cookie.split('; ').find((c) => c.startsWith(`${this.cookieName}=`));
       if (!raw) return DEFAULT_CONSENT;
-      const parsed = JSON.parse(decodeURIComponent(raw.slice(this.cookieName.length + 1))) as Partial<ConsentState>;
+      const parsed = JSON.parse(
+        decodeURIComponent(raw.slice(this.cookieName.length + 1)),
+      ) as Partial<ConsentState>;
       if (parsed.version !== 1) return DEFAULT_CONSENT;
       return {
         decided: Boolean(parsed.decided),

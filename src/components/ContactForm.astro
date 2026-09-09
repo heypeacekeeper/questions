@@ -2,17 +2,78 @@
 import { API_PATHS, FORM_LIMITS, ROUTES, TURNSTILE } from '@/config/site';
 import TurnstileWidget from './TurnstileWidget.astro';
 ---
+
 <form class="form" id="contact-form" data-form data-endpoint={API_PATHS.contact} novalidate>
-  <noscript><p class="notice nojs-form-note">This form needs JavaScript. You can also email us directly using the address above.</p></noscript>
-  <div class="form-field"><label for="c-name">Name</label><input id="c-name" name="name" type="text" required maxlength={FORM_LIMITS.nameMax} autocomplete="name" /><p class="form-error" data-error-for="name"></p></div>
-  <div class="form-field"><label for="c-email">Email</label><span class="hint">Used only to reply to your message.</span><input id="c-email" name="email" type="email" required maxlength={FORM_LIMITS.emailMax} autocomplete="email" /><p class="form-error" data-error-for="email"></p></div>
-  <div class="form-field"><label for="c-subject">Subject</label><input id="c-subject" name="subject" type="text" required maxlength={FORM_LIMITS.subjectMax} /><p class="form-error" data-error-for="subject"></p></div>
-  <div class="form-field"><label for="c-message">Message</label><textarea id="c-message" name="message" required minlength={FORM_LIMITS.messageMin} maxlength={FORM_LIMITS.messageMax}></textarea><p class="form-error" data-error-for="message"></p></div>
-  <div class="form-field"><label class="form-check"><input type="checkbox" name="privacy" required /><span>I understand my message and email will be stored so the site owner can reply, as described in the <a href={ROUTES.privacy}>Privacy Policy</a>.</span></label><p class="form-error" data-error-for="privacy"></p></div>
-  <div class="honeypot" aria-hidden="true"><label for="c-website">Website</label><input id="c-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+  <noscript>
+    <p class="notice nojs-form-note">
+      This form needs JavaScript. You can also email us directly using the address above.
+    </p>
+  </noscript>
+  <div class="form-field">
+    <label for="c-name">Name</label>
+    <input
+      id="c-name"
+      name="name"
+      type="text"
+      required
+      maxlength={FORM_LIMITS.nameMax}
+      autocomplete="name"
+    />
+    <p class="form-error" data-error-for="name"></p>
+  </div>
+  <div class="form-field">
+    <label for="c-email">Email</label>
+    <span class="hint">Used only to reply to your message.</span>
+    <input
+      id="c-email"
+      name="email"
+      type="email"
+      required
+      maxlength={FORM_LIMITS.emailMax}
+      autocomplete="email"
+    />
+    <p class="form-error" data-error-for="email"></p>
+  </div>
+  <div class="form-field">
+    <label for="c-subject">Subject</label>
+    <input id="c-subject" name="subject" type="text" required maxlength={FORM_LIMITS.subjectMax} />
+    <p class="form-error" data-error-for="subject"></p>
+  </div>
+  <div class="form-field">
+    <label for="c-message">Message</label>
+    <textarea
+      id="c-message"
+      name="message"
+      required
+      minlength={FORM_LIMITS.messageMin}
+      maxlength={FORM_LIMITS.messageMax}
+    ></textarea>
+    <p class="form-error" data-error-for="message"></p>
+  </div>
+  <div class="form-field">
+    <label class="form-check">
+      <input type="checkbox" name="privacy" required />
+      <span>
+        I understand my message and email will be stored so the site owner can reply, as described
+        in the <a href={ROUTES.privacy}>Privacy Policy</a>.
+      </span>
+    </label>
+    <p class="form-error" data-error-for="privacy"></p>
+  </div>
+  <div class="honeypot" aria-hidden="true">
+    <label for="c-website">Website</label>
+    <input id="c-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+  </div>
   <TurnstileWidget action={TURNSTILE.actions.contact} />
   <p class="form-error" data-error-for="_form" role="alert"></p>
-  <div class="form-actions"><button class="button-primary" type="submit">Send message</button></div>
+  <div class="form-actions">
+    <button class="button-primary" type="submit">
+      Send message
+    </button>
+  </div>
   <p class="form-status" data-status role="status"></p>
 </form>
-<script>import { initForms } from '@/scripts/forms'; initForms();</script>
+<script>
+  import { initForms } from '@/scripts/forms';
+  initForms();
+</script>

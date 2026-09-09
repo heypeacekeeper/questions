@@ -8,7 +8,9 @@
  */
 
 /** Canonical production origin, no trailing slash. */
-export const SITE_URL = (process.env.PUBLIC_SITE_URL || 'https://wouldyouratherquestions.org').replace(/\/+$/, '');
+export const SITE_URL = (
+  process.env.PUBLIC_SITE_URL || 'https://wouldyouratherquestions.org'
+).replace(/\/+$/, '');
 
 /** Route prefixes that must never appear in the XML sitemap. */
 export const SITEMAP_EXCLUDED_PREFIXES = ['/s/', '/api/', '/__', '/preview/', '/mock/', '/test/'];

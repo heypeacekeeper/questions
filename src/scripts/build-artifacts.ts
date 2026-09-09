@@ -20,9 +20,18 @@ import { getContentContext } from '@/repositories/factory';
 
 function gitCommit(): string | null {
   try {
-    return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null;
+    return (
+      execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim() || null
+    );
   } catch {
-    return process.env.GITHUB_SHA ?? process.env.CF_PAGES_COMMIT_SHA ?? process.env.WORKERS_CI_COMMIT_SHA ?? null;
+    return (
+      process.env.GITHUB_SHA ??
+      process.env.CF_PAGES_COMMIT_SHA ??
+      process.env.WORKERS_CI_COMMIT_SHA ??
+      null
+    );
   }
 }
 
@@ -49,10 +58,15 @@ export default function buildArtifacts(): AstroIntegration {
         const outDir = existsSync(join(root, 'client')) ? join(root, 'client') : root;
         Object.assign(process.env, invocationEnv);
         const ctx = await getContentContext();
-        const [categories, questions] = await Promise.all([ctx.categories.getAllCategories(), ctx.questions.getAllQuestions()]);
+        const [categories, questions] = await Promise.all([
+          ctx.categories.getAllCategories(),
+          ctx.questions.getAllQuestions(),
+        ]);
 
         // Safety net: validation also runs before the build, but never emit artifacts for invalid content.
-        const issues = validateContent(categories, questions, { allowDemoContent: ctx.env.allowDemoContent });
+        const issues = validateContent(categories, questions, {
+          allowDemoContent: ctx.env.allowDemoContent,
+        });
         if (hasErrors(issues)) {
           logger.error(formatIssues(issues));
           throw new Error('Content validation failed — refusing to emit build artifacts.');
@@ -60,7 +74,10 @@ export default function buildArtifacts(): AstroIntegration {
 
         const visible = await ctx.categoryService.getVisibleCategories();
         const perCategory = await Promise.all(
-          visible.map(async (category) => ({ category, questions: await ctx.questionService.getForCategory(category) })),
+          visible.map(async (category) => ({
+            category,
+            questions: await ctx.questionService.getForCategory(category),
+          })),
         );
         const mixedCats = await ctx.categoryService.getMixedGameCategories();
         const mixed = await ctx.questionService.getMixedGameQuestions(mixedCats);
@@ -74,7 +91,9 @@ export default function buildArtifacts(): AstroIntegration {
         const manifestPath = join(outDir, gameData.manifestUrl);
         await mkdir(dirname(manifestPath), { recursive: true });
         await writeFile(manifestPath, JSON.stringify(gameData.manifest), 'utf8');
-        logger.info(`Wrote ${gameData.files.length} game-data packs for ${Object.keys(gameData.manifest.sets).length} sets`);
+        logger.info(
+          `Wrote ${gameData.files.length} game-data packs for ${Object.keys(gameData.manifest.sets).length} sets`,
+        );
 
         const manifest = await buildDeploymentManifest({
           categories,
@@ -83,7 +102,11 @@ export default function buildArtifacts(): AstroIntegration {
           gitCommit: gitCommit(),
           dataProvider: ctx.env.dataProvider,
         });
-        await writeFile(join(outDir, 'deployment-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+        await writeFile(
+          join(outDir, 'deployment-manifest.json'),
+          JSON.stringify(manifest, null, 2),
+          'utf8',
+        );
         logger.info(
           `Deployment manifest: ${manifest.publishedQuestionCount} questions, ${manifest.publishedCategoryCount} categories, checksum ${manifest.contentChecksum.slice(0, 12)}…`,
         );

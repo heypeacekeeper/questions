@@ -4,9 +4,33 @@ import { getContentContext } from '@/repositories/factory';
 import { ROUTES } from '@/config/site';
 const ctx = await getContentContext();
 const nav = await ctx.categoryService.getNavigationCategories();
-const meta = { title: 'Page not found', description: 'That page does not exist. Try a Would You Rather category instead.', path: '/404/', robots: 'noindex,follow' };
+const meta = {
+  title: 'Page not found',
+  description: 'That page does not exist. Try a Would You Rather category instead.',
+  path: '/404/',
+  robots: 'noindex,follow',
+};
 ---
+
 <BaseLayout meta={meta}>
-  <section class="content-intro"><div class="wrap"><h1>Page not found</h1><div class="intro-copy"><p>We could not find that page. It may have moved, or the link may be wrong. Here are some good places to go next.</p></div>
-  <nav class="quick-links" aria-label="Popular pages"><a href={ROUTES.home}>🎲 Play the game</a><a href={ROUTES.categories}>All categories</a>{nav.map((c) => <a href={c.canonicalPath}>{c.icon} {c.name}</a>)}</nav></div></section>
+  <section class="content-intro">
+    <div class="wrap">
+      <h1>Page not found</h1>
+      <div class="intro-copy">
+        <p>
+          We could not find that page. It may have moved, or the link may be wrong. Here are some
+          good places to go next.
+        </p>
+      </div>
+      <nav class="quick-links" aria-label="Popular pages">
+        <a href={ROUTES.home}>🎲 Play the game</a>
+        <a href={ROUTES.categories}>All categories</a>
+        {nav.map((c) => (
+          <a href={c.canonicalPath}>
+            {c.icon} {c.name}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </section>
 </BaseLayout>

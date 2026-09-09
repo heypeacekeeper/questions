@@ -2,7 +2,10 @@ import { expect, test } from '@playwright/test';
 
 async function prepare(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('wyr_consent', JSON.stringify({ analytics: false, updatedAt: Date.now() }));
+    localStorage.setItem(
+      'wyr_consent',
+      JSON.stringify({ analytics: false, updatedAt: Date.now() }),
+    );
   });
 }
 

@@ -18,12 +18,18 @@ import type { CategoryWithCount } from '@/domain/category';
 export async function getStaticPaths() {
   const ctx = await getContentContext();
   const visible = await ctx.categoryService.getVisibleCategories();
-  const paths: { params: { category: string }; props: { category: CategoryWithCount; page: number } }[] = [];
+  const paths: {
+    params: { category: string };
+    props: { category: CategoryWithCount; page: number };
+  }[] = [];
   for (const category of visible) {
     const pages = QuestionService.pageCount(category.publishedQuestionCount);
     const base = category.canonicalPath.replace(/^\/|\/$/g, '');
     for (let page = 1; page <= pages; page++) {
-      paths.push({ params: { category: page === 1 ? base : `${base}/${PAGINATION.pageSegment}/${page}` }, props: { category, page } });
+      paths.push({
+        params: { category: page === 1 ? base : `${base}/${PAGINATION.pageSegment}/${page}` },
+        props: { category, page },
+      });
     }
   }
   return paths;
@@ -39,30 +45,66 @@ const path = categoryPagePath(category.canonicalPath, page);
 const pageSuffix = page > 1 ? ` – Page ${page}` : '';
 const meta = {
   title: `${category.seoTitle}${pageSuffix}`,
-  description: page > 1 ? `${category.h1}, page ${page}: questions ${pagination.startIndex}–${pagination.endIndex} of ${pagination.totalItems}. ${category.metaDescription}` : category.metaDescription,
+  description:
+    page > 1
+      ? `${category.h1}, page ${page}: questions ${pagination.startIndex}–${pagination.endIndex} of ${pagination.totalItems}. ${category.metaDescription}`
+      : category.metaDescription,
   path,
   prev: pagination.hasPrevious ? categoryPagePath(category.canonicalPath, page - 1) : undefined,
   next: pagination.hasNext ? categoryPagePath(category.canonicalPath, page + 1) : undefined,
 };
-const breadcrumbs = [homeBreadcrumb(), { name: 'Categories', path: ROUTES.categories }, { name: category.name, path: category.canonicalPath }, ...(page > 1 ? [{ name: `Page ${page}`, path }] : [])];
+const breadcrumbs = [
+  homeBreadcrumb(),
+  { name: 'Categories', path: ROUTES.categories },
+  { name: category.name, path: category.canonicalPath },
+  ...(page > 1 ? [{ name: `Page ${page}`, path }] : []),
+];
 ---
-<BaseLayout meta={meta} breadcrumbs={breadcrumbs} jsonLd={[collectionPageJsonLd(ctx.env.siteUrl, meta)]}>
+
+<BaseLayout
+  meta={meta}
+  breadcrumbs={breadcrumbs}
+  jsonLd={[collectionPageJsonLd(ctx.env.siteUrl, meta)]}
+>
   <Game mode="category" initial={initial} setSlug={category.slug} category={category} />
   <AdSlot slot="belowGame" />
   <section class="content-intro">
     <div class="wrap">
       <Breadcrumbs items={breadcrumbs} />
-      <h1>{category.h1}{page > 1 && <span class="sr-only"> – page {page}</span>}</h1>
+      <h1>
+        {category.h1}
+        {page > 1 && <span class="sr-only"> – page {page}</span>}
+      </h1>
       <div class="intro-copy">
-        {page === 1 ? paragraphs(category.introduction).map((p) => <p>{p}</p>) : <p>Page {page} of {category.name.toLowerCase()} questions ({pagination.startIndex}–{pagination.endIndex} of {pagination.totalItems}). <a href={category.canonicalPath}>Start from the beginning</a>.</p>}
+        {page === 1 ? (
+          paragraphs(category.introduction).map((p) => <p>{p}</p>)
+        ) : (
+          <p>
+            Page {page} of {category.name.toLowerCase()} questions ({pagination.startIndex}–
+            {pagination.endIndex} of {pagination.totalItems}).{' '}
+            <a href={category.canonicalPath}>Start from the beginning</a>.
+          </p>
+        )}
       </div>
     </div>
   </section>
   <div class="wrap page-layout">
     <div class="content-column">
       <section class="question-section" aria-labelledby="list-heading">
-        <header class="section-header"><span class="section-tag">{pagination.totalItems} questions</span><h2 id="list-heading" style="font-size:clamp(22px,3vw,28px)">{page > 1 ? `Questions ${pagination.startIndex}–${pagination.endIndex}` : `All ${category.name} Would You Rather Questions`}</h2></header>
-        <QuestionList questions={pagination.items} startIndex={pagination.startIndex} long={pagination.items.length > 20} ariaLabel={`${category.name} questions`} />
+        <header class="section-header">
+          <span class="section-tag">{pagination.totalItems} questions</span>
+          <h2 id="list-heading" style="font-size:clamp(22px,3vw,28px)">
+            {page > 1
+              ? `Questions ${pagination.startIndex}–${pagination.endIndex}`
+              : `All ${category.name} Would You Rather Questions`}
+          </h2>
+        </header>
+        <QuestionList
+          questions={pagination.items}
+          startIndex={pagination.startIndex}
+          long={pagination.items.length > 20}
+          ariaLabel={`${category.name} questions`}
+        />
         <Pagination pagination={pagination} basePath={category.canonicalPath} />
       </section>
       <AdSlot slot="inContent" class="inline-ad" />
