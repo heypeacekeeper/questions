@@ -76,7 +76,8 @@ if (fillB) fillB.style.height = '0';
   async function activateSet(slug: string, label?: string): Promise<void> { const entry: PackSetManifestEntry | null = (await ensureManifest())?.sets[slug] ?? null; if (packLabel && label) packLabel.textContent = label; engine.setSeenStore(new SessionSeenStore(`${config.keys.seen}:${slug}`, session)); await engine.useSet(entry); if (current && slug === config.set) engine.primeWith(current); packGrid?.querySelectorAll<HTMLButtonElement>('.pack-button').forEach((button) => button.setAttribute('aria-current', button.dataset.pack === slug ? 'true' : 'false')); }
   function openDialog(): void { if (!packDialog) return; if (packPicker) packPicker.hidden = false; if (ageGate) ageGate.hidden = true; if (typeof packDialog.showModal === 'function') packDialog.showModal(); else packDialog.setAttribute('open', ''); }
   function closeDialog(): void { if (!packDialog) return; if (typeof packDialog.close === 'function') packDialog.close(); else packDialog.removeAttribute('open'); packButton?.focus(); }
-  async function choosePack(slug: string, name: string, gated: boolean): Promise<void> { if (gated && local?.getItem(config.keys.adult) !== '1') { pendingGatedPack = { slug, name }; if (packPicker) packPicker.hidden = true; if (ageGate) ageGate.hidden = false; if (ageGatePack) ageGatePack.textContent = name; $('confirm-age-button')?.focus(); return; } local?.setItem(config.keys.pack, slug); await activateSet(slug, name); closeDialog(); const question = await engine.next(null); if (question) renderQuestion(question); else setNotice('No questions are available in this pack yet.'); }
+  async function choosePack(slug: string, name: string, gated: boolean): Promise<void> { if (gated && local?.getItem(config.keys.adult) !== '1') { pendingGatedPack = { slug, name }; if (packPicker) packPicker.hidden = true; if (ageGate) ageGate.hidden = false; if (ageGatePack) ageGatePack.textContent = name; $('confirm-age-button')?.focus(); return; } await activateSet(slug, name);
+  closeDialog(); const question = await engine.next(null); if (question) renderQuestion(question); else setNotice('No questions are available in this pack yet.'); }
   async function share(): Promise<void> { if (!current) return; const url = `${location.origin}${config.sharePrefix}${current.s}/`; const title = `Would you rather ${current.a} or ${current.b}?`; try { if (navigator.share) { await navigator.share({ title, url }); return; } } catch { /* Clipboard fallback. */ } try { await navigator.clipboard.writeText(url); setNotice('Link copied!'); announce('Link copied to clipboard.'); } catch { setNotice(url); } }
   const isFullscreen = () => Boolean(document.fullscreenElement || (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement);
   const toggleFullscreen = () => { if (isFullscreen()) { void document.exitFullscreen?.(); return; } void shell.requestFullscreen?.().catch(() => undefined); };
@@ -85,5 +86,24 @@ if (fillB) fillB.style.height = '0';
   packButton?.addEventListener('click', openDialog); $('close-pack-dialog')?.addEventListener('click', closeDialog); $('close-age-gate')?.addEventListener('click', closeDialog); $('age-back-button')?.addEventListener('click', () => { if (ageGate) ageGate.hidden = true; if (packPicker) packPicker.hidden = false; pendingGatedPack = null; }); $('confirm-age-button')?.addEventListener('click', () => { local?.setItem(config.keys.adult, '1'); const pack = pendingGatedPack; pendingGatedPack = null; if (pack) void choosePack(pack.slug, pack.name, false); }); packGrid?.addEventListener('click', (event) => { const button = (event.target as Element).closest<HTMLButtonElement>('.pack-button'); if (button) void choosePack(button.dataset.pack ?? config.set, button.dataset.name ?? 'Mixed', button.dataset.gated === '1'); }); packDialog?.addEventListener('click', (event) => { const box = packDialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeDialog(); });
   document.addEventListener('keydown', (event) => { if (event.defaultPrevented || packDialog?.open || document.getElementById('nav-links')?.classList.contains('open')) return; if (event.ctrlKey || event.metaKey || event.altKey) return;
   const target = event.target as HTMLElement | null; if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) return; if (event.key === 'ArrowLeft') { event.preventDefault(); choose('A'); } else if (event.key === 'ArrowRight') { event.preventDefault(); choose('B'); } else if ((event.key === 'Enter' || event.key === ' ') && hasVoted && target?.closest('.game-shell')) { event.preventDefault(); void nextQuestion(); } else if ((event.key === 'c' || event.key === 'C') && packButton) openDialog(); else if ((event.key === 'f' || event.key === 'F') && fullscreenButton && !fullscreenButton.hidden) toggleFullscreen(); });
-  if (config.mode !== 'single') { const warm = () => { const saved = config.mode === 'mixed' ? local?.getItem(config.keys.pack) : null; const adultOk = local?.getItem(config.keys.adult) === '1'; void (async () => { const loaded = await ensureManifest(); if (config.mode === 'mixed' && saved && saved !== config.set && loaded?.sets[saved] && (!loaded.sets[saved].requiresAgeGate || adultOk)) { const entry = loaded.sets[saved]; await activateSet(saved, entry?.name); const question = await engine.next(current?.id ?? null); if (question) renderQuestion(question); } else await activateSet(config.set); })(); }; if ('requestIdleCallback' in window) (window as Window & { requestIdleCallback: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback(warm, { timeout: 1500 }); else setTimeout(warm, 300); }
+
+    if (config.mode !== 'single') {
+    const warm = () => {
+      if (config.mode === 'mixed') local?.removeItem(config.keys.pack);
+      void activateSet(config.set);
+    };
+
+    if ('requestIdleCallback' in window) {
+      (
+        window as Window & {
+          requestIdleCallback: (
+            callback: () => void,
+            options?: { timeout: number },
+          ) => number;
+        }
+      ).requestIdleCallback(warm, { timeout: 1500 });
+    } else {
+      setTimeout(warm, 300);
+    }
+  }
 }
