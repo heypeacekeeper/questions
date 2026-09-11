@@ -17,6 +17,7 @@ import {
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
 import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
+import { readBoundedBody } from '@/lib/bounded-body';
 import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import {
@@ -291,6 +292,27 @@ describe('production Turnstile configuration', () => {
     expect(() =>
       buildAppEnv(productionEnv, { mode: 'production', context: 'worker' }),
     ).not.toThrow();
+  });
+});
+
+describe('bounded request bodies', () => {
+  it('cancels an upload as soon as it exceeds the byte limit', async () => {
+    let pulls = 0;
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 2) throw new Error('Body was read past the limit');
+        controller.enqueue(new Uint8Array(6));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    expect(await readBoundedBody(stream, 10)).toBeNull();
+    expect(cancelled).toBe(true);
+    expect(pulls).toBe(2);
   });
 });
 
