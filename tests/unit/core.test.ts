@@ -254,6 +254,46 @@ describe('supabase mapping and environment', () => {
   });
 });
 
+describe('production Turnstile configuration', () => {
+  const productionEnv = {
+    DATA_PROVIDER: 'supabase',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SECRET_KEY: 'test-supabase-secret',
+    PUBLIC_TURNSTILE_SITE_KEY: 'production-site-key',
+    TURNSTILE_SECRET_KEY: 'production-secret-key',
+  };
+
+  it('rejects Cloudflare test sitekeys in production', () => {
+    expect(() =>
+      buildAppEnv(
+        {
+          ...productionEnv,
+          PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+        },
+        { mode: 'production', context: 'worker' },
+      ),
+    ).toThrow(/PUBLIC_TURNSTILE_SITE_KEY must not use a Cloudflare test key/);
+  });
+
+  it('rejects Cloudflare test secrets in production', () => {
+    expect(() =>
+      buildAppEnv(
+        {
+          ...productionEnv,
+          TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+        },
+        { mode: 'production', context: 'worker' },
+      ),
+    ).toThrow(/TURNSTILE_SECRET_KEY must not use a Cloudflare test key/);
+  });
+
+  it('allows non-test Turnstile keys in production', () => {
+    expect(() =>
+      buildAppEnv(productionEnv, { mode: 'production', context: 'worker' }),
+    ).not.toThrow();
+  });
+});
+
 describe('client-only game helpers', () => {
   it('normalizes Windows and POSIX asset paths', () => {
     expect(normalizePath('dist\\client\\_astro\\game.js')).toBe('dist/client/_astro/game.js');
