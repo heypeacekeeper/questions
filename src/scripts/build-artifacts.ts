@@ -80,7 +80,7 @@ export default function buildArtifacts(): AstroIntegration {
           })),
         );
         const mixedCats = await ctx.categoryService.getMixedGameCategories();
-        const mixed = await ctx.questionService.getMixedGameQuestions(mixedCats);
+        const mixed = await ctx.questionService.getMixedGameQuestions(mixedCats, categories);
 
         const gameData = await buildGameData(perCategory, mixed);
         for (const file of gameData.files) {

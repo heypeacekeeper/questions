@@ -61,12 +61,17 @@ export class QuestionService {
   /** Mixed game questions: union of the given categories, de-duplicated, shuffled. */
   async getMixedGameQuestions(
     categories: readonly Pick<CategoryWithCount, 'id' | 'slug'>[],
+    allCategories: readonly Pick<CategoryWithCount, 'id' | 'isMature' | 'requiresAgeGate'>[],
     rng?: Rng,
   ): Promise<readonly Question[]> {
+    const restrictedCategoryIds = new Set(
+      allCategories.filter((c) => c.isMature || c.requiresAgeGate).map((c) => c.id),
+    );
     const seen = new Set<string>();
     const out: Question[] = [];
     for (const c of categories) {
       for (const q of await this.getForCategory(c)) {
+        if (q.categoryIds.some((id) => restrictedCategoryIds.has(id))) continue;
         if (!seen.has(q.id)) {
           seen.add(q.id);
           out.push(q);

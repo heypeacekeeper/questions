@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isSeasonalCategoryActive, isWithinWindow } from '@/application/category-service';
 import { hasErrors, validateContent } from '@/application/content-validation';
-import { pickNextUnseen } from '@/application/question-service';
+import { pickNextUnseen, QuestionService } from '@/application/question-service';
 import { validateContact, validateSubmission } from '@/application/submission-service';
 import { buildAppEnv } from '@/config/env';
 import { SEASONAL_WINDOWS } from '@/config/site';
@@ -52,6 +52,40 @@ describe('randomization', () => {
       seen.add(question!.id);
     }
     expect(pickNextUnseen(pool, seen)).toBeNull();
+  });
+});
+
+describe('mixed game filtering', () => {
+  it('excludes a question cross-listed in a mature or age-gated category', async () => {
+    const data = createDefaultMockDataset(0);
+    const categories = await new MockCategoryRepository(data).getAllCategories();
+    const safe = categories.find(
+      (category) =>
+        category.includeInMixedGame &&
+        category.isMature === false &&
+        category.requiresAgeGate === false,
+    );
+    const restricted = categories.find((category) => category.isMature || category.requiresAgeGate);
+
+    if (safe === undefined || restricted === undefined) {
+      throw new Error('Expected safe and restricted fixture categories');
+    }
+
+    const crossListedQuestion = {
+      ...DEMO_QUESTIONS[0]!,
+      id: 'cross-listed-question',
+      categoryIds: [safe.id, restricted.id],
+    };
+    const service = new QuestionService(
+      new MockQuestionRepository({
+        categories: data.categories,
+        questions: [crossListedQuestion],
+      }),
+    );
+
+    const mixed = await service.getMixedGameQuestions([safe], categories, () => 0);
+
+    expect(mixed).toEqual([]);
   });
 });
 
