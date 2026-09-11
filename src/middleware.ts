@@ -12,6 +12,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   res.headers.set('x-frame-options', 'DENY');
   // JSON-only endpoints: lock everything down. Pages get their CSP from public/_headers.
   if (new URL(ctx.request.url).pathname.startsWith('/api/')) {
+    res.headers.set('cache-control', 'no-store');
     res.headers.set(
       'content-security-policy',
       "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
