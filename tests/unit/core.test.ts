@@ -438,6 +438,95 @@ describe('game engine pack loading', () => {
   });
 });
 
+describe('game category switching', () => {
+  it('ignores an old pack download after switching categories', async () => {
+    let resolveOld!: (
+      questions: Array<{ id: string; a: string; b: string; s: string; d: number }>,
+    ) => void;
+    const engine = new GameEngine(
+      new SessionSeenStore('race-seen', null),
+      async (url) => {
+        if (url === '/old-pack.json') {
+          return new Promise((resolve) => {
+            resolveOld = resolve;
+          });
+        }
+        return [{ id: 'new-question', a: 'New A', b: 'New B', s: 'new0001', d: 10 }];
+      },
+      1,
+      () => 0,
+    );
+
+    const oldLoad = engine.useSet({
+      slug: 'old',
+      name: 'Old',
+      icon: '',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/old-pack.json'],
+    });
+    const newLoad = engine.useSet({
+      slug: 'new',
+      name: 'New',
+      icon: '',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/new-pack.json'],
+    });
+
+    await newLoad;
+    const current = await engine.next(null);
+    expect(current?.id).toBe('new-question');
+
+    resolveOld([{ id: 'old-question', a: 'Old A', b: 'Old B', s: 'old0001', d: 10 }]);
+    await oldLoad;
+
+    expect(await engine.next(current?.id ?? null)).toBeNull();
+  });
+});
+
+describe('game background loading', () => {
+  it('does not block an available question while prefetching', async () => {
+    const calls: string[] = [];
+    let finishPrefetch = () => {};
+    const engine = new GameEngine(
+      new SessionSeenStore('prefetch-seen', null),
+      async (url) => {
+        calls.push(url);
+        if (url === '/pack-2.json') {
+          return new Promise((resolve) => {
+            finishPrefetch = () => resolve([{ id: 'q3', a: 'A3', b: 'B3', s: 'pref003', d: 30 }]);
+          });
+        }
+        return [
+          { id: 'q1', a: 'A1', b: 'B1', s: 'pref001', d: 10 },
+          { id: 'q2', a: 'A2', b: 'B2', s: 'pref002', d: 20 },
+        ];
+      },
+      2,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'prefetch',
+      name: 'Prefetch',
+      icon: '',
+      requiresAgeGate: false,
+      total: 3,
+      packs: ['/pack-1.json', '/pack-2.json'],
+    });
+
+    const first = await engine.next(null);
+    expect(calls).toEqual(['/pack-1.json', '/pack-2.json']);
+
+    const second = await engine.next(first?.id ?? null);
+    expect(second?.id).toBe('q2');
+
+    finishPrefetch();
+    await engine.ensureSupply();
+  });
+});
+
 describe('generated display results', () => {
   it('is deterministic and uses complementary in-range percentages', () => {
     const first = generatedDisplayResult('question-stable-id');

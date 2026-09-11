@@ -77,6 +77,8 @@ export function initGame(): void {
   let busy = false;
   let manifest: GameDataManifest | null = null;
   let pendingGatedPack: { slug: string; name: string } | null = null;
+  let activationRequestId = 0;
+  let userSelectedPack = false;
   if (current) {
     engine.primeWith(current);
     engine.markSeen(current.id);
@@ -163,17 +165,21 @@ export function initGame(): void {
     manifest ??= await loadManifest(config.manifest);
     return manifest;
   }
-  async function activateSet(slug: string, label?: string): Promise<void> {
+  async function activateSet(slug: string, label?: string): Promise<number | null> {
+    const requestId = ++activationRequestId;
     const entry: PackSetManifestEntry | null = (await ensureManifest())?.sets[slug] ?? null;
+    if (requestId !== activationRequestId) return null;
     if (packLabel && label) packLabel.textContent = label;
     engine.setSeenStore(new SessionSeenStore(`${config.keys.seen}:${slug}`, session));
     await engine.useSet(entry);
+    if (requestId !== activationRequestId) return null;
     if (current && slug === config.set) engine.primeWith(current);
     packGrid
       ?.querySelectorAll<HTMLButtonElement>('.pack-button')
       .forEach((button) =>
         button.setAttribute('aria-current', button.dataset.pack === slug ? 'true' : 'false'),
       );
+    return requestId;
   }
   function openDialog(): void {
     if (!packDialog) return;
@@ -197,9 +203,14 @@ export function initGame(): void {
       $('confirm-age-button')?.focus();
       return;
     }
-    await activateSet(slug, name);
+    userSelectedPack = true;
+    const requestId = await activateSet(slug, name);
+    if (requestId === null) return;
+
     closeDialog();
     const question = await engine.next(null);
+    if (requestId !== activationRequestId) return;
+
     if (question) renderQuestion(question);
     else setNotice('No questions are available in this pack yet.');
   }
@@ -284,6 +295,7 @@ export function initGame(): void {
   });
   if (config.mode !== 'single') {
     const warm = () => {
+      if (userSelectedPack) return;
       if (config.mode === 'mixed') local?.removeItem(config.keys.pack);
       void activateSet(config.set);
     };

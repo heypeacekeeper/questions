@@ -72,6 +72,7 @@ export class GameEngine {
   private loadedPacks = new Set<string>();
   private entry: PackSetManifestEntry | null = null;
   private loading: Promise<void> | null = null;
+  private generation = 0;
 
   constructor(
     private seen: SeenStore,
@@ -92,6 +93,8 @@ export class GameEngine {
   }
 
   async useSet(entry: PackSetManifestEntry | null): Promise<void> {
+    this.generation += 1;
+    this.loading = null;
     this.entry = entry;
     this.pool = [];
     this.loadedPacks.clear();
@@ -114,12 +117,18 @@ export class GameEngine {
   /** Load more packs until we have enough unseen questions or run out of packs. */
   async ensureSupply(): Promise<void> {
     if (this.loading) return this.loading;
+    const generation = this.generation;
     this.loading = (async () => {
-      while (this.unseenCount < this.refillThreshold && this.remainingPacks.length > 0) {
+      while (
+        generation === this.generation &&
+        this.unseenCount < this.refillThreshold &&
+        this.remainingPacks.length > 0
+      ) {
         const url = this.remainingPacks[0];
         if (!url) break;
         try {
           const qs = await this.fetcher(url);
+          if (generation !== this.generation) return;
           this.loadedPacks.add(url);
           const ids = new Set(this.pool.map((q) => q.id));
           for (const q of qs) if (!ids.has(q.id)) this.pool.push(q);
@@ -129,7 +138,7 @@ export class GameEngine {
         }
       }
     })().finally(() => {
-      this.loading = null;
+      if (generation === this.generation) this.loading = null;
     });
     return this.loading;
   }
@@ -140,7 +149,8 @@ export class GameEngine {
    * never repeating the current question back-to-back).
    */
   async next(currentId: string | null): Promise<GameQuestion | null> {
-    await this.ensureSupply();
+    // Do not wait for background prefetching while usable questions remain.
+    if (this.unseenCount === 0) await this.ensureSupply();
     let seen = this.seen.get();
     let candidate = pickNextUnseen(
       this.pool.filter((q) => q.id !== currentId),
@@ -159,7 +169,11 @@ export class GameEngine {
         this.rng,
       );
     }
-    if (candidate) this.seen.add(candidate.id);
+    if (candidate) {
+      this.seen.add(candidate.id);
+      // Refill while the player reads the current question.
+      void this.ensureSupply();
+    }
     return candidate;
   }
 
