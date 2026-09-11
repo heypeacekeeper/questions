@@ -26,9 +26,11 @@ export interface AnalyticsConfig {
 type Params = Record<string, string | number | boolean>;
 
 let composite: CompositeAnalytics | null = null;
+let analyticsAllowed = false;
 
 /** Global, safe tracking entry point used by the game and forms. */
 export function track(event: AnalyticsEventName, params: Params = {}): void {
+  if (!analyticsAllowed) return;
   composite?.track(event, sanitize(params));
 }
 
@@ -69,7 +71,15 @@ export function initAnalytics(config: AnalyticsConfig): void {
   composite.loadConsentFree();
   const store = new CookieConsentStore();
   const apply = (state: ConsentState) => {
-    if (state.decided && state.analytics) composite?.loadConsented();
+    analyticsAllowed = state.decided && state.analytics;
+    if (config.ga4Id) {
+      (window as unknown as Record<string, unknown>)[`ga-disable-${config.ga4Id}`] =
+        !analyticsAllowed;
+      window.gtag?.('consent', 'update', {
+        analytics_storage: analyticsAllowed ? 'granted' : 'denied',
+      });
+    }
+    if (analyticsAllowed) composite?.loadConsented();
   };
   apply(store.read());
   document.addEventListener(CONSENT_EVENT, (e) => apply((e as CustomEvent<ConsentState>).detail));
