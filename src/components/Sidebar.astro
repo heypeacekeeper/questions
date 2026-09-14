@@ -19,7 +19,7 @@ const { popular, seasonal } = Astro.props;
         <li>
           <a href={c.canonicalPath}>
             <span>
-              {c.icon} {c.name}
+              <span aria-hidden="true">{c.icon}</span> {c.name}
             </span>
             <span class="count">{c.publishedQuestionCount}</span>
           </a>
@@ -36,7 +36,7 @@ const { popular, seasonal } = Astro.props;
     <h2 id="random-heading">Random game</h2>
     <p>Jump into a mixed round of questions from every family-friendly category.</p>
     <a class="side-cta side-cta-yellow" href={`${ROUTES.home}#game`}>
-      🎲 Play a random game
+      <span aria-hidden="true">🎲</span> Play a random game
     </a>
   </section>
   <section class="side-card" aria-labelledby="submit-heading">
