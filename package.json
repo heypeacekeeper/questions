@@ -31,7 +31,7 @@
     "cf-typegen": "wrangler types",
     "audit": "npm audit --omit=dev",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --check . --end-of-line auto",
     "lint": "eslint ."
   },
   "dependencies": {
