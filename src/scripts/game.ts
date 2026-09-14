@@ -189,13 +189,15 @@ export function initGame(): void {
     if (!packDialog) return;
     if (packPicker) packPicker.hidden = false;
     if (ageGate) ageGate.hidden = true;
-    if (typeof packDialog.showModal === 'function') packDialog.showModal();
-    else packDialog.setAttribute('open', '');
+    if (typeof packDialog.showModal !== 'function') {
+      setNotice('Pack selection requires a newer browser. You can continue playing Mixed.');
+      return;
+    }
+    packDialog.showModal();
   }
   function closeDialog(): void {
     if (!packDialog) return;
     if (typeof packDialog.close === 'function') packDialog.close();
-    else packDialog.removeAttribute('open');
     packButton?.focus();
   }
   async function choosePack(slug: string, name: string, gated: boolean): Promise<void> {
