@@ -3,7 +3,14 @@ import { API_PATHS, FORM_LIMITS, ROUTES, TURNSTILE } from '@/config/site';
 import TurnstileWidget from './TurnstileWidget.astro';
 ---
 
-<form class="form" id="contact-form" data-form data-endpoint={API_PATHS.contact} novalidate>
+<form
+  class="form"
+  id="contact-form"
+  data-form
+  data-endpoint={API_PATHS.contact}
+  method="post"
+  novalidate
+>
   <noscript>
     <p class="notice nojs-form-note">
       This form needs JavaScript. You can also email us directly using the address above.
@@ -67,7 +74,7 @@ import TurnstileWidget from './TurnstileWidget.astro';
   <TurnstileWidget action={TURNSTILE.actions.contact} />
   <p class="form-error" data-error-for="_form" role="alert"></p>
   <div class="form-actions">
-    <button class="button-primary" type="submit">
+    <button class="button-primary" type="submit" disabled>
       Send message
     </button>
   </div>

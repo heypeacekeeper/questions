@@ -13,6 +13,7 @@ const { categories } = Astro.props;
   id="submission-form"
   data-form
   data-endpoint={API_PATHS.submitQuestion}
+  method="post"
   novalidate
 >
   <noscript>
@@ -107,7 +108,7 @@ const { categories } = Astro.props;
   <TurnstileWidget action={TURNSTILE.actions.submitQuestion} />
   <p class="form-error" data-error-for="_form" role="alert"></p>
   <div class="form-actions">
-    <button class="button-primary" type="submit">
+    <button class="button-primary" type="submit" disabled>
       Submit question
     </button>
   </div>

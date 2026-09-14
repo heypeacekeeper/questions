@@ -19,6 +19,7 @@ export function initForms(): void {
   document.querySelectorAll<HTMLFormElement>('form[data-form]').forEach((form) => {
     if (form.dataset.ready === '1') return;
     form.dataset.ready = '1';
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const renderedAt = Date.now();
     const slot = form.querySelector<HTMLElement>('[data-turnstile]');
     let widgetId: string | undefined;
@@ -92,7 +93,6 @@ export function initForms(): void {
           data[k] = (form.elements.namedItem(k) as HTMLInputElement | null)?.checked ?? false;
       data.turnstileToken = token || window.turnstile?.getResponse(widgetId) || '';
       data.renderedAt = renderedAt;
-      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (button) button.disabled = true;
       try {
         const res = await fetch(form.dataset.endpoint ?? '', {
@@ -128,5 +128,8 @@ export function initForms(): void {
         if (button) button.disabled = false;
       }
     });
+
+    // The native buttons stay disabled unless initialization reaches this point.
+    if (button) button.disabled = false;
   });
 }

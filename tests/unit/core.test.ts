@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isSeasonalCategoryActive, isWithinWindow } from '@/application/category-service';
 import { hasErrors, validateContent } from '@/application/content-validation';
-import { pickNextUnseen } from '@/application/question-service';
+import { pickNextUnseen, QuestionService } from '@/application/question-service';
 import { validateContact, validateSubmission } from '@/application/submission-service';
 import { buildAppEnv } from '@/config/env';
 import { SEASONAL_WINDOWS } from '@/config/site';
@@ -17,6 +17,7 @@ import {
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
 import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
+import { readBoundedBody } from '@/lib/bounded-body';
 import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
 import {
@@ -52,6 +53,40 @@ describe('randomization', () => {
       seen.add(question!.id);
     }
     expect(pickNextUnseen(pool, seen)).toBeNull();
+  });
+});
+
+describe('mixed game filtering', () => {
+  it('excludes a question cross-listed in a mature or age-gated category', async () => {
+    const data = createDefaultMockDataset(0);
+    const categories = await new MockCategoryRepository(data).getAllCategories();
+    const safe = categories.find(
+      (category) =>
+        category.includeInMixedGame &&
+        category.isMature === false &&
+        category.requiresAgeGate === false,
+    );
+    const restricted = categories.find((category) => category.isMature || category.requiresAgeGate);
+
+    if (safe === undefined || restricted === undefined) {
+      throw new Error('Expected safe and restricted fixture categories');
+    }
+
+    const crossListedQuestion = {
+      ...DEMO_QUESTIONS[0]!,
+      id: 'cross-listed-question',
+      categoryIds: [safe.id, restricted.id],
+    };
+    const service = new QuestionService(
+      new MockQuestionRepository({
+        categories: data.categories,
+        questions: [crossListedQuestion],
+      }),
+    );
+
+    const mixed = await service.getMixedGameQuestions([safe], categories, () => 0);
+
+    expect(mixed).toEqual([]);
   });
 });
 
@@ -220,6 +255,67 @@ describe('supabase mapping and environment', () => {
   });
 });
 
+describe('production Turnstile configuration', () => {
+  const productionEnv = {
+    DATA_PROVIDER: 'supabase',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SECRET_KEY: 'test-supabase-secret',
+    PUBLIC_TURNSTILE_SITE_KEY: 'production-site-key',
+    TURNSTILE_SECRET_KEY: 'production-secret-key',
+  };
+
+  it('rejects Cloudflare test sitekeys in production', () => {
+    expect(() =>
+      buildAppEnv(
+        {
+          ...productionEnv,
+          PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+        },
+        { mode: 'production', context: 'worker' },
+      ),
+    ).toThrow(/PUBLIC_TURNSTILE_SITE_KEY must not use a Cloudflare test key/);
+  });
+
+  it('rejects Cloudflare test secrets in production', () => {
+    expect(() =>
+      buildAppEnv(
+        {
+          ...productionEnv,
+          TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+        },
+        { mode: 'production', context: 'worker' },
+      ),
+    ).toThrow(/TURNSTILE_SECRET_KEY must not use a Cloudflare test key/);
+  });
+
+  it('allows non-test Turnstile keys in production', () => {
+    expect(() =>
+      buildAppEnv(productionEnv, { mode: 'production', context: 'worker' }),
+    ).not.toThrow();
+  });
+});
+
+describe('bounded request bodies', () => {
+  it('cancels an upload as soon as it exceeds the byte limit', async () => {
+    let pulls = 0;
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 2) throw new Error('Body was read past the limit');
+        controller.enqueue(new Uint8Array(6));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    expect(await readBoundedBody(stream, 10)).toBeNull();
+    expect(cancelled).toBe(true);
+    expect(pulls).toBe(2);
+  });
+});
+
 describe('client-only game helpers', () => {
   it('normalizes Windows and POSIX asset paths', () => {
     expect(normalizePath('dist\\client\\_astro\\game.js')).toBe('dist/client/_astro/game.js');
@@ -361,6 +457,95 @@ describe('game engine pack loading', () => {
     expect(question?.id).toBe('only-question');
 
     expect(await engine.next(question?.id ?? null)).toBeNull();
+  });
+});
+
+describe('game category switching', () => {
+  it('ignores an old pack download after switching categories', async () => {
+    let resolveOld!: (
+      questions: Array<{ id: string; a: string; b: string; s: string; d: number }>,
+    ) => void;
+    const engine = new GameEngine(
+      new SessionSeenStore('race-seen', null),
+      async (url) => {
+        if (url === '/old-pack.json') {
+          return new Promise((resolve) => {
+            resolveOld = resolve;
+          });
+        }
+        return [{ id: 'new-question', a: 'New A', b: 'New B', s: 'new0001', d: 10 }];
+      },
+      1,
+      () => 0,
+    );
+
+    const oldLoad = engine.useSet({
+      slug: 'old',
+      name: 'Old',
+      icon: '',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/old-pack.json'],
+    });
+    const newLoad = engine.useSet({
+      slug: 'new',
+      name: 'New',
+      icon: '',
+      requiresAgeGate: false,
+      total: 1,
+      packs: ['/new-pack.json'],
+    });
+
+    await newLoad;
+    const current = await engine.next(null);
+    expect(current?.id).toBe('new-question');
+
+    resolveOld([{ id: 'old-question', a: 'Old A', b: 'Old B', s: 'old0001', d: 10 }]);
+    await oldLoad;
+
+    expect(await engine.next(current?.id ?? null)).toBeNull();
+  });
+});
+
+describe('game background loading', () => {
+  it('does not block an available question while prefetching', async () => {
+    const calls: string[] = [];
+    let finishPrefetch = () => {};
+    const engine = new GameEngine(
+      new SessionSeenStore('prefetch-seen', null),
+      async (url) => {
+        calls.push(url);
+        if (url === '/pack-2.json') {
+          return new Promise((resolve) => {
+            finishPrefetch = () => resolve([{ id: 'q3', a: 'A3', b: 'B3', s: 'pref003', d: 30 }]);
+          });
+        }
+        return [
+          { id: 'q1', a: 'A1', b: 'B1', s: 'pref001', d: 10 },
+          { id: 'q2', a: 'A2', b: 'B2', s: 'pref002', d: 20 },
+        ];
+      },
+      2,
+      () => 0,
+    );
+
+    await engine.useSet({
+      slug: 'prefetch',
+      name: 'Prefetch',
+      icon: '',
+      requiresAgeGate: false,
+      total: 3,
+      packs: ['/pack-1.json', '/pack-2.json'],
+    });
+
+    const first = await engine.next(null);
+    expect(calls).toEqual(['/pack-1.json', '/pack-2.json']);
+
+    const second = await engine.next(first?.id ?? null);
+    expect(second?.id).toBe('q2');
+
+    finishPrefetch();
+    await engine.ensureSupply();
   });
 });
 

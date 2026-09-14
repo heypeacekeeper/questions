@@ -18,11 +18,16 @@ export async function initialGameQuestion(
   category: CategoryWithCount | null,
 ): Promise<GameQuestion | null> {
   const ctx = await getContentContext();
-  const qs = category
-    ? await ctx.questionService.getForCategory(category)
-    : await ctx.questionService.getMixedGameQuestions(
-        await ctx.categoryService.getMixedGameCategories(),
-      );
+  let qs;
+  if (category) {
+    qs = await ctx.questionService.getForCategory(category);
+  } else {
+    const [mixedCategories, allCategories] = await Promise.all([
+      ctx.categoryService.getMixedGameCategories(),
+      ctx.categories.getAllCategories(),
+    ]);
+    qs = await ctx.questionService.getMixedGameQuestions(mixedCategories, allCategories);
+  }
   if (qs.length === 0) return null;
   const pick = shuffle(qs, seededRng(seedFromString(`initial:${category?.slug ?? 'mixed'}`)))[0];
   return pick ? toGameQuestion(pick) : null;

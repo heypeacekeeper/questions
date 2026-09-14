@@ -2,6 +2,7 @@
 import type { APIContext } from 'astro';
 import { workerBindings } from '@/lib/worker-env';
 import { sha256Hex } from '@/lib/crypto';
+import { readBoundedBody } from '@/lib/bounded-body';
 
 export const NO_STORE = {
   'cache-control': 'no-store, max-age=0',
@@ -53,8 +54,8 @@ export async function readJsonBody(
     return { error: fail(413, 'Request too large') };
   }
 
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > maxBytes) {
+  const text = await readBoundedBody(request.body, maxBytes);
+  if (text === null) {
     return { error: fail(413, 'Request too large') };
   }
 

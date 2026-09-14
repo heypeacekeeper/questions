@@ -27,16 +27,21 @@ export function initConsentBanner(): void {
     manageBtn?.setAttribute('aria-expanded', 'false');
   };
 
+  const save = (state: { decided: boolean; analytics: boolean; advertising: boolean }) => {
+    const previous = store.read();
+    const next = store.write(state);
+    hide();
+    if (previous.analytics && !next.analytics) location.reload();
+  };
+
   banner.addEventListener('click', (event) => {
     const btn = (event.target as Element).closest<HTMLButtonElement>('[data-consent]');
     if (!btn) return;
     const action = btn.dataset.consent;
     if (action === 'accept') {
-      store.write({ decided: true, analytics: true, advertising: true });
-      hide();
+      save({ decided: true, analytics: true, advertising: true });
     } else if (action === 'reject') {
-      store.write({ decided: true, analytics: false, advertising: false });
-      hide();
+      save({ decided: true, analytics: false, advertising: false });
     } else if (action === 'manage' && prefs && saveBtn) {
       const open = prefs.hidden;
       prefs.hidden = !open;
@@ -45,12 +50,11 @@ export function initConsentBanner(): void {
     } else if (action === 'save' && prefs) {
       const a = prefs.elements.namedItem('analytics') as HTMLInputElement | null;
       const ad = prefs.elements.namedItem('advertising') as HTMLInputElement | null;
-      store.write({
+      save({
         decided: true,
         analytics: Boolean(a?.checked),
         advertising: Boolean(ad?.checked),
       });
-      hide();
     }
   });
 

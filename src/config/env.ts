@@ -76,6 +76,20 @@ function trimOrUndefined(value: string | undefined): string | undefined {
   return v ? v : undefined;
 }
 
+const TURNSTILE_TEST_SITE_KEYS = [
+  '1x00000000000000000000AA',
+  '2x00000000000000000000AB',
+  '1x00000000000000000000BB',
+  '2x00000000000000000000BB',
+  '3x00000000000000000000FF',
+] as const;
+
+const TURNSTILE_TEST_SECRET_KEYS = [
+  '1x0000000000000000000000000000000AA',
+  '2x0000000000000000000000000000000AA',
+  '3x0000000000000000000000000000000AA',
+] as const;
+
 /**
  * Build a typed, validated `AppEnv` from a raw key/value record.
  * Pure function — easy to unit test.
@@ -162,6 +176,24 @@ export function buildAppEnv(
     if ((features.FEATURE_SUBMISSIONS || features.FEATURE_CONTACT_FORM) && !turnstileSecretKey) {
       problems.push('TURNSTILE_SECRET_KEY is required when forms are enabled');
     }
+  }
+
+  // --- Production CAPTCHA safety ---------------------------------------------
+  if (
+    isProduction &&
+    dataProvider !== 'mock' &&
+    turnstileSiteKey &&
+    TURNSTILE_TEST_SITE_KEYS.some((key) => key === turnstileSiteKey)
+  ) {
+    problems.push('PUBLIC_TURNSTILE_SITE_KEY must not use a Cloudflare test key in production');
+  }
+  if (
+    isProduction &&
+    dataProvider !== 'mock' &&
+    turnstileSecretKey &&
+    TURNSTILE_TEST_SECRET_KEYS.some((key) => key === turnstileSecretKey)
+  ) {
+    problems.push('TURNSTILE_SECRET_KEY must not use a Cloudflare test key in production');
   }
 
   // --- Feature-dependent public IDs -----------------------------------------
