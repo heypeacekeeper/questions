@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test --project=chromium --project=mobile-chromium",
+    "test:e2e": "playwright test",
     "test:runtime:mock": "npm run build:mock && tsx tools/mock-runtime-smoke.ts",
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "validate:content": "tsx tools/validate-content.ts",
@@ -32,8 +32,7 @@
     "audit": "npm audit --omit=dev",
     "format": "prettier --write .",
     "format:check": "prettier --check . --end-of-line auto",
-    "lint": "eslint .",
-    "test:e2e:webkit": "playwright test --project=mobile-webkit"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.0",

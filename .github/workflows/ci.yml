@@ -32,29 +32,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  webkit:
-    name: Experimental Safari/WebKit
-    needs: verify
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps webkit
-      - run: npm run test:e2e:webkit
-      - name: Upload WebKit report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-webkit
-          path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 7
-
   lighthouse:
     name: Experimental Lighthouse
     needs: verify
