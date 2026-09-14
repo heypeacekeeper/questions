@@ -14,7 +14,7 @@ const { categories } = Astro.props;
 
 <header class="site-nav" id="site-header">
   <div class="wrap nav-inner">
-    <a class="brand" href={ROUTES.home} aria-label={`${BRAND_NAME} home`}>
+    <a data-astro-prefetch class="brand" href={ROUTES.home} aria-label={`${BRAND_NAME} home`}>
       <span class="brand-mark" aria-hidden="true">
         ?
       </span>
@@ -62,7 +62,7 @@ const { categories } = Astro.props;
 
         <div class="category-menu" id="category-menu" hidden>
           {categories.map((c) => (
-            <a href={c.canonicalPath}>
+            <a data-astro-prefetch href={c.canonicalPath}>
               <span class="category-icon" aria-hidden="true">
                 {c.icon}
               </span>
@@ -72,19 +72,19 @@ const { categories } = Astro.props;
               </span>
             </a>
           ))}
-          <a class="view-all" href={ROUTES.categories}>
+          <a data-astro-prefetch class="view-all" href={ROUTES.categories}>
             View all categories →
           </a>
         </div>
       </div>
 
-      <a class="nav-link" href={ROUTES.about}>
+      <a data-astro-prefetch class="nav-link" href={ROUTES.about}>
         About Us
       </a>
-      <a class="nav-link" href={ROUTES.contact}>
+      <a data-astro-prefetch class="nav-link" href={ROUTES.contact}>
         Contact Us
       </a>
-      <a class="submit-link" href={ROUTES.submit}>
+      <a data-astro-prefetch class="submit-link" href={ROUTES.submit}>
         ＋ Submit a Question
       </a>
     </nav>
@@ -93,4 +93,4 @@ const { categories } = Astro.props;
 
 <div class="nav-scrim" id="nav-scrim"></div>
 
-<script is:inline src="/navigation.js" defer></script>
+<script src="../scripts/navigation.js"></script>

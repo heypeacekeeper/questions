@@ -581,7 +581,11 @@ svg {
     width: calc(100% + 36px);
     height: calc(100% + 8px);
     overflow: hidden;
-    animation: water-drift 1.8s ease-in-out infinite alternate;
+    animation: none;
+  }
+
+  .game-stage.voted .water-wave {
+    animation: water-drift 1.8s ease-in-out 3 alternate;
   }
 
   .water-wave-fill {
@@ -2092,4 +2096,39 @@ svg {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* A11Y: minimum 44px touch targets */
+.menu-button {
+  width: 44px;
+  height: 44px;
+}
+
+.tool-button {
+  min-height: 44px;
+}
+
+.icon-button,
+.close-button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+}
+
+.consent-actions button {
+  min-height: 44px;
+}
+
+/* A11Y: protect fixed and fullscreen controls from device safe areas */
+.consent-banner {
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.game-shell:fullscreen .game-toolbar,
+.game-shell:-webkit-full-screen .game-toolbar {
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-right: max(16px, env(safe-area-inset-right));
+  padding-left: max(16px, env(safe-area-inset-left));
 }

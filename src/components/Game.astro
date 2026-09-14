@@ -69,11 +69,7 @@ const packOptions =
     : [];
 ---
 
-<section class="game-section" id="game" aria-labelledby="game-heading">
-  <h2 class="sr-only" id="game-heading">
-    Play Would You Rather
-  </h2>
-
+<section class="game-section" id="game" aria-label="Play Would You Rather">
   <div class="game-wrap">
     <div class="game-shell" id="game-shell" data-game-config={JSON.stringify(config)}>
       <div class="game-toolbar">
@@ -232,7 +228,7 @@ const packOptions =
               </div>
               {mode !== 'single' && (
                 <button class="next-button" id="next-button" type="button">
-                  Next question
+                  <span id="next-label">Next question</span>
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"

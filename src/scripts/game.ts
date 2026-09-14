@@ -52,6 +52,7 @@ export function initGame(): void {
   const fillB = $('fill-b');
   const verdict = $('verdict-text');
   const nextButton = $<HTMLButtonElement>('next-button');
+  const nextLabel = $('next-label');
   const live = $('game-live');
   const shareButton = $<HTMLButtonElement>('share-button');
   const fullscreenButton = $<HTMLButtonElement>('fullscreen-button');
@@ -148,17 +149,30 @@ export function initGame(): void {
   async function nextQuestion(): Promise<void> {
     if (busy || config.mode === 'single') return;
     busy = true;
+    gameStage.setAttribute('aria-busy', 'true');
+    if (nextButton) nextButton.disabled = true;
+    if (nextLabel) nextLabel.textContent = 'Loading…';
+    announce('Loading next question.');
     try {
       const question = await engine.next(current?.id ?? null);
-      if (question) renderQuestion(question);
-      else
+      if (question) {
+        renderQuestion(question);
+      } else if (engine.supplyLoadFailed) {
+        const message = 'Could not load more questions. Check your connection and try again.';
+        setNotice(message);
+        announce(message);
+      } else {
         setNotice(
           engine.totalInSet <= 1
             ? 'That is the only question in this collection right now.'
             : 'You have seen every question in this collection. Nice work!',
         );
+      }
     } finally {
       busy = false;
+      gameStage.removeAttribute('aria-busy');
+      if (nextButton) nextButton.disabled = false;
+      if (nextLabel) nextLabel.textContent = 'Next question';
     }
   }
   async function ensureManifest(): Promise<GameDataManifest | null> {
@@ -185,13 +199,15 @@ export function initGame(): void {
     if (!packDialog) return;
     if (packPicker) packPicker.hidden = false;
     if (ageGate) ageGate.hidden = true;
-    if (typeof packDialog.showModal === 'function') packDialog.showModal();
-    else packDialog.setAttribute('open', '');
+    if (typeof packDialog.showModal !== 'function') {
+      setNotice('Pack selection requires a newer browser. You can continue playing Mixed.');
+      return;
+    }
+    packDialog.showModal();
   }
   function closeDialog(): void {
     if (!packDialog) return;
     if (typeof packDialog.close === 'function') packDialog.close();
-    else packDialog.removeAttribute('open');
     packButton?.focus();
   }
   async function choosePack(slug: string, name: string, gated: boolean): Promise<void> {

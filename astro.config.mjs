@@ -30,7 +30,7 @@ export default defineConfig({
   devToolbar: { enabled: false },
   // No client-side view transitions / SPA router. Native navigation only;
   // prefetch just warms the cache on hover.
-  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
   // Sessions would provision a KV namespace we do not need.
   session: false,
   adapter: cloudflare({
@@ -55,6 +55,8 @@ export default defineConfig({
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
     build: {
+      // Keep scripts external so the strict Content Security Policy can execute them.
+      assetsInlineLimit: 0,
       // Keep the client bundle honest: no source maps shipped to production.
       sourcemap: false,
     },

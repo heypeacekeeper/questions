@@ -72,6 +72,7 @@ export class GameEngine {
   private loadedPacks = new Set<string>();
   private entry: PackSetManifestEntry | null = null;
   private loading: Promise<void> | null = null;
+  private loadFailed = false;
   private generation = 0;
 
   constructor(
@@ -95,6 +96,7 @@ export class GameEngine {
   async useSet(entry: PackSetManifestEntry | null): Promise<void> {
     this.generation += 1;
     this.loading = null;
+    this.loadFailed = false;
     this.entry = entry;
     this.pool = [];
     this.loadedPacks.clear();
@@ -104,6 +106,10 @@ export class GameEngine {
   get unseenCount(): number {
     const seen = this.seen.get();
     return this.pool.filter((q) => !seen.has(q.id)).length;
+  }
+
+  get supplyLoadFailed(): boolean {
+    return this.loadFailed;
   }
 
   get totalInSet(): number {
@@ -118,6 +124,7 @@ export class GameEngine {
   async ensureSupply(): Promise<void> {
     if (this.loading) return this.loading;
     const generation = this.generation;
+    this.loadFailed = false;
     this.loading = (async () => {
       while (
         generation === this.generation &&
@@ -133,6 +140,7 @@ export class GameEngine {
           const ids = new Set(this.pool.map((q) => q.id));
           for (const q of qs) if (!ids.has(q.id)) this.pool.push(q);
         } catch {
+          this.loadFailed = true;
           // Leave the pack unloaded so the next call can retry it.
           break;
         }
