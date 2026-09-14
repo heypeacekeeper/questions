@@ -150,13 +150,17 @@ export function initGame(): void {
     busy = true;
     try {
       const question = await engine.next(current?.id ?? null);
-      if (question) renderQuestion(question);
-      else
+      if (question) {
+        renderQuestion(question);
+      } else if (engine.supplyLoadFailed) {
+        setNotice('Could not load more questions. Check your connection and try again.');
+      } else {
         setNotice(
           engine.totalInSet <= 1
             ? 'That is the only question in this collection right now.'
             : 'You have seen every question in this collection. Nice work!',
         );
+      }
     } finally {
       busy = false;
     }
