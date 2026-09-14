@@ -2,10 +2,15 @@ import { expect, test } from '@playwright/test';
 
 async function prepare(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem(
-      'wyr_consent',
-      JSON.stringify({ analytics: false, updatedAt: Date.now() }),
-    );
+    const consent = {
+      decided: true,
+      analytics: false,
+      advertising: false,
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    };
+    document.cookie =
+      'wyr_consent=' + encodeURIComponent(JSON.stringify(consent)) + '; Path=/; SameSite=Lax';
   });
 }
 
