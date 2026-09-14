@@ -1168,7 +1168,7 @@ svg {
   display: grid;
   place-items: center;
   overflow: hidden;
-  color: #aaa1b2;
+  color: var(--muted);
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -1181,7 +1181,7 @@ svg {
   top: 9px;
   left: 0;
   right: 0;
-  color: #aaa1b2;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.3px;
