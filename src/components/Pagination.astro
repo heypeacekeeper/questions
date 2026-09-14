@@ -1,5 +1,5 @@
 ---
-/** Crawlable pagination with real <a href> links and rel prev/next. */
+/** Crawlable pagination with real <a data-astro-prefetch href> links and rel prev/next. */
 import type { PaginationResult } from '@/domain/site';
 import { categoryPagePath } from '@/config/site';
 
@@ -34,7 +34,7 @@ function pageNumbers(current: number, total: number): (number | 'gap')[] {
     </p>
     <div class="pagination">
       {p.hasPrevious ? (
-        <a href={categoryPagePath(basePath, p.page - 1)} rel="prev">
+        <a data-astro-prefetch href={categoryPagePath(basePath, p.page - 1)} rel="prev">
           ← Previous
         </a>
       ) : (
@@ -48,13 +48,13 @@ function pageNumbers(current: number, total: number): (number | 'gap')[] {
         ) : n === p.page ? (
           <span aria-current="page">{n}</span>
         ) : (
-          <a href={categoryPagePath(basePath, n)} aria-label={`Page ${n}`}>
+          <a data-astro-prefetch href={categoryPagePath(basePath, n)} aria-label={`Page ${n}`}>
             {n}
           </a>
         ),
       )}
       {p.hasNext ? (
-        <a href={categoryPagePath(basePath, p.page + 1)} rel="next">
+        <a data-astro-prefetch href={categoryPagePath(basePath, p.page + 1)} rel="next">
           Next →
         </a>
       ) : (
