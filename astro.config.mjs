@@ -55,6 +55,8 @@ export default defineConfig({
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
     build: {
+      // Keep scripts external so the strict Content Security Policy can execute them.
+      assetsInlineLimit: 0,
       // Keep the client bundle honest: no source maps shipped to production.
       sourcemap: false,
     },
