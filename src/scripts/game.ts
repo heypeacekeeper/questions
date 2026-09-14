@@ -52,6 +52,7 @@ export function initGame(): void {
   const fillB = $('fill-b');
   const verdict = $('verdict-text');
   const nextButton = $<HTMLButtonElement>('next-button');
+  const nextLabel = $('next-label');
   const live = $('game-live');
   const shareButton = $<HTMLButtonElement>('share-button');
   const fullscreenButton = $<HTMLButtonElement>('fullscreen-button');
@@ -148,12 +149,18 @@ export function initGame(): void {
   async function nextQuestion(): Promise<void> {
     if (busy || config.mode === 'single') return;
     busy = true;
+    gameStage.setAttribute('aria-busy', 'true');
+    if (nextButton) nextButton.disabled = true;
+    if (nextLabel) nextLabel.textContent = 'Loading…';
+    announce('Loading next question.');
     try {
       const question = await engine.next(current?.id ?? null);
       if (question) {
         renderQuestion(question);
       } else if (engine.supplyLoadFailed) {
-        setNotice('Could not load more questions. Check your connection and try again.');
+        const message = 'Could not load more questions. Check your connection and try again.';
+        setNotice(message);
+        announce(message);
       } else {
         setNotice(
           engine.totalInSet <= 1
@@ -163,6 +170,9 @@ export function initGame(): void {
       }
     } finally {
       busy = false;
+      gameStage.removeAttribute('aria-busy');
+      if (nextButton) nextButton.disabled = false;
+      if (nextLabel) nextLabel.textContent = 'Next question';
     }
   }
   async function ensureManifest(): Promise<GameDataManifest | null> {
