@@ -581,7 +581,11 @@ svg {
     width: calc(100% + 36px);
     height: calc(100% + 8px);
     overflow: hidden;
-    animation: water-drift 1.8s ease-in-out infinite alternate;
+    animation: none;
+  }
+
+  .game-stage.voted .water-wave {
+    animation: water-drift 1.8s ease-in-out 3 alternate;
   }
 
   .water-wave-fill {
