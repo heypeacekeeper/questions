@@ -2093,3 +2093,24 @@ svg {
     transition: none !important;
   }
 }
+
+/* A11Y: minimum 44px touch targets */
+.menu-button {
+  width: 44px;
+  height: 44px;
+}
+
+.tool-button {
+  min-height: 44px;
+}
+
+.icon-button,
+.close-button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+}
+
+.consent-actions button {
+  min-height: 44px;
+}
