@@ -226,6 +226,77 @@ test('contact and submission APIs remain protected form flows', async ({ page },
   expect((await submission.json()).ok).toBe(true);
 });
 
+test('browser form excludes the automatic Turnstile response field', async ({ page }) => {
+  await page.addInitScript(() => {
+    const browserWindow = window as Window & {
+      __turnstileOptions?: Record<string, unknown>;
+    };
+
+    window.turnstile = {
+      render(element, options) {
+        browserWindow.__turnstileOptions = options;
+
+        // Simulate Turnstile's default hidden form field.
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'cf-turnstile-response';
+        hidden.value = 'automatic-response-token';
+        element.append(hidden);
+
+        const callback = options.callback;
+        if (typeof callback === 'function') {
+          callback('test-turnstile-token-value');
+        }
+
+        return 'test-widget';
+      },
+      reset() {},
+      getResponse() {
+        return 'test-turnstile-token-value';
+      },
+    };
+  });
+
+  let submittedPayload: Record<string, unknown> | null = null;
+
+  await page.route('**/api/contact/', async (route) => {
+    submittedPayload = route.request().postDataJSON() as Record<string, unknown>;
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, message: 'Test message received.' }),
+    });
+  });
+
+  await page.goto('/contact-us/');
+
+  await page.locator('#c-name').fill('Browser Test');
+  await page.locator('#c-email').fill('browser-test@example.com');
+  await page.locator('#c-subject').fill('Turnstile payload test');
+  await page
+    .locator('#c-message')
+    .fill('This verifies the complete browser form payload handling.');
+  await page.locator('input[name="privacy"]').check();
+
+  await page.locator('#contact-form button[type="submit"]').click();
+  await expect(page.locator('#contact-form [data-status]')).toHaveText('Test message received.');
+
+  const responseField = await page.evaluate(() => {
+    const browserWindow = window as Window & {
+      __turnstileOptions?: Record<string, unknown>;
+    };
+    return browserWindow.__turnstileOptions?.['response-field'];
+  });
+
+  expect(responseField).toBe(false);
+  expect(submittedPayload).not.toBeNull();
+  expect(submittedPayload).toMatchObject({
+    turnstileToken: 'test-turnstile-token-value',
+  });
+  expect(submittedPayload).not.toHaveProperty('cf-turnstile-response');
+});
+
 test('support pages and 404 render without blank states', async ({ page }) => {
   for (const path of [
     '/contact-us/',

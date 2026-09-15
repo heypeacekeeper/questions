@@ -29,6 +29,7 @@ export function initForms(): void {
       widgetId = window.turnstile.render(slot, {
         sitekey: slot.dataset.sitekey,
         action: slot.dataset.action,
+        'response-field': false,
         callback: (t: string) => {
           token = t;
         },
@@ -88,6 +89,7 @@ export function initForms(): void {
       new FormData(form).forEach((v, k) => {
         data[k] = typeof v === 'string' ? v : '';
       });
+      delete data['cf-turnstile-response'];
       for (const k of ['agree', 'privacy'])
         if (k in data || form.elements.namedItem(k))
           data[k] = (form.elements.namedItem(k) as HTMLInputElement | null)?.checked ?? false;
