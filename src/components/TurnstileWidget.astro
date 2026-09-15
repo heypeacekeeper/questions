@@ -22,4 +22,4 @@ const siteKey = env.turnstileSiteKey ?? TURNSTILE.testSiteKey;
   ></div>
   <p class="form-error" data-error-for="turnstile" role="alert"></p>
 </div>
-<script is:inline async defer src={TURNSTILE.scriptUrl}></script>
+<script is:inline defer src={TURNSTILE.scriptUrl} data-turnstile-script></script>

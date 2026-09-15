@@ -3,6 +3,7 @@ interface TurnstileApi {
   render(el: HTMLElement, o: Record<string, unknown>): string;
   reset(id?: string): void;
   getResponse(id?: string): string | undefined;
+  ready?(callback: () => void): void;
 }
 declare global {
   interface Window {
@@ -22,34 +23,81 @@ export function initForms(): void {
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const renderedAt = Date.now();
     const slot = form.querySelector<HTMLElement>('[data-turnstile]');
+    const turnstileError = form.querySelector<HTMLElement>('[data-error-for="turnstile"]');
     let widgetId: string | undefined;
     let token = '';
+    let loadTimer: number | null = null;
+
+    const setTurnstileError = (message: string) => {
+      if (turnstileError) turnstileError.textContent = message;
+    };
+
+    const clearLoadTimer = () => {
+      if (loadTimer === null) return;
+      window.clearTimeout(loadTimer);
+      loadTimer = null;
+    };
+
+    const turnstileUnavailable = () => {
+      clearLoadTimer();
+      token = '';
+      if (button) button.disabled = true;
+      setTurnstileError('Human verification could not load. Please refresh and try again.');
+    };
+
     const renderTurnstile = () => {
       if (!slot || widgetId || !window.turnstile) return;
+
       widgetId = window.turnstile.render(slot, {
         sitekey: slot.dataset.sitekey,
         action: slot.dataset.action,
         'response-field': false,
         callback: (t: string) => {
           token = t;
+          setTurnstileError('');
+          if (button) button.disabled = false;
         },
         'expired-callback': () => {
           token = '';
+          if (button) button.disabled = true;
+          setTurnstileError('Verification expired. Please complete it again.');
         },
         'error-callback': () => {
           token = '';
+          if (button) button.disabled = true;
+          setTurnstileError('Human verification failed to load. Please try again.');
         },
       });
     };
-    if (window.turnstile) renderTurnstile();
-    else {
-      const iv = setInterval(() => {
-        if (window.turnstile) {
-          clearInterval(iv);
-          renderTurnstile();
-        }
-      }, 200);
-      setTimeout(() => clearInterval(iv), 15000);
+
+    const initializeTurnstile = () => {
+      clearLoadTimer();
+
+      const api = window.turnstile;
+      if (!api) {
+        turnstileUnavailable();
+        return;
+      }
+
+      if (typeof api.ready === 'function') {
+        api.ready(renderTurnstile);
+      } else {
+        renderTurnstile();
+      }
+    };
+
+    const turnstileScript = document.querySelector<HTMLScriptElement>(
+      'script[data-turnstile-script]',
+    );
+
+    if (window.turnstile) {
+      initializeTurnstile();
+    } else if (turnstileScript) {
+      turnstileScript.addEventListener('load', initializeTurnstile, { once: true });
+      turnstileScript.addEventListener('error', turnstileUnavailable, { once: true });
+      loadTimer = window.setTimeout(turnstileUnavailable, 15000);
+    } else {
+      turnstileUnavailable();
     }
     const resetTurnstile = () => {
       token = '';
@@ -127,11 +175,8 @@ export function initForms(): void {
           status.classList.add('error');
         }
       } finally {
-        if (button) button.disabled = false;
+        if (button) button.disabled = !token;
       }
     });
-
-    // The native buttons stay disabled unless initialization reaches this point.
-    if (button) button.disabled = false;
   });
 }
