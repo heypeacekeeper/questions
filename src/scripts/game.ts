@@ -88,6 +88,8 @@ export function initGame(): void {
   let pendingGatedPack: { slug: string; name: string } | null = null;
   let activationRequestId = 0;
   let userSelectedPack = false;
+  let activeSet = config.set;
+  let activeLabel: string | undefined;
   function showFavoriteMessage(message: string): void {
     if (!favoriteToast) return;
 
@@ -195,6 +197,11 @@ export function initGame(): void {
 
   function renderQuestion(question: GameQuestion): void {
     current = question;
+
+    if (nextButton?.dataset.action === 'retry') {
+      delete nextButton.dataset.action;
+    }
+    if (nextLabel) nextLabel.textContent = 'Next question';
     hasVoted = false;
     lastPick = null;
     gameStage.classList.remove('voted', 'has-notice');
@@ -236,6 +243,14 @@ export function initGame(): void {
       `Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. ${current.d.toLocaleString('en-US')} votes.`,
     );
   }
+  function showQuestionLoadFailure(): void {
+    const message = 'Could not load more questions. Check your connection and try again.';
+    setNotice(message);
+    announce(message);
+    nextButton?.setAttribute('data-action', 'retry');
+    if (nextLabel) nextLabel.textContent = 'Try again';
+  }
+
   async function nextQuestion(): Promise<void> {
     if (busy || config.mode === 'single') return;
     if (
@@ -250,7 +265,8 @@ export function initGame(): void {
       if (nextLabel) nextLabel.textContent = 'Play again';
       return;
     }
-    if (nextButton?.dataset.action === 'retry') {
+    const retrying = nextButton?.dataset.action === 'retry';
+    if (retrying && nextButton) {
       delete nextButton.dataset.action;
     }
 
@@ -260,6 +276,16 @@ export function initGame(): void {
     if (nextLabel) nextLabel.textContent = 'Loading…';
     announce('Loading next question.');
     try {
+      if (retrying) {
+        manifest = null;
+        const requestId = await activateSet(activeSet, activeLabel);
+
+        if (requestId === null) {
+          showQuestionLoadFailure();
+          return;
+        }
+      }
+
       if (config.mode === 'favorites' && nextButton?.dataset.action === 'replay') {
         const questions = favorites.getAll();
         const replaySeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
@@ -282,11 +308,8 @@ export function initGame(): void {
       const question = await engine.next(current?.id ?? null);
       if (question) {
         renderQuestion(question);
-      } else if (engine.supplyLoadFailed) {
-        const message = 'Could not load more questions. Check your connection and try again.';
-        setNotice(message);
-        announce(message);
-        nextButton?.setAttribute('data-action', 'retry');
+      } else if (engine.supplyLoadFailed || engine.totalInSet === 0) {
+        showQuestionLoadFailure();
       } else {
         setNotice(
           engine.totalInSet <= 1
@@ -341,6 +364,8 @@ export function initGame(): void {
     return manifest;
   }
   async function activateSet(slug: string, label?: string): Promise<number | null> {
+    activeSet = slug;
+    activeLabel = label;
     const requestId = ++activationRequestId;
     const entry: PackSetManifestEntry | null = (await ensureManifest())?.sets[slug] ?? null;
     if (requestId !== activationRequestId) return null;
@@ -526,6 +551,8 @@ export function initGame(): void {
 
         if (question) {
           renderQuestion(question);
+        } else {
+          showQuestionLoadFailure();
         }
       } finally {
         busy = false;
