@@ -1,0 +1,108 @@
+<div class="page-loading-indicator" aria-hidden="true"></div>
+
+<script>
+  const loadingClass = 'is-page-loading';
+
+  const stopLoading = () => {
+    document.documentElement.classList.remove(loadingClass);
+  };
+
+  window.addEventListener('pageshow', stopLoading);
+
+  document.addEventListener('click', (event) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const link = target.closest('a[href]');
+    if (!(link instanceof HTMLAnchorElement)) return;
+
+    if (
+      link.hasAttribute('download') ||
+      link.target === '_blank' ||
+      link.rel.split(/\s+/).includes('external')
+    ) {
+      return;
+    }
+
+    const destination = new URL(link.href, window.location.href);
+
+    if (
+      destination.origin !== window.location.origin ||
+      !['http:', 'https:'].includes(destination.protocol)
+    ) {
+      return;
+    }
+
+    const currentPage = `${window.location.pathname}${window.location.search}`;
+    const destinationPage = `${destination.pathname}${destination.search}`;
+
+    // Do not show loading for a link that only moves within the current page.
+    if (destinationPage === currentPage && destination.hash) return;
+
+    // Do not show loading when the link points to the exact current URL.
+    if (destination.href === window.location.href) return;
+
+    document.documentElement.classList.add(loadingClass);
+  });
+</script>
+
+<style>
+  .page-loading-indicator {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1000;
+    height: 3px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .page-loading-indicator::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 35%;
+    content: '';
+    background: linear-gradient(90deg, var(--pink), var(--orange), var(--purple));
+    transform: translateX(-100%);
+  }
+
+  :global(html.is-page-loading) .page-loading-indicator {
+    opacity: 1;
+  }
+
+  :global(html.is-page-loading) .page-loading-indicator::before {
+    animation: page-loading-slide 900ms ease-in-out infinite;
+  }
+
+  @keyframes page-loading-slide {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(300%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.is-page-loading) .page-loading-indicator::before {
+      width: 70%;
+      animation: none;
+      transform: none;
+    }
+  }
+</style>
