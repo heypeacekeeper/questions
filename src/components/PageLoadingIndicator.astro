@@ -29,7 +29,7 @@
 
     if (
       link.hasAttribute('download') ||
-      link.target === '_blank' ||
+      (link.target && link.target !== '_self') ||
       link.rel.split(/\s+/).includes('external')
     ) {
       return;
@@ -47,11 +47,8 @@
     const currentPage = `${window.location.pathname}${window.location.search}`;
     const destinationPage = `${destination.pathname}${destination.search}`;
 
-    // Do not show loading for a link that only moves within the current page.
-    if (destinationPage === currentPage && destination.hash) return;
-
-    // Do not show loading when the link points to the exact current URL.
-    if (destination.href === window.location.href) return;
+    // Same-document links do not load another page.
+    if (destinationPage === currentPage) return;
 
     document.documentElement.classList.add(loadingClass);
   });
