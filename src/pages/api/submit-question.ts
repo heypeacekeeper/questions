@@ -12,7 +12,8 @@ export const POST: APIRoute = async (ctx) => {
   let mc;
   try {
     mc = createMutationContext(workerBindings());
-  } catch {
+  } catch (error) {
+    console.error('Question submission initialization failed.', error);
     return fail(503, 'Submissions are temporarily unavailable.');
   }
   if (!mc.env.features.FEATURE_SUBMISSIONS) return fail(503, 'Submissions are currently closed.');

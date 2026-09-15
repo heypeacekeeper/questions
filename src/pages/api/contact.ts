@@ -12,7 +12,8 @@ export const POST: APIRoute = async (ctx) => {
   let mc;
   try {
     mc = createMutationContext(workerBindings());
-  } catch {
+  } catch (error) {
+    console.error('Contact form initialization failed.', error);
     return fail(503, 'The contact form is temporarily unavailable.');
   }
   if (!mc.env.features.FEATURE_CONTACT_FORM)
