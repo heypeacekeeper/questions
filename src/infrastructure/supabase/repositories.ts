@@ -64,13 +64,30 @@ async function fetchAll<T>(
 export async function loadContentGraph(client: TypedSupabaseClient): Promise<ContentGraph> {
   const [categoryRows, questionRows, linkRows] = await Promise.all([
     fetchAll<CategoryRow>((from, to) =>
-      client.from('categories').select('*').order('sort_order').order('name').range(from, to),
+      client
+        .from('categories')
+        .select('*')
+        .order('sort_order')
+        .order('name')
+        .order('id')
+        .range(from, to),
     ),
     fetchAll<QuestionRow>((from, to) =>
-      client.from('questions').select('*').order('sort_order').order('created_at').range(from, to),
+      client
+        .from('questions')
+        .select('*')
+        .order('sort_order')
+        .order('created_at')
+        .order('id')
+        .range(from, to),
     ),
     fetchAll<QuestionCategoryRow>((from, to) =>
-      client.from('question_categories').select('*').range(from, to),
+      client
+        .from('question_categories')
+        .select('*')
+        .order('question_id')
+        .order('category_id')
+        .range(from, to),
     ),
   ]);
 

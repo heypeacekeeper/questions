@@ -16,6 +16,7 @@ import {
   MockQuestionRepository,
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
+import { loadContentGraph } from '@/infrastructure/supabase/repositories';
 import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
 import { readBoundedBody } from '@/lib/bounded-body';
 import { normalizePath } from '@/lib/performance-path';
@@ -273,6 +274,39 @@ describe('content helpers', () => {
 });
 
 describe('supabase mapping and environment', () => {
+  it('uses unique final ordering keys for paginated Supabase content', async () => {
+    const orderCalls: Record<string, string[]> = {};
+
+    const client = {
+      from(table: string) {
+        orderCalls[table] = [];
+
+        const query = {
+          select() {
+            return query;
+          },
+          order(column: string) {
+            orderCalls[table]!.push(column);
+            return query;
+          },
+          async range() {
+            return { data: [], error: null };
+          },
+        };
+
+        return query;
+      },
+    };
+
+    await loadContentGraph(client as never);
+
+    expect(orderCalls).toEqual({
+      categories: ['sort_order', 'name', 'id'],
+      questions: ['sort_order', 'created_at', 'id'],
+      question_categories: ['question_id', 'category_id'],
+    });
+  });
+
   it('maps content rows', () => {
     expect(
       mapQuestion(
