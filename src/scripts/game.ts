@@ -219,7 +219,7 @@ export function initGame(): void {
       const message = 'You have played every saved question. Nice work.';
       setNotice(message);
       announce(message);
-      nextButton.dataset.action = 'replay';
+      nextButton?.setAttribute('data-action', 'replay');
       if (nextLabel) nextLabel.textContent = 'Play again';
       return;
     }
