@@ -113,7 +113,7 @@ const structuredData: Record<string, unknown>[] = [
       <slot />
     </main>
 
-    <Footer />
+    <Footer showConsentPreferences={env.features.FEATURE_GA4 || env.features.FEATURE_ADS} />
 
     <ConsentManager />
     <Analytics />
