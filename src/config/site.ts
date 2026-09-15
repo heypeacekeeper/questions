@@ -96,7 +96,7 @@ export const FORM_LIMITS = {
 export const TURNSTILE = {
   actions: { contact: 'contact', submitQuestion: 'submit_question' } as const,
   siteverifyUrl: 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-  scriptUrl: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
+  scriptUrl: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
   /** Cloudflare documented test keys (always pass). */
   testSiteKey: '1x00000000000000000000AA',
   testSecretKey: '1x0000000000000000000000000000000AA',
