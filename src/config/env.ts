@@ -63,11 +63,22 @@ export class EnvValidationError extends Error {
   }
 }
 
-function parseBool(value: string | undefined, fallback: boolean): boolean {
-  if (value === undefined || value === '') return fallback;
-  const v = value.trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(v)) return true;
-  if (['0', 'false', 'no', 'off'].includes(v)) return false;
+function parseBool(
+  value: string | undefined,
+  fallback: boolean,
+  name: string,
+  problems: string[],
+): boolean {
+  if (value === undefined || value.trim() === '') return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  problems.push(
+    name +
+      ' must be a boolean value: true/false, 1/0, yes/no, or on/off (received "' +
+      value +
+      '")',
+  );
   return fallback;
 }
 
@@ -102,6 +113,7 @@ export function buildAppEnv(
   const isProduction = mode === 'production';
   const context = options.context ?? 'build';
   const problems: string[] = [];
+  const bool = (name: string, fallback: boolean) => parseBool(raw[name], fallback, name, problems);
 
   const providerRaw = (raw.DATA_PROVIDER ?? (isProduction ? 'supabase' : 'mock'))
     .trim()
@@ -121,15 +133,12 @@ export function buildAppEnv(
   }
 
   const features: FeatureFlags = {
-    FEATURE_SUBMISSIONS: parseBool(raw.FEATURE_SUBMISSIONS, FEATURE_DEFAULTS.FEATURE_SUBMISSIONS),
-    FEATURE_CONTACT_FORM: parseBool(
-      raw.FEATURE_CONTACT_FORM,
-      FEATURE_DEFAULTS.FEATURE_CONTACT_FORM,
-    ),
-    FEATURE_ADS: parseBool(raw.FEATURE_ADS, FEATURE_DEFAULTS.FEATURE_ADS),
-    FEATURE_GA4: parseBool(raw.FEATURE_GA4, FEATURE_DEFAULTS.FEATURE_GA4),
-    FEATURE_CLOUDFLARE_ANALYTICS: parseBool(
-      raw.FEATURE_CLOUDFLARE_ANALYTICS,
+    FEATURE_SUBMISSIONS: bool('FEATURE_SUBMISSIONS', FEATURE_DEFAULTS.FEATURE_SUBMISSIONS),
+    FEATURE_CONTACT_FORM: bool('FEATURE_CONTACT_FORM', FEATURE_DEFAULTS.FEATURE_CONTACT_FORM),
+    FEATURE_ADS: bool('FEATURE_ADS', FEATURE_DEFAULTS.FEATURE_ADS),
+    FEATURE_GA4: bool('FEATURE_GA4', FEATURE_DEFAULTS.FEATURE_GA4),
+    FEATURE_CLOUDFLARE_ANALYTICS: bool(
+      'FEATURE_CLOUDFLARE_ANALYTICS',
       FEATURE_DEFAULTS.FEATURE_CLOUDFLARE_ANALYTICS,
     ),
   };
@@ -142,7 +151,7 @@ export function buildAppEnv(
   const cloudflareAnalyticsToken = trimOrUndefined(raw.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN);
   const searchConsoleVerification = trimOrUndefined(raw.PUBLIC_SEARCH_CONSOLE_VERIFICATION);
   const adsensePublisherId = trimOrUndefined(raw.PUBLIC_ADSENSE_PUBLISHER_ID);
-  const allowDemoContent = parseBool(raw.ALLOW_DEMO_CONTENT, !isProduction);
+  const allowDemoContent = bool('ALLOW_DEMO_CONTENT', !isProduction);
 
   // --- Provider requirements -------------------------------------------------
   if (dataProvider === 'supabase') {
@@ -164,7 +173,7 @@ export function buildAppEnv(
     dataProvider === 'mock' &&
     isProduction &&
     context !== 'tool' &&
-    !parseBool(raw.ALLOW_MOCK_IN_PRODUCTION, false)
+    !bool('ALLOW_MOCK_IN_PRODUCTION', false)
   ) {
     problems.push(
       'DATA_PROVIDER=mock is not allowed in a production build. Set ALLOW_MOCK_IN_PRODUCTION=true only for deliberate test deployments.',

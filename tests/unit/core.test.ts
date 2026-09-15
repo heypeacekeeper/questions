@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { isSeasonalCategoryActive, isWithinWindow } from '@/application/category-service';
 import { hasErrors, validateContent } from '@/application/content-validation';
 import { pickNextUnseen, QuestionService } from '@/application/question-service';
 import { validateContact, validateSubmission } from '@/application/submission-service';
 import { buildAppEnv } from '@/config/env';
-import { SEASONAL_WINDOWS } from '@/config/site';
+import { FORM_LIMITS, SEASONAL_WINDOWS } from '@/config/site';
 import { isSitemapEligible } from '@/config/site-static.mjs';
 import { toGameQuestion, type Question } from '@/domain/question';
 import type { CategoryWithCount } from '@/domain/category';
@@ -25,6 +26,8 @@ import {
   formatGeneratedPercent,
   GameEngine,
   generatedDisplayResult,
+  parseGameDataManifest,
+  parsePackFilePayload,
   SessionSeenStore,
 } from '@/scripts/game-engine';
 
@@ -359,6 +362,35 @@ describe('supabase mapping and environment', () => {
   });
 });
 
+describe('strict environment booleans', () => {
+  it('rejects invalid boolean values instead of silently using defaults', () => {
+    expect(() =>
+      buildAppEnv(
+        {
+          DATA_PROVIDER: 'mock',
+          FEATURE_ADS: 'treu',
+        },
+        { mode: 'development' },
+      ),
+    ).toThrow(/FEATURE_ADS must be a boolean value/);
+  });
+
+  it('accepts supported boolean spellings', () => {
+    const result = buildAppEnv(
+      {
+        DATA_PROVIDER: 'mock',
+        FEATURE_ADS: 'yes',
+        FEATURE_GA4: '0',
+        PUBLIC_ADSENSE_PUBLISHER_ID: 'ca-pub-1234567890123456',
+      },
+      { mode: 'development' },
+    );
+
+    expect(result.features.FEATURE_ADS).toBe(true);
+    expect(result.features.FEATURE_GA4).toBe(false);
+  });
+});
+
 describe('production Turnstile configuration', () => {
   const productionEnv = {
     DATA_PROVIDER: 'supabase',
@@ -443,6 +475,24 @@ describe('client-only game helpers', () => {
   });
 });
 
+describe('Cloudflare rate-limit configuration', () => {
+  it('matches the application form limits', () => {
+    const source = readFileSync(new URL('../../wrangler.jsonc', import.meta.url), 'utf8');
+    const binding = source.match(
+      /"name"\s*:\s*"FORM_RATE_LIMITER"[\s\S]*?"simple"\s*:\s*\{\s*"limit"\s*:\s*(\d+)\s*,\s*"period"\s*:\s*(\d+)/,
+    );
+
+    expect(binding).not.toBeNull();
+    expect({
+      limit: Number(binding?.[1]),
+      period: Number(binding?.[2]),
+    }).toEqual({
+      limit: FORM_LIMITS.rateLimitMaxRequests,
+      period: FORM_LIMITS.rateLimitWindowSeconds,
+    });
+  });
+});
+
 describe('isolate rate limiter', () => {
   it('blocks requests over the limit and allows them after the window', async () => {
     const realDateNow = Date.now;
@@ -470,6 +520,90 @@ describe('isolate rate limiter', () => {
     expect(await limiter.allow('client-a', 1, 60)).toBe(true);
     expect(await limiter.allow('client-a', 1, 60)).toBe(false);
     expect(await limiter.allow('client-b', 1, 60)).toBe(true);
+  });
+});
+
+describe('game-data payload validation', () => {
+  const validQuestion = {
+    id: 'question-1',
+    a: 'Option A',
+    b: 'Option B',
+    s: 'abc2345',
+    d: 100,
+  };
+
+  it('accepts a valid pack and rejects malformed questions', () => {
+    expect(
+      parsePackFilePayload({
+        v: 1,
+        set: 'mixed',
+        i: 0,
+        n: 1,
+        q: [validQuestion],
+      }),
+    ).toEqual([validQuestion]);
+
+    expect(() =>
+      parsePackFilePayload({
+        v: 1,
+        set: 'mixed',
+        i: 0,
+        n: 1,
+        q: [{ ...validQuestion, id: '' }],
+      }),
+    ).toThrow(/Invalid question/);
+
+    expect(() =>
+      parsePackFilePayload({
+        v: 2,
+        set: 'mixed',
+        i: 0,
+        n: 1,
+        q: [validQuestion],
+      }),
+    ).toThrow(/Invalid game-data pack metadata/);
+  });
+
+  it('rejects duplicate question ids inside a pack', () => {
+    expect(() =>
+      parsePackFilePayload({
+        v: 1,
+        set: 'mixed',
+        i: 0,
+        n: 1,
+        q: [validQuestion, validQuestion],
+      }),
+    ).toThrow(/Invalid question/);
+  });
+
+  it('validates manifest metadata and pack URLs', () => {
+    const validManifest = {
+      version: 1,
+      generatedAt: '2026-09-15T00:00:00.000Z',
+      sets: {
+        mixed: {
+          slug: 'mixed',
+          name: 'Mixed',
+          icon: '🎲',
+          requiresAgeGate: false,
+          total: 1,
+          packs: ['/game-data/mixed/pack-01.abcdef1234.json'],
+        },
+      },
+    };
+
+    expect(parseGameDataManifest(validManifest)).toEqual(validManifest);
+    expect(
+      parseGameDataManifest({
+        ...validManifest,
+        sets: {
+          mixed: {
+            ...validManifest.sets.mixed,
+            packs: ['https://attacker.example/pack.json'],
+          },
+        },
+      }),
+    ).toBeNull();
   });
 });
 
