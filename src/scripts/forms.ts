@@ -21,7 +21,7 @@ export function initForms(): void {
     if (form.dataset.ready === '1') return;
     form.dataset.ready = '1';
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-    const renderedAt = Date.now();
+    let renderedAt = Date.now();
     const slot = form.querySelector<HTMLElement>('[data-turnstile]');
     const turnstileError = form.querySelector<HTMLElement>('[data-error-for="turnstile"]');
     let widgetId: string | undefined;
@@ -154,6 +154,7 @@ export function initForms(): void {
         const body = (await res.json().catch(() => ({ ok: false }))) as ApiResponse;
         if (res.ok && body.ok) {
           form.reset();
+          renderedAt = Date.now();
           resetTurnstile();
           if (status) {
             status.textContent = body.message ?? 'Thank you! Your message was sent.';
@@ -177,6 +178,10 @@ export function initForms(): void {
       } finally {
         if (button) button.disabled = !token;
       }
+    });
+
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) renderedAt = Date.now();
     });
   });
 }
