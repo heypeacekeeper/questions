@@ -185,6 +185,76 @@ describe('content helpers', () => {
     );
   });
 
+  const duplicateQuestion = (
+    id: string,
+    shareCode: string,
+    optionA: string,
+    optionB: string,
+  ): Question => ({
+    ...DEMO_QUESTIONS[0]!,
+    id,
+    shareCode,
+    optionA,
+    optionB,
+    status: 'published',
+    categoryIds: [],
+    isDemo: false,
+  });
+
+  const duplicateIssues = (...questions: Question[]) =>
+    validateContent([], questions, { allowDemoContent: true }).filter((issue) =>
+      ['QUESTION_DUPLICATE', 'QUESTION_REVERSED_DUPLICATE'].includes(issue.code),
+    );
+
+  it('reports a reversed duplicate pair', () => {
+    const issues = duplicateIssues(
+      duplicateQuestion('reverse-1', 'rev0001', 'Live on Mars', 'Live underwater'),
+      duplicateQuestion('reverse-2', 'rev0002', 'Live underwater', 'Live on Mars'),
+    );
+
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'QUESTION_REVERSED_DUPLICATE',
+        records: ['reverse-1', 'reverse-2'],
+      }),
+    ]);
+  });
+
+  it('reports exact duplicates without calling them reversed', () => {
+    const issues = duplicateIssues(
+      duplicateQuestion('exact-1', 'exct001', 'Live on Mars', 'Live underwater'),
+      duplicateQuestion('exact-2', 'exct002', 'Live on Mars', 'Live underwater'),
+    );
+
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'QUESTION_DUPLICATE',
+        records: ['exact-1', 'exact-2'],
+      }),
+    ]);
+  });
+
+  it('reports exact duplicates plus a third reversed record', () => {
+    const issues = duplicateIssues(
+      duplicateQuestion('mixed-1', 'mix0001', 'Live on Mars', 'Live underwater'),
+      duplicateQuestion('mixed-2', 'mix0002', 'Live on Mars', 'Live underwater'),
+      duplicateQuestion('mixed-3', 'mix0003', 'Live underwater', 'Live on Mars'),
+    );
+
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'QUESTION_DUPLICATE',
+          records: ['mixed-1', 'mixed-2'],
+        }),
+        expect.objectContaining({
+          code: 'QUESTION_REVERSED_DUPLICATE',
+          records: ['mixed-1', 'mixed-2', 'mixed-3'],
+        }),
+      ]),
+    );
+  });
+
   it('strips the question lead-in', () => {
     expect(normalizeForComparison('Would you rather Fly?')).toBe('fly');
   });
