@@ -6,6 +6,8 @@ import type { GameQuestion } from '@/domain/question';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
 import { pickNextUnseen } from '@/application/question-service';
 import type { Rng } from '@/lib/random';
+import { CONTENT_LIMITS } from '@/config/site';
+import { SHARE_CODE_PATTERN } from '@/lib/crypto';
 
 export interface SeenStore {
   get(): Set<string>;
@@ -60,11 +62,105 @@ export interface PackFilePayload {
   q: GameQuestion[];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+export function parsePackFilePayload(data: unknown): GameQuestion[] {
+  if (
+    !isRecord(data) ||
+    data.v !== 1 ||
+    !isNonEmptyString(data.set) ||
+    typeof data.i !== 'number' ||
+    !Number.isInteger(data.i) ||
+    data.i < 0 ||
+    typeof data.n !== 'number' ||
+    !Number.isInteger(data.n) ||
+    data.n <= 0 ||
+    data.i >= data.n ||
+    !Array.isArray(data.q)
+  ) {
+    throw new Error('Invalid game-data pack metadata');
+  }
+
+  const seenIds = new Set<string>();
+  const questions: GameQuestion[] = [];
+
+  for (const item of data.q) {
+    if (
+      !isRecord(item) ||
+      !isNonEmptyString(item.id) ||
+      !isNonEmptyString(item.a) ||
+      item.a.length > CONTENT_LIMITS.optionMax ||
+      !isNonEmptyString(item.b) ||
+      item.b.length > CONTENT_LIMITS.optionMax ||
+      !isNonEmptyString(item.s) ||
+      !SHARE_CODE_PATTERN.test(item.s) ||
+      typeof item.d !== 'number' ||
+      !Number.isInteger(item.d) ||
+      item.d < 0 ||
+      seenIds.has(item.id)
+    ) {
+      throw new Error('Invalid question in game-data pack');
+    }
+
+    seenIds.add(item.id);
+    questions.push({
+      id: item.id,
+      a: item.a,
+      b: item.b,
+      s: item.s,
+      d: item.d,
+    });
+  }
+
+  return questions;
+}
+
+export function parseGameDataManifest(data: unknown): GameDataManifest | null {
+  if (
+    !isRecord(data) ||
+    data.version !== 1 ||
+    !isNonEmptyString(data.generatedAt) ||
+    Number.isNaN(Date.parse(data.generatedAt)) ||
+    !isRecord(data.sets)
+  ) {
+    return null;
+  }
+
+  for (const [slug, value] of Object.entries(data.sets)) {
+    if (
+      !isRecord(value) ||
+      value.slug !== slug ||
+      !isNonEmptyString(value.name) ||
+      typeof value.icon !== 'string' ||
+      typeof value.requiresAgeGate !== 'boolean' ||
+      typeof value.total !== 'number' ||
+      !Number.isInteger(value.total) ||
+      value.total < 0 ||
+      !Array.isArray(value.packs) ||
+      !value.packs.every(
+        (pack) =>
+          typeof pack === 'string' &&
+          /^\/game-data\/[a-z0-9-]+\/pack-\d+\.[a-f0-9]+\.json$/.test(pack),
+      ) ||
+      new Set(value.packs).size !== value.packs.length
+    ) {
+      return null;
+    }
+  }
+
+  return data as unknown as GameDataManifest;
+}
+
 export const defaultFetcher: PackFetcher = async (url) => {
   const res = await fetch(url, { credentials: 'omit' });
   if (!res.ok) throw new Error(`pack ${res.status}`);
-  const data = (await res.json()) as PackFilePayload;
-  return Array.isArray(data.q) ? data.q : [];
+  return parsePackFilePayload(await res.json());
 };
 
 export class GameEngine {
@@ -204,8 +300,7 @@ export async function loadManifest(url: string): Promise<GameDataManifest | null
   try {
     const res = await fetch(url, { credentials: 'omit' });
     if (!res.ok) return null;
-    const data = (await res.json()) as GameDataManifest;
-    return data && data.version === 1 && data.sets ? data : null;
+    return parseGameDataManifest(await res.json());
   } catch {
     return null;
   }
