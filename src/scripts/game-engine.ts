@@ -103,6 +103,16 @@ export class GameEngine {
     if (entry) await this.ensureSupply();
   }
 
+  /** Use an in-memory question set without downloading game-data packs. */
+  useQuestions(questions: readonly GameQuestion[]): void {
+    this.generation += 1;
+    this.loading = null;
+    this.loadFailed = false;
+    this.entry = null;
+    this.pool = [...questions];
+    this.loadedPacks.clear();
+  }
+
   get unseenCount(): number {
     const seen = this.seen.get();
     return this.pool.filter((q) => !seen.has(q.id)).length;

@@ -2132,3 +2132,134 @@ svg {
   padding-right: max(16px, env(safe-area-inset-right));
   padding-left: max(16px, env(safe-area-inset-left));
 }
+
+/* Favorites */
+#favorite-icon {
+  display: block;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.favorite-toast {
+  position: fixed;
+  top: calc(var(--nav-height) + 12px);
+  left: 50%;
+  z-index: 110;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  background: var(--ink);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%);
+}
+
+.favorite-toast[hidden] {
+  display: none;
+}
+
+.favorites-wrap {
+  max-width: 900px;
+  padding-bottom: 64px;
+}
+
+.favorites-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.favorites-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.favorites-actions,
+.favorite-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primary-link,
+.secondary-button,
+.favorite-card-actions a,
+.favorite-card-actions button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.primary-link {
+  color: #fff;
+  background: var(--pink-dark);
+  border-color: var(--pink-dark);
+}
+
+.primary-link:hover {
+  text-decoration: none;
+  filter: brightness(1.06);
+}
+
+.secondary-button,
+.favorite-card-actions button {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.favorites-empty {
+  padding: 36px 24px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.favorites-empty h2 {
+  margin-top: 0;
+}
+
+.favorite-list {
+  display: grid;
+  gap: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.favorite-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.favorite-question {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+@media (max-width: 600px) {
+  .favorites-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .favorites-actions > * {
+    flex: 1;
+  }
+}

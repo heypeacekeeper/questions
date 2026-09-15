@@ -250,3 +250,125 @@ test('support pages and 404 render without blank states', async ({ page }) => {
   await page.goto('/404.html');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found');
 });
+
+test('game question can be saved and removed from favorites', async ({ page }) => {
+  await page.goto('/');
+
+  const favoriteButton = page.locator('#favorite-button');
+  await expect(favoriteButton).toBeVisible();
+  await expect(favoriteButton).toHaveAttribute('aria-pressed', 'false');
+  await expect(favoriteButton).toHaveAttribute('aria-label', 'Save this question to favorites');
+
+  const questionId = await page.locator('#game-stage').getAttribute('data-question-id');
+  expect(questionId).toBeTruthy();
+
+  await favoriteButton.click();
+  await expect(favoriteButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(favoriteButton).toHaveAttribute('aria-label', 'Remove this question from favorites');
+  await expect(page.locator('#favorite-icon')).toHaveText('♥');
+
+  const savedRaw = await page.evaluate(() => localStorage.getItem('wyr_favorites'));
+  expect(savedRaw).not.toBeNull();
+
+  const saved = JSON.parse(savedRaw ?? '{}') as {
+    v: number;
+    questions: { id: string }[];
+  };
+  expect(saved.v).toBe(1);
+  expect(saved.questions[0]?.id).toBe(questionId);
+
+  await page.reload();
+  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#favorite-button').click();
+  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'false');
+
+  const remaining = await page.evaluate(() => {
+    const raw = localStorage.getItem('wyr_favorites');
+    return raw ? (JSON.parse(raw) as { questions: unknown[] }).questions.length : 0;
+  });
+  expect(remaining).toBe(0);
+});
+
+test('favorites list and saved-question game work without pack downloads', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'wyr_favorites',
+      JSON.stringify({
+        v: 1,
+        questions: [
+          {
+            id: 'favorite-test-1',
+            a: 'explore outer space',
+            b: 'explore the deepest ocean',
+            s: 'demq22a',
+            d: 2500,
+          },
+          {
+            id: 'favorite-test-2',
+            a: 'have a pet dragon',
+            b: 'have a friendly robot',
+            s: 'demq22b',
+            d: 3500,
+          },
+        ],
+      }),
+    );
+  });
+
+  const manifestRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/game-data/manifest.json') {
+      manifestRequests.push(request.url());
+    }
+  });
+
+  await page.goto('/favorites/');
+
+  await expect(page.locator('#favorites-count')).toHaveText('2 saved questions');
+  await expect(page.locator('#favorite-list .favorite-card')).toHaveCount(2);
+  await expect(page.locator('#play-favorites')).toBeVisible();
+
+  await page.locator('#play-favorites').click();
+  await expect(page).toHaveURL(/\/favorites\/play\/$/);
+  await expect(page.locator('#game-stage')).toBeVisible();
+
+  const firstId = await page.locator('#game-stage').getAttribute('data-question-id');
+  expect(['favorite-test-1', 'favorite-test-2']).toContain(firstId);
+
+  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#choice-a').click();
+  await page.locator('#next-button').click();
+
+  await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstId ?? '');
+
+  await page.locator('#choice-b').click();
+  await page.locator('#next-button').click();
+  await expect(page.locator('#verdict-text')).toHaveText(
+    'You have played every saved question. Nice work.',
+  );
+  await expect(page.locator('#next-label')).toHaveText('Play again');
+
+  await page.locator('#next-button').click();
+  await expect(page.locator('#next-label')).toHaveText('Next question');
+  await expect(page.locator('#game-stage')).toHaveAttribute(
+    'data-question-id',
+    /favorite-test-[12]/,
+  );
+
+  expect(manifestRequests).toEqual([]);
+
+  await page.goto('/favorites/');
+  await expect(page.locator('#favorites-count')).toHaveText('2 saved questions');
+
+  await page.locator('.favorite-card-actions button').first().click();
+  await expect(page.locator('#favorites-count')).toHaveText('1 saved question');
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#clear-favorites').click();
+
+  await expect(page.locator('#favorites-count')).toHaveText('0 saved questions');
+  await expect(page.locator('#favorites-empty')).toBeVisible();
+  await expect(page.locator('#favorite-list')).toBeHidden();
+});

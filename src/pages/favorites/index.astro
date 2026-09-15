@@ -1,0 +1,61 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { ROUTES } from '@/config/site';
+import { homeBreadcrumb } from '@/lib/seo';
+
+const meta = {
+  title: 'My Favorite Questions',
+  description: 'View and manage the Would You Rather questions saved in this browser.',
+  path: ROUTES.favorites,
+  robots: 'noindex,follow',
+};
+
+const breadcrumbs = [homeBreadcrumb(), { name: 'Favorites', path: ROUTES.favorites }];
+---
+
+<BaseLayout meta={meta} breadcrumbs={breadcrumbs} bodyClass="favorites-page">
+  <section class="content-intro">
+    <div class="wrap">
+      <Breadcrumbs items={breadcrumbs} />
+      <h1>My Favorite Questions</h1>
+      <div class="intro-copy">
+        <p>
+          Questions you save appear here on this device. Favorites are stored only in your browser.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap favorites-wrap">
+    <div class="favorites-summary">
+      <p id="favorites-count">Loading saved questions…</p>
+
+      <div class="favorites-actions">
+        <a class="primary-link" id="play-favorites" href={ROUTES.favoritesPlay} hidden>
+          Play saved questions
+        </a>
+        <button class="secondary-button" id="clear-favorites" type="button" hidden>
+          Clear all
+        </button>
+      </div>
+    </div>
+
+    <div class="favorites-empty" id="favorites-empty" hidden>
+      <h2>No favorites saved yet</h2>
+      <p>Play the game and tap the heart to save questions here.</p>
+      <a class="primary-link" href={ROUTES.home}>
+        Start playing
+      </a>
+    </div>
+
+    <ol class="favorite-list" id="favorite-list" hidden></ol>
+
+    <p class="sr-only" id="favorites-live" aria-live="polite" aria-atomic="true"></p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { initFavoritesPage } from '@/scripts/favorites-page';
+  initFavoritesPage();
+</script>

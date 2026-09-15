@@ -22,6 +22,8 @@ export const API_PATHS = {
 export const ROUTES = {
   home: '/',
   categories: '/categories/',
+  favorites: '/favorites/',
+  favoritesPlay: '/favorites/play/',
   about: '/about-us/',
   contact: '/contact-us/',
   submit: '/submit-a-question/',
