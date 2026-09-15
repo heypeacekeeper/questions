@@ -1,0 +1,36 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Game from '@/components/Game.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { ROUTES } from '@/config/site';
+import { homeBreadcrumb } from '@/lib/seo';
+
+const meta = {
+  title: 'Play My Favorite Questions',
+  description: 'Play the Would You Rather questions saved in this browser.',
+  path: ROUTES.favoritesPlay,
+  robots: 'noindex,follow',
+};
+
+const breadcrumbs = [
+  homeBreadcrumb(),
+  { name: 'Favorites', path: ROUTES.favorites },
+  { name: 'Play', path: ROUTES.favoritesPlay },
+];
+---
+
+<BaseLayout meta={meta} breadcrumbs={breadcrumbs}>
+  <Game mode="favorites" initial={null} setSlug="favorites" />
+
+  <section class="content-intro">
+    <div class="wrap">
+      <Breadcrumbs items={breadcrumbs} />
+      <h1>Play My Favorite Questions</h1>
+      <div class="intro-copy">
+        <p>
+          Play through the questions saved in this browser. Your favorites never leave this device.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

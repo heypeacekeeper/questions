@@ -23,7 +23,7 @@ interface PackOption {
 }
 
 interface Props {
-  mode: 'mixed' | 'category' | 'single';
+  mode: 'mixed' | 'category' | 'single' | 'favorites';
   /** First question to render statically (null → empty state). */
   initial: GameQuestion | null;
   /** Pack set slug for the manifest (mixed | category slug). Ignored for single. */
@@ -51,7 +51,12 @@ const config = {
   manifest: `${ROUTES.gameDataPrefix}${GAME_DATA.manifestFile}`,
   refill: GAME_DATA.refillThreshold,
   sharePrefix: ROUTES.sharePrefix,
-  keys: { pack: STORAGE_KEYS.pack, adult: STORAGE_KEYS.adultConfirmed, seen: STORAGE_KEYS.seen },
+  keys: {
+    pack: STORAGE_KEYS.pack,
+    adult: STORAGE_KEYS.adultConfirmed,
+    seen: STORAGE_KEYS.seen,
+    favorites: STORAGE_KEYS.favorites,
+  },
   initial,
 };
 const packOptions =
@@ -93,6 +98,10 @@ const packOptions =
               <path d="m5 8 7 8 7-8" />
             </svg>
           </button>
+        ) : mode === 'favorites' ? (
+          <a class="tool-button" href={ROUTES.favorites}>
+            ♥ Favorites
+          </a>
         ) : mode === 'category' && category ? (
           <span
             class="tool-button"
@@ -108,6 +117,28 @@ const packOptions =
         )}
 
         <span class="toolbar-spacer"></span>
+
+        <button
+          class="tool-button icon-button"
+          id="favorite-button"
+          type="button"
+          aria-label="Save this question"
+          aria-pressed="false"
+          title="Save question"
+          hidden
+        >
+          <span id="favorite-icon" aria-hidden="true">
+            ♡
+          </span>
+        </button>
+
+        <div
+          class="favorite-toast"
+          id="favorite-toast"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
 
         <button
           class="tool-button icon-button"
@@ -157,8 +188,9 @@ const packOptions =
         data-question-id={initial?.id ?? ''}
         data-share-code={initial?.s ?? ''}
         aria-busy="false"
+        hidden={mode === 'favorites'}
       >
-        {initial ? (
+        {initial || mode === 'favorites' ? (
           <>
             <button
               class="choice choice-a"
@@ -169,7 +201,7 @@ const packOptions =
               <span class="choice-content">
                 <span class="option-label">OPTION A</span>
                 <span class="choice-text" id="text-a">
-                  {initial.a}
+                  {initial?.a ?? ''}
                 </span>
 
                 <span class="result" id="result-a">
@@ -200,7 +232,7 @@ const packOptions =
               <span class="choice-content">
                 <span class="option-label">OPTION B</span>
                 <span class="choice-text" id="text-b">
-                  {initial.b}
+                  {initial?.b ?? ''}
                 </span>
 
                 <span class="result" id="result-b">
@@ -266,6 +298,12 @@ const packOptions =
         )}
       </div>
 
+      {mode === 'favorites' && (
+        <div class="game-empty" id="favorites-game-empty">
+          <p id="favorites-game-empty-text">Loading your saved questions…</p>
+          <a href={ROUTES.home}>Return to the main game</a>
+        </div>
+      )}
       <p class="sr-only" id="game-instructions">
         Would you rather… choose Option A or Option B.
       </p>

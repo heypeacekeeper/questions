@@ -1,5 +1,6 @@
 /** Progressive enhancement controller for the static first game question. */
 import type { GameQuestion } from '@/domain/question';
+import { FavoriteStore } from '@/lib/favorites';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
 import {
   formatGeneratedPercent,
@@ -10,12 +11,12 @@ import {
 } from './game-engine';
 
 interface GameConfig {
-  mode: 'mixed' | 'category' | 'single';
+  mode: 'mixed' | 'category' | 'single' | 'favorites';
   set: string;
   manifest: string;
   refill: number;
   sharePrefix: string;
-  keys: { pack: string; adult: string; seen: string };
+  keys: { pack: string; adult: string; seen: string; favorites: string };
   initial: GameQuestion | null;
 }
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -54,6 +55,10 @@ export function initGame(): void {
   const nextButton = $<HTMLButtonElement>('next-button');
   const nextLabel = $('next-label');
   const live = $('game-live');
+  const favoriteButton = $<HTMLButtonElement>('favorite-button');
+  const favoriteIcon = $('favorite-icon');
+  const favoriteToast = $('favorite-toast');
+  let favoriteToastTimer: number | null = null;
   const shareButton = $<HTMLButtonElement>('share-button');
   const fullscreenButton = $<HTMLButtonElement>('fullscreen-button');
   const packButton = $<HTMLButtonElement>('pack-button');
@@ -63,10 +68,13 @@ export function initGame(): void {
   const packPicker = $('pack-picker');
   const ageGate = $('age-gate');
   const ageGatePack = $('age-gate-pack');
+  const favoritesGameEmpty = $('favorites-game-empty');
+  const favoritesGameEmptyText = $('favorites-game-empty-text');
   if (!stage) return;
   const gameStage = stage;
   const local = safeStorage('local');
   const session = safeStorage('session');
+  const favorites = new FavoriteStore(local, config.keys.favorites);
   const engine = new GameEngine(
     new SessionSeenStore(`${config.keys.seen}:${config.set}`, session),
     undefined,
@@ -80,11 +88,65 @@ export function initGame(): void {
   let pendingGatedPack: { slug: string; name: string } | null = null;
   let activationRequestId = 0;
   let userSelectedPack = false;
+  function showFavoriteMessage(message: string): void {
+    if (!favoriteToast) return;
+
+    if (favoriteToastTimer !== null) {
+      window.clearTimeout(favoriteToastTimer);
+    }
+
+    favoriteToast.textContent = message;
+    favoriteToast.hidden = false;
+
+    favoriteToastTimer = window.setTimeout(() => {
+      favoriteToast.hidden = true;
+      favoriteToast.textContent = '';
+      favoriteToastTimer = null;
+    }, 2000);
+  }
+
+  function updateFavoriteButton(): void {
+    if (!favoriteButton) return;
+
+    const saved = Boolean(current && favorites.has(current.id));
+    favoriteButton.hidden = !current || !local;
+    favoriteButton.setAttribute('aria-pressed', String(saved));
+    favoriteButton.setAttribute(
+      'aria-label',
+      saved ? 'Remove this question from favorites' : 'Save this question to favorites',
+    );
+    favoriteButton.title = saved ? 'Remove from favorites' : 'Save question';
+
+    if (favoriteIcon) favoriteIcon.textContent = saved ? '♥' : '♡';
+  }
+
+  function toggleFavorite(): void {
+    if (!current) return;
+
+    const wasSaved = favorites.has(current.id);
+    favorites.toggle(current);
+    const saved = favorites.has(current.id);
+
+    updateFavoriteButton();
+
+    if (saved === wasSaved) {
+      showFavoriteMessage('Favorites are unavailable in this browser.');
+      return;
+    }
+
+    showFavoriteMessage(saved ? 'Added to favorites ♥' : 'Removed from favorites');
+
+    if (config.mode === 'favorites') {
+      engine.useQuestions(favorites.getAll());
+      if (current) engine.markSeen(current.id);
+    }
+  }
   if (current) {
     engine.primeWith(current);
     engine.markSeen(current.id);
   }
   if (shareButton && current) shareButton.hidden = false;
+  updateFavoriteButton();
   if (
     fullscreenButton &&
     (document.fullscreenEnabled ||
@@ -111,6 +173,7 @@ export function initGame(): void {
     gameStage.classList.remove('voted', 'has-notice');
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
+    updateFavoriteButton();
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a;
     if (textB) textB.textContent = question.b;
@@ -148,12 +211,43 @@ export function initGame(): void {
   }
   async function nextQuestion(): Promise<void> {
     if (busy || config.mode === 'single') return;
+    if (
+      config.mode === 'favorites' &&
+      engine.unseenCount === 0 &&
+      nextButton?.dataset.action !== 'replay'
+    ) {
+      const message = 'You have played every saved question. Nice work.';
+      setNotice(message);
+      announce(message);
+      nextButton?.setAttribute('data-action', 'replay');
+      if (nextLabel) nextLabel.textContent = 'Play again';
+      return;
+    }
     busy = true;
     gameStage.setAttribute('aria-busy', 'true');
     if (nextButton) nextButton.disabled = true;
     if (nextLabel) nextLabel.textContent = 'Loading…';
     announce('Loading next question.');
     try {
+      if (config.mode === 'favorites' && nextButton?.dataset.action === 'replay') {
+        const questions = favorites.getAll();
+        const replaySeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
+
+        replaySeen.clear();
+        engine.setSeenStore(replaySeen);
+        engine.useQuestions(questions);
+        delete nextButton.dataset.action;
+
+        const replayQuestion = await engine.next(null);
+        if (replayQuestion) {
+          renderQuestion(replayQuestion);
+        } else {
+          setNotice('Save at least one question before playing favorites.');
+        }
+
+        return;
+      }
+
       const question = await engine.next(current?.id ?? null);
       if (question) {
         renderQuestion(question);
@@ -172,9 +266,40 @@ export function initGame(): void {
       busy = false;
       gameStage.removeAttribute('aria-busy');
       if (nextButton) nextButton.disabled = false;
-      if (nextLabel) nextLabel.textContent = 'Next question';
+      if (nextLabel) {
+        nextLabel.textContent =
+          nextButton?.dataset.action === 'replay' ? 'Play again' : 'Next question';
+      }
     }
   }
+  async function activateFavoritesGame(): Promise<void> {
+    const questions = favorites.getAll();
+    const favoritesSeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
+    favoritesSeen.clear();
+    engine.setSeenStore(favoritesSeen);
+    engine.useQuestions(questions);
+
+    if (questions.length === 0) {
+      gameStage.hidden = true;
+      if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
+      if (favoritesGameEmptyText) {
+        favoritesGameEmptyText.textContent = local
+          ? 'You have no saved questions yet. Return to the main game and tap the heart to add some.'
+          : 'Favorites are unavailable in this browser.';
+      }
+      return;
+    }
+
+    const question = await engine.next(null);
+    if (!question) return;
+
+    if (favoritesGameEmpty) favoritesGameEmpty.hidden = true;
+    gameStage.hidden = false;
+    renderQuestion(question);
+    if (shareButton) shareButton.hidden = false;
+    announce(`Playing ${questions.length} saved questions.`);
+  }
+
   async function ensureManifest(): Promise<GameDataManifest | null> {
     manifest ??= await loadManifest(config.manifest);
     return manifest;
@@ -270,6 +395,7 @@ export function initGame(): void {
   choiceA?.addEventListener('click', () => choose('A'));
   choiceB?.addEventListener('click', () => choose('B'));
   nextButton?.addEventListener('click', () => void nextQuestion());
+  favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', updateFullscreenLabel);
@@ -309,7 +435,9 @@ export function initGame(): void {
       closeDialog();
     }
   });
-  if (config.mode !== 'single') {
+  if (config.mode === 'favorites') void activateFavoritesGame();
+
+  if (config.mode !== 'single' && config.mode !== 'favorites') {
     const warm = () => {
       if (userSelectedPack) return;
       if (config.mode === 'mixed') local?.removeItem(config.keys.pack);

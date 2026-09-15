@@ -22,6 +22,8 @@ export const API_PATHS = {
 export const ROUTES = {
   home: '/',
   categories: '/categories/',
+  favorites: '/favorites/',
+  favoritesPlay: '/favorites/play/',
   about: '/about-us/',
   contact: '/contact-us/',
   submit: '/submit-a-question/',
@@ -108,6 +110,7 @@ export const COOKIES = {
 export const STORAGE_KEYS = {
   pack: 'wyr_pack',
   adultConfirmed: 'wyr_adult',
+  favorites: 'wyr_favorites',
   /** sessionStorage: seen question ids for repeat-prevention. */
   seen: 'wyr_seen',
 } as const;
