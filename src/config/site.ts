@@ -108,6 +108,7 @@ export const COOKIES = {
 export const STORAGE_KEYS = {
   pack: 'wyr_pack',
   adultConfirmed: 'wyr_adult',
+  favorites: 'wyr_favorites',
   /** sessionStorage: seen question ids for repeat-prevention. */
   seen: 'wyr_seen',
 } as const;
