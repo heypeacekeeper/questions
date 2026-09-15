@@ -251,6 +251,33 @@ test('support pages and 404 render without blank states', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found');
 });
 
+test('home question changes after reload and browser history restoration', async ({ page }) => {
+  await page.goto('/');
+
+  const stage = page.locator('#game-stage');
+  await expect(stage).toHaveAttribute('data-entry-ready', '1');
+
+  const firstQuestionId = await stage.getAttribute('data-question-id');
+  expect(firstQuestionId).toBeTruthy();
+
+  await page.reload();
+  await expect(stage).toHaveAttribute('data-entry-ready', '1');
+
+  const secondQuestionId = await stage.getAttribute('data-question-id');
+  expect(secondQuestionId).toBeTruthy();
+  expect(secondQuestionId).not.toBe(firstQuestionId);
+
+  await page.goto('/categories/');
+  await page.goBack();
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(stage).not.toHaveAttribute('data-question-id', secondQuestionId ?? '');
+
+  const restoredQuestionId = await stage.getAttribute('data-question-id');
+  expect(restoredQuestionId).toBeTruthy();
+  expect(restoredQuestionId).not.toBe(secondQuestionId);
+});
+
 test('game question can be saved and removed from favorites', async ({ page }) => {
   await page.goto('/');
 
@@ -272,12 +299,30 @@ test('game question can be saved and removed from favorites', async ({ page }) =
 
   const saved = JSON.parse(savedRaw ?? '{}') as {
     v: number;
-    questions: { id: string }[];
+    questions: { id: string; s: string }[];
   };
   expect(saved.v).toBe(1);
-  expect(saved.questions[0]?.id).toBe(questionId);
+
+  const savedQuestion = saved.questions[0];
+  if (!savedQuestion) throw new Error('Saved question was not stored');
+  expect(savedQuestion.id).toBe(questionId);
 
   await page.reload();
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-entry-ready', '1');
+
+  const reloadedQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
+  expect(reloadedQuestionId).not.toBe(questionId);
+  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'false');
+
+  const persisted = await page.evaluate((id) => {
+    const raw = localStorage.getItem('wyr_favorites');
+    if (!raw) return false;
+    const payload = JSON.parse(raw) as { questions: { id: string }[] };
+    return payload.questions.some((question) => question.id === id);
+  }, savedQuestion.id);
+  expect(persisted).toBe(true);
+
+  await page.goto(`/s/${savedQuestion.s}/`);
   await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'true');
 
   await page.locator('#favorite-button').click();
