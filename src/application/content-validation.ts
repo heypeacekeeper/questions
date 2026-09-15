@@ -152,7 +152,7 @@ export function validateContent(
   const ids = new Map<string, number>();
   const shareCodes = new Map<string, string[]>();
   const exact = new Map<string, string[]>();
-  const reversed = new Map<string, string[]>();
+  const reversed = new Map<string, Map<string, string[]>>();
   for (const q of questions) {
     const label = `question ${q.id}`;
     ids.set(q.id, (ids.get(q.id) ?? 0) + 1);
@@ -223,7 +223,10 @@ export function validateContent(
       const o = questionOrderedFingerprint(q.optionA, q.optionB);
       const r = questionPairFingerprint(q.optionA, q.optionB);
       exact.set(o, [...(exact.get(o) ?? []), q.id]);
-      reversed.set(r, [...(reversed.get(r) ?? []), q.id]);
+
+      const orientations = reversed.get(r) ?? new Map<string, string[]>();
+      orientations.set(o, [...(orientations.get(o) ?? []), q.id]);
+      reversed.set(r, orientations);
     }
   }
   for (const [id, n] of ids)
@@ -244,16 +247,13 @@ export function validateContent(
         `Duplicate published question (same wording after normalization)`,
         qids,
       );
-  for (const [, qids] of reversed) {
-    if (
-      qids.length > 1 &&
-      !exact.has(questionOrderedFingerprint(...(pairFor(qids[0], questions) ?? ['', ''])))
-    ) {
+  for (const [, orientations] of reversed) {
+    if (orientations.size > 1) {
       push(
         'error',
         'QUESTION_REVERSED_DUPLICATE',
         `Reversed duplicate published question (A/B swapped)`,
-        qids,
+        [...orientations.values()].flat(),
       );
     }
   }
@@ -279,26 +279,7 @@ export function validateContent(
       );
   }
 
-  // De-duplicate reversed vs exact: exact dupes already reported as such.
-  return dedupeReversed(issues);
-}
-
-function pairFor(id: string | undefined, questions: readonly Question[]): [string, string] | null {
-  const q = questions.find((x) => x.id === id);
-  return q ? [q.optionA, q.optionB] : null;
-}
-
-function dedupeReversed(issues: ContentIssue[]): ContentIssue[] {
-  const exactSets = issues
-    .filter((i) => i.code === 'QUESTION_DUPLICATE')
-    .map((i) => [...i.records].sort().join(','));
-  return issues.filter(
-    (i) =>
-      !(
-        i.code === 'QUESTION_REVERSED_DUPLICATE' &&
-        exactSets.includes([...i.records].sort().join(','))
-      ),
-  );
+  return issues;
 }
 
 export function hasErrors(issues: readonly ContentIssue[]): boolean {
