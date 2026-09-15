@@ -137,7 +137,20 @@ export function initGame(): void {
     showFavoriteMessage(saved ? 'Added to favorites ♥' : 'Removed from favorites');
 
     if (config.mode === 'favorites') {
-      engine.useQuestions(favorites.getAll());
+      const questions = favorites.getAll();
+      engine.useQuestions(questions);
+
+      if (!saved && questions.length === 0) {
+        gameStage.hidden = true;
+        if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
+        if (favoritesGameEmptyText) {
+          favoritesGameEmptyText.textContent =
+            'You have no saved questions left. Return to the main game to save more.';
+        }
+        announce('You have no saved questions left.');
+        return;
+      }
+
       if (current) engine.markSeen(current.id);
     }
   }
@@ -147,12 +160,26 @@ export function initGame(): void {
   }
   if (shareButton && current) shareButton.hidden = false;
   updateFavoriteButton();
-  if (
-    fullscreenButton &&
-    (document.fullscreenEnabled ||
-      (document as unknown as { webkitFullscreenEnabled?: boolean }).webkitFullscreenEnabled)
-  )
+  type WebkitDocument = Document & {
+    webkitFullscreenEnabled?: boolean;
+    webkitFullscreenElement?: Element;
+    webkitExitFullscreen?: () => Promise<void> | void;
+  };
+  type WebkitElement = HTMLElement & {
+    webkitRequestFullscreen?: () => Promise<void> | void;
+  };
+
+  const fullscreenDocument = document as WebkitDocument;
+  const fullscreenShell = shell as WebkitElement;
+  const standardFullscreenAvailable =
+    document.fullscreenEnabled && typeof shell.requestFullscreen === 'function';
+  const webkitFullscreenAvailable =
+    Boolean(fullscreenDocument.webkitFullscreenEnabled) &&
+    typeof fullscreenShell.webkitRequestFullscreen === 'function';
+
+  if (fullscreenButton && (standardFullscreenAvailable || webkitFullscreenAvailable)) {
     fullscreenButton.hidden = false;
+  }
   const announce = (message: string) => {
     if (live) {
       live.textContent = '';
@@ -223,6 +250,10 @@ export function initGame(): void {
       if (nextLabel) nextLabel.textContent = 'Play again';
       return;
     }
+    if (nextButton?.dataset.action === 'retry') {
+      delete nextButton.dataset.action;
+    }
+
     busy = true;
     gameStage.setAttribute('aria-busy', 'true');
     if (nextButton) nextButton.disabled = true;
@@ -255,6 +286,7 @@ export function initGame(): void {
         const message = 'Could not load more questions. Check your connection and try again.';
         setNotice(message);
         announce(message);
+        nextButton?.setAttribute('data-action', 'retry');
       } else {
         setNotice(
           engine.totalInSet <= 1
@@ -268,7 +300,11 @@ export function initGame(): void {
       if (nextButton) nextButton.disabled = false;
       if (nextLabel) {
         nextLabel.textContent =
-          nextButton?.dataset.action === 'replay' ? 'Play again' : 'Next question';
+          nextButton?.dataset.action === 'replay'
+            ? 'Play again'
+            : nextButton?.dataset.action === 'retry'
+              ? 'Try again'
+              : 'Next question';
       }
     }
   }
@@ -312,7 +348,6 @@ export function initGame(): void {
     engine.setSeenStore(new SessionSeenStore(`${config.keys.seen}:${slug}`, session));
     await engine.useSet(entry);
     if (requestId !== activationRequestId) return null;
-    if (current && slug === config.set) engine.primeWith(current);
     packGrid
       ?.querySelectorAll<HTMLButtonElement>('.pack-button')
       .forEach((button) =>
@@ -349,7 +384,7 @@ export function initGame(): void {
     if (requestId === null) return;
 
     closeDialog();
-    const question = await engine.next(null);
+    const question = await engine.next(current?.id ?? null);
     if (requestId !== activationRequestId) return;
 
     if (question) renderQuestion(question);
@@ -376,16 +411,35 @@ export function initGame(): void {
     }
   }
   const isFullscreen = () =>
-    Boolean(
-      document.fullscreenElement ||
-      (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement,
-    );
+    Boolean(document.fullscreenElement || fullscreenDocument.webkitFullscreenElement);
+
+  const runFullscreenAction = (action: (() => Promise<void> | void) | undefined): void => {
+    if (!action) return;
+
+    try {
+      void Promise.resolve(action()).catch(() => undefined);
+    } catch {
+      // Fullscreen can be rejected by browser or permission policy.
+    }
+  };
+
   const toggleFullscreen = () => {
     if (isFullscreen()) {
-      void document.exitFullscreen?.();
+      const exit =
+        typeof document.exitFullscreen === 'function'
+          ? document.exitFullscreen.bind(document)
+          : fullscreenDocument.webkitExitFullscreen?.bind(fullscreenDocument);
+
+      runFullscreenAction(exit);
       return;
     }
-    void shell.requestFullscreen?.().catch(() => undefined);
+
+    const enter =
+      typeof shell.requestFullscreen === 'function'
+        ? shell.requestFullscreen.bind(shell)
+        : fullscreenShell.webkitRequestFullscreen?.bind(fullscreenShell);
+
+    runFullscreenAction(enter);
   };
   const updateFullscreenLabel = () =>
     fullscreenButton?.setAttribute(
@@ -409,7 +463,12 @@ export function initGame(): void {
     pendingGatedPack = null;
   });
   $('confirm-age-button')?.addEventListener('click', () => {
-    local?.setItem(config.keys.adult, '1');
+    try {
+      local?.setItem(config.keys.adult, '1');
+    } catch {
+      // Continue for this visit when storage is unavailable.
+    }
+
     const pack = pendingGatedPack;
     pendingGatedPack = null;
     if (pack) void choosePack(pack.slug, pack.name, false);
@@ -438,20 +497,59 @@ export function initGame(): void {
   if (config.mode === 'favorites') void activateFavoritesGame();
 
   if (config.mode !== 'single' && config.mode !== 'favorites') {
-    const warm = () => {
-      if (userSelectedPack) return;
-      if (config.mode === 'mixed') local?.removeItem(config.keys.pack);
-      void activateSet(config.set);
-    };
+    async function loadRandomEntryQuestion(): Promise<void> {
+      if (busy || userSelectedPack) return;
 
-    if ('requestIdleCallback' in window) {
-      (
-        window as Window & {
-          requestIdleCallback: (callback: () => void, options?: { timeout: number }) => number;
+      busy = true;
+      gameStage.dataset.entryReady = '0';
+      gameStage.setAttribute('aria-busy', 'true');
+      if (nextButton) nextButton.disabled = true;
+      if (choiceA) choiceA.disabled = true;
+      if (choiceB) choiceB.disabled = true;
+      if (favoriteButton) favoriteButton.disabled = true;
+      if (shareButton) shareButton.disabled = true;
+      if (packButton) packButton.disabled = true;
+
+      try {
+        if (config.mode === 'mixed') {
+          local?.removeItem(config.keys.pack);
         }
-      ).requestIdleCallback(warm, { timeout: 1500 });
-    } else {
-      setTimeout(warm, 300);
+
+        const previousQuestionId = current?.id ?? null;
+        const requestId = await activateSet(config.set);
+
+        if (requestId === null || userSelectedPack) return;
+
+        const question = await engine.next(previousQuestionId);
+
+        if (requestId !== activationRequestId || userSelectedPack) return;
+
+        if (question) {
+          renderQuestion(question);
+        }
+      } finally {
+        busy = false;
+        gameStage.dataset.entryReady = '1';
+        gameStage.removeAttribute('aria-busy');
+        if (nextButton) nextButton.disabled = false;
+        if (choiceA) choiceA.disabled = false;
+        if (choiceB) choiceB.disabled = false;
+        if (favoriteButton) favoriteButton.disabled = false;
+        if (shareButton) shareButton.disabled = false;
+        if (packButton) packButton.disabled = false;
+      }
     }
+
+    void loadRandomEntryQuestion();
+
+    window.addEventListener('pageshow', (event) => {
+      if (!event.persisted || busy) return;
+
+      gameStage.dataset.entryReady = '0';
+
+      void nextQuestion().finally(() => {
+        gameStage.dataset.entryReady = '1';
+      });
+    });
   }
 }
