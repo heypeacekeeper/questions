@@ -73,6 +73,8 @@ export const GAME_DATA = {
   hashLength: 10,
   /** Manifest file (unhashed, short cache) that maps packs → hashed URLs. */
   manifestFile: 'manifest.json',
+  /** Current published questions used to resolve browser Favorites safely. */
+  favoritesCatalogFile: 'favorites.json',
 } as const;
 
 export const FORM_LIMITS = {

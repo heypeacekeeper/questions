@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { buildGameData } from '@/application/game-data-service';
+import { buildFavoritesCatalog } from '@/application/favorites-catalog';
 import { buildDeploymentManifest } from '@/application/manifest-service';
 import { validateContent, hasErrors, formatIssues } from '@/application/content-validation';
 import { getContentContext } from '@/repositories/factory';
@@ -93,6 +94,14 @@ export default function buildArtifacts(): AstroIntegration {
         await writeFile(manifestPath, JSON.stringify(gameData.manifest), 'utf8');
         logger.info(
           `Wrote ${gameData.files.length} game-data packs for ${Object.keys(gameData.manifest.sets).length} sets`,
+        );
+
+        const favoritesCatalog = buildFavoritesCatalog(questions, categories);
+        const favoritesCatalogPath = join(outDir, favoritesCatalog.url);
+        await mkdir(dirname(favoritesCatalogPath), { recursive: true });
+        await writeFile(favoritesCatalogPath, favoritesCatalog.json, 'utf8');
+        logger.info(
+          `Wrote Favorites catalog with ${favoritesCatalog.questionCount} published questions`,
         );
 
         const manifest = await buildDeploymentManifest({
