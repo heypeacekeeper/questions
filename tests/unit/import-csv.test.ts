@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { fetchAllQuestions, parseRows } from '../../tools/import-csv';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  fetchAllQuestions,
+  importQuestionsAtomically,
+  parseRows,
+  type AtomicImportQuestion,
+} from '../../tools/import-csv';
 import { asCsv, type ExportQuestion } from '../../tools/export-questions';
 import type { TypedSupabaseClient } from '@/infrastructure/supabase/client';
 import type { QuestionRow } from '@/infrastructure/supabase/database.types';
@@ -81,6 +86,55 @@ describe('CSV question importer', () => {
       [2500, 2999],
       [3000, 3499],
     ]);
+  });
+});
+
+describe('atomic CSV question import', () => {
+  const rows: AtomicImportQuestion[] = [
+    {
+      line: 2,
+      option_a: 'sweat maple syrup',
+      option_b: 'sneeze glitter',
+      status: 'draft',
+      sort_order: 1000,
+      display_vote_count: 2450,
+      is_demo: false,
+      category_ids: ['11111111-1111-4111-8111-000000000007'],
+    },
+    {
+      line: 3,
+      option_a: 'fly forever',
+      option_b: 'breathe underwater',
+      status: 'draft',
+      sort_order: 1001,
+      is_demo: false,
+      category_ids: ['11111111-1111-4111-8111-000000000008'],
+    },
+  ];
+
+  it('sends the complete batch through one database RPC', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: 2, error: null });
+    const client = { rpc } as unknown as TypedSupabaseClient;
+
+    await expect(importQuestionsAtomically(client, rows)).resolves.toBe(2);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('import_questions_atomic', {
+      p_rows: rows,
+    });
+  });
+
+  it('reports a transaction failure without client-side rollback', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'CSV line 3: category link failed' },
+    });
+
+    const client = { rpc } as unknown as TypedSupabaseClient;
+
+    await expect(importQuestionsAtomically(client, rows)).rejects.toThrow(
+      /Atomic question import failed: CSV line 3/,
+    );
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 });
 
