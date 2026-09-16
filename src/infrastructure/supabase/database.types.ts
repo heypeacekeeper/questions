@@ -170,6 +170,21 @@ export type Database = {
         Args: { code_length?: number };
         Returns: string;
       };
+      import_questions_atomic: {
+        Args: {
+          p_rows: Array<{
+            line: number;
+            option_a: string;
+            option_b: string;
+            status: ContentStatus;
+            sort_order: number;
+            display_vote_count?: number;
+            is_demo: boolean;
+            category_ids: string[];
+          }>;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       content_status: ContentStatus;

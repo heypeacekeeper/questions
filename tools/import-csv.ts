@@ -36,6 +36,17 @@ export interface ImportRow {
   line: number;
 }
 
+export interface AtomicImportQuestion {
+  line: number;
+  option_a: string;
+  option_b: string;
+  status: ContentStatus;
+  sort_order: number;
+  display_vote_count?: number;
+  is_demo: boolean;
+  category_ids: string[];
+}
+
 function argument(name: string): string | undefined {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
@@ -220,6 +231,27 @@ export async function fetchAllQuestions(client: TypedSupabaseClient): Promise<Qu
   }
 }
 
+export async function importQuestionsAtomically(
+  client: TypedSupabaseClient,
+  rows: AtomicImportQuestion[],
+): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  const { data, error } = await client.rpc('import_questions_atomic', {
+    p_rows: rows,
+  });
+
+  if (error) {
+    throw new Error(`Atomic question import failed: ${error.message}`);
+  }
+
+  if (typeof data !== 'number' || data !== rows.length) {
+    throw new Error(`Atomic question import returned an unexpected count: ${String(data)}`);
+  }
+
+  return data;
+}
+
 async function main(): Promise<void> {
   const file =
     argument('--file') ?? process.argv.find((value, index) => index > 1 && !value.startsWith('--'));
@@ -280,51 +312,18 @@ async function main(): Promise<void> {
     return;
   }
 
-  let imported = 0;
+  const importRows: AtomicImportQuestion[] = accepted.map((row) => ({
+    line: row.line,
+    option_a: row.optionA,
+    option_b: row.optionB,
+    status: row.status,
+    sort_order: row.sortOrder,
+    ...(row.displayVoteCount === undefined ? {} : { display_vote_count: row.displayVoteCount }),
+    is_demo: row.isDemo,
+    category_ids: row.categorySlugs.map((slug) => categoryBySlug.get(slug)!.id),
+  }));
 
-  for (const row of accepted) {
-    const questionInsert = {
-      option_a: row.optionA,
-      option_b: row.optionB,
-      status: row.status,
-      sort_order: row.sortOrder,
-      is_demo: row.isDemo,
-      ...(row.displayVoteCount === undefined
-        ? {}
-        : {
-            display_vote_count: row.displayVoteCount,
-          }),
-    };
-
-    const { data, error } = await client
-      .from('questions')
-      .insert(questionInsert)
-      .select('id')
-      .single();
-
-    if (error) {
-      throw new Error(`Line ${row.line}: question insert failed: ${error.message}`);
-    }
-
-    const questionId = (data as Pick<QuestionRow, 'id'>).id;
-
-    const links = row.categorySlugs.map((slug) => ({
-      question_id: questionId,
-      category_id: categoryBySlug.get(slug)!.id,
-    }));
-
-    const { error: linkError } = await client.from('question_categories').insert(links);
-
-    if (linkError) {
-      await client.from('questions').delete().eq('id', questionId);
-
-      throw new Error(
-        `Line ${row.line}: category links failed and question was rolled back: ${linkError.message}`,
-      );
-    }
-
-    imported += 1;
-  }
+  const imported = await importQuestionsAtomically(client, importRows);
 
   console.log(`Import complete: ${imported} questions added, ${skipped} duplicates skipped.`);
 }
