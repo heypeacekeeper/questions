@@ -3,16 +3,31 @@ import { STORAGE_KEYS } from '@/config/site';
 
 export const MAX_FAVORITES = 100;
 
-interface FavoritesPayload {
+interface LegacyFavoritesPayload {
   readonly v: 1;
   readonly questions: readonly GameQuestion[];
+}
+
+interface FavoritesIdPayload {
+  readonly v: 2;
+  readonly ids: readonly string[];
+}
+
+export interface FavoriteMutationResult {
+  readonly ok: boolean;
+  readonly saved: boolean;
+}
+
+export interface FavoriteReconcileResult {
+  readonly ok: boolean;
+  readonly removed: number;
 }
 
 function isText(value: unknown, maxLength: number): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= maxLength;
 }
 
-export function isFavoriteQuestion(value: unknown): value is GameQuestion {
+function isLegacyFavoriteQuestion(value: unknown): value is GameQuestion {
   if (!value || typeof value !== 'object') return false;
 
   const question = value as Record<string, unknown>;
@@ -28,22 +43,44 @@ export function isFavoriteQuestion(value: unknown): value is GameQuestion {
   );
 }
 
-function normalizeQuestions(value: unknown): GameQuestion[] {
+export function isFavoriteId(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= 128;
+}
+
+function normalizeIds(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
-  const questions: GameQuestion[] = [];
+  const ids: string[] = [];
+  const seen = new Set<string>();
+
+  for (const id of value) {
+    if (!isFavoriteId(id) || seen.has(id)) continue;
+
+    seen.add(id);
+    ids.push(id);
+
+    if (ids.length === MAX_FAVORITES) break;
+  }
+
+  return ids;
+}
+
+function legacyIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const ids: string[] = [];
   const seen = new Set<string>();
 
   for (const item of value) {
-    if (!isFavoriteQuestion(item) || seen.has(item.id)) continue;
+    if (!isLegacyFavoriteQuestion(item) || seen.has(item.id)) continue;
 
     seen.add(item.id);
-    questions.push(item);
+    ids.push(item.id);
 
-    if (questions.length === MAX_FAVORITES) break;
+    if (ids.length === MAX_FAVORITES) break;
   }
 
-  return questions;
+  return ids;
 }
 
 export class FavoriteStore {
@@ -52,64 +89,81 @@ export class FavoriteStore {
     private readonly key: string = STORAGE_KEYS.favorites,
   ) {}
 
-  getAll(): readonly GameQuestion[] {
+  getIds(): readonly string[] {
     try {
       const raw = this.storage?.getItem(this.key);
       if (!raw) return [];
 
-      const payload = JSON.parse(raw) as Partial<FavoritesPayload>;
-      if (payload.v !== 1) return [];
+      const payload = JSON.parse(raw) as
+        Partial<FavoritesIdPayload> | Partial<LegacyFavoritesPayload>;
 
-      return normalizeQuestions(payload.questions);
+      if (payload.v === 2) return normalizeIds(payload.ids);
+
+      if (payload.v === 1) {
+        const ids = legacyIds(payload.questions);
+        this.writeIds(ids);
+        return ids;
+      }
+
+      return [];
     } catch {
       return [];
     }
   }
 
-  has(questionId: string): boolean {
-    return this.getAll().some((question) => question.id === questionId);
+  hasId(questionId: string): boolean {
+    return this.getIds().includes(questionId);
   }
 
-  save(question: GameQuestion): boolean {
-    if (!isFavoriteQuestion(question)) return false;
+  saveId(questionId: string): FavoriteMutationResult {
+    if (!isFavoriteId(questionId)) return { ok: false, saved: false };
+    if (this.hasId(questionId)) return { ok: true, saved: true };
 
-    const questions = [
-      question,
-      ...this.getAll().filter((existing) => existing.id !== question.id),
-    ].slice(0, MAX_FAVORITES);
-
-    return this.write(questions);
+    const ok = this.writeIds([questionId, ...this.getIds()].slice(0, MAX_FAVORITES));
+    return { ok, saved: ok };
   }
 
-  remove(questionId: string): boolean {
-    const questions = this.getAll().filter((question) => question.id !== questionId);
-    return this.write(questions);
+  removeId(questionId: string): FavoriteMutationResult {
+    const ids = this.getIds();
+    if (!ids.includes(questionId)) return { ok: true, saved: false };
+
+    const ok = this.writeIds(ids.filter((id) => id !== questionId));
+    return { ok, saved: !ok };
   }
 
-  toggle(question: GameQuestion): boolean {
-    if (this.has(question.id)) {
-      this.remove(question.id);
-      return false;
-    }
-
-    return this.save(question);
+  toggleId(questionId: string): FavoriteMutationResult {
+    return this.hasId(questionId) ? this.removeId(questionId) : this.saveId(questionId);
   }
 
-  clear(): void {
+  reconcileIds(availableIds: ReadonlySet<string>): FavoriteReconcileResult {
+    const current = this.getIds();
+    const next = current.filter((id) => availableIds.has(id));
+    const removed = current.length - next.length;
+
+    if (removed === 0) return { ok: true, removed: 0 };
+
+    const ok = this.writeIds(next);
+    return { ok, removed: ok ? removed : 0 };
+  }
+
+  clearIds(): { readonly ok: boolean } {
     try {
-      this.storage?.removeItem(this.key);
+      if (!this.storage) return { ok: false };
+
+      this.storage.removeItem(this.key);
+      return { ok: true };
     } catch {
-      // Storage may be blocked.
+      return { ok: false };
     }
   }
 
-  private write(questions: readonly GameQuestion[]): boolean {
+  private writeIds(ids: readonly string[]): boolean {
     try {
       if (!this.storage) return false;
 
-      const payload: FavoritesPayload = {
-        v: 1,
-        questions,
+      const payload: FavoritesIdPayload = {
+        v: 2,
+        ids: normalizeIds(ids),
       };
 
       this.storage.setItem(this.key, JSON.stringify(payload));

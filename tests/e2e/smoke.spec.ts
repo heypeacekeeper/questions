@@ -349,7 +349,7 @@ test('home question changes after reload and browser history restoration', async
   expect(restoredQuestionId).not.toBe(secondQuestionId);
 });
 
-test('game question can be saved and removed from favorites', async ({ page }) => {
+test('game question can be saved and removed using ID-only storage', async ({ page }) => {
   await page.goto('/');
 
   const favoriteButton = page.locator('#favorite-button');
@@ -363,79 +363,98 @@ test('game question can be saved and removed from favorites', async ({ page }) =
   await favoriteButton.click();
   await expect(favoriteButton).toHaveAttribute('aria-pressed', 'true');
   await expect(favoriteButton).toHaveAttribute('aria-label', 'Remove this question from favorites');
-  await expect(page.locator('#favorite-icon')).toHaveText('♥');
 
-  const savedRaw = await page.evaluate(() => localStorage.getItem('wyr_favorites'));
-  expect(savedRaw).not.toBeNull();
+  const saved = await page.evaluate(() => {
+    const raw = localStorage.getItem('wyr_favorites');
+    return raw ? (JSON.parse(raw) as { v: number; ids: string[] }) : null;
+  });
 
-  const saved = JSON.parse(savedRaw ?? '{}') as {
-    v: number;
-    questions: { id: string; s: string }[];
-  };
-  expect(saved.v).toBe(1);
-
-  const savedQuestion = saved.questions[0];
-  if (!savedQuestion) throw new Error('Saved question was not stored');
-  expect(savedQuestion.id).toBe(questionId);
+  expect(saved).toEqual({
+    v: 2,
+    ids: [questionId],
+  });
 
   await page.reload();
   await expect(page.locator('#game-stage')).toHaveAttribute('data-entry-ready', '1');
 
-  const reloadedQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
-  expect(reloadedQuestionId).not.toBe(questionId);
-  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'false');
-
   const persisted = await page.evaluate((id) => {
     const raw = localStorage.getItem('wyr_favorites');
     if (!raw) return false;
-    const payload = JSON.parse(raw) as { questions: { id: string }[] };
-    return payload.questions.some((question) => question.id === id);
-  }, savedQuestion.id);
+
+    const payload = JSON.parse(raw) as { v: number; ids: string[] };
+    return payload.v === 2 && payload.ids.includes(id);
+  }, questionId!);
+
   expect(persisted).toBe(true);
 
-  await page.goto(`/s/${savedQuestion.s}/`);
-  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'true');
+  await page.goto('/favorites/');
+  await expect(page.locator('#favorites-count')).toHaveText('1 saved question');
+  await expect(page.locator('#favorite-list .favorite-card')).toHaveCount(1);
 
-  await page.locator('#favorite-button').click();
-  await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('.favorite-card-actions button').click();
+  await expect(page.locator('#favorites-count')).toHaveText('0 saved questions');
+  await expect(page.locator('#favorites-empty')).toBeVisible();
 
   const remaining = await page.evaluate(() => {
     const raw = localStorage.getItem('wyr_favorites');
-    return raw ? (JSON.parse(raw) as { questions: unknown[] }).questions.length : 0;
+    return raw ? (JSON.parse(raw) as { ids: string[] }).ids.length : 0;
   });
+
   expect(remaining).toBe(0);
 });
 
-test('favorites list and saved-question game work without pack downloads', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      'wyr_favorites',
-      JSON.stringify({
-        v: 1,
-        questions: [
-          {
-            id: 'favorite-test-1',
-            a: 'explore outer space',
-            b: 'explore the deepest ocean',
-            s: 'demq22a',
-            d: 2500,
-          },
-          {
-            id: 'favorite-test-2',
-            a: 'have a pet dragon',
-            b: 'have a friendly robot',
-            s: 'demq22b',
-            d: 3500,
-          },
-        ],
-      }),
-    );
-  });
+test('favorites migrate, reconcile, and play from the current catalog', async ({ page }) => {
+  const firstId = '22222222-2222-4222-8222-000000000001';
+  const secondId = '22222222-2222-4222-8222-000000000003';
+  const unavailableId = '99999999-9999-4999-8999-999999999999';
+
+  await page.addInitScript(
+    ({ firstId, secondId, unavailableId }) => {
+      localStorage.setItem(
+        'wyr_favorites',
+        JSON.stringify({
+          v: 1,
+          questions: [
+            {
+              id: firstId,
+              a: 'stale option A',
+              b: 'stale option B',
+              s: 'oldcode1',
+              d: 1,
+            },
+            {
+              id: secondId,
+              a: 'another stale option A',
+              b: 'another stale option B',
+              s: 'oldcode2',
+              d: 2,
+            },
+            {
+              id: unavailableId,
+              a: 'deleted question A',
+              b: 'deleted question B',
+              s: 'deleted1',
+              d: 3,
+            },
+          ],
+        }),
+      );
+    },
+    { firstId, secondId, unavailableId },
+  );
 
   const manifestRequests: string[] = [];
+  const packRequests: string[] = [];
+
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname === '/game-data/manifest.json') {
+    const pathname = new URL(request.url()).pathname;
+
+    if (pathname === '/game-data/manifest.json') {
       manifestRequests.push(request.url());
+    }
+
+    if (pathname.includes('/game-data/packs/')) {
+      packRequests.push(request.url());
     }
   });
 
@@ -443,24 +462,40 @@ test('favorites list and saved-question game work without pack downloads', async
 
   await expect(page.locator('#favorites-count')).toHaveText('2 saved questions');
   await expect(page.locator('#favorite-list .favorite-card')).toHaveCount(2);
+  await expect(page.locator('#favorite-list')).toContainText('[DEMO] have a pet dragon');
+  await expect(page.locator('#favorite-list')).toContainText('[DEMO] sweat maple syrup');
+  await expect(page.locator('#favorite-list')).not.toContainText('stale option');
   await expect(page.locator('#play-favorites')).toBeVisible();
+
+  const migrated = await page.evaluate(() => {
+    const raw = localStorage.getItem('wyr_favorites');
+    return raw ? (JSON.parse(raw) as { v: number; ids: string[] }) : null;
+  });
+
+  expect(migrated).toEqual({
+    v: 2,
+    ids: [firstId, secondId],
+  });
 
   await page.locator('#play-favorites').click();
   await expect(page).toHaveURL(/\/favorites\/play\/$/);
   await expect(page.locator('#game-stage')).toBeVisible();
 
-  const firstId = await page.locator('#game-stage').getAttribute('data-question-id');
-  expect(['favorite-test-1', 'favorite-test-2']).toContain(firstId);
-
+  const playedFirstId = await page.locator('#game-stage').getAttribute('data-question-id');
+  expect([firstId, secondId]).toContain(playedFirstId);
   await expect(page.locator('#favorite-button')).toHaveAttribute('aria-pressed', 'true');
 
   await page.locator('#choice-a').click();
   await page.locator('#next-button').click();
 
-  await expect(page.locator('#game-stage')).not.toHaveAttribute('data-question-id', firstId ?? '');
+  await expect(page.locator('#game-stage')).not.toHaveAttribute(
+    'data-question-id',
+    playedFirstId ?? '',
+  );
 
   await page.locator('#choice-b').click();
   await page.locator('#next-button').click();
+
   await expect(page.locator('#verdict-text')).toHaveText(
     'You have played every saved question. Nice work.',
   );
@@ -470,10 +505,11 @@ test('favorites list and saved-question game work without pack downloads', async
   await expect(page.locator('#next-label')).toHaveText('Next question');
   await expect(page.locator('#game-stage')).toHaveAttribute(
     'data-question-id',
-    /favorite-test-[12]/,
+    /22222222-2222-4222-8222-00000000000[13]/,
   );
 
   expect(manifestRequests).toEqual([]);
+  expect(packRequests).toEqual([]);
 
   await page.goto('/favorites/');
   await expect(page.locator('#favorites-count')).toHaveText('2 saved questions');

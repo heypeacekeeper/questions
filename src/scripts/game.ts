@@ -1,5 +1,10 @@
 /** Progressive enhancement controller for the static first game question. */
 import type { GameQuestion } from '@/domain/question';
+import {
+  fetchFavoritesCatalog,
+  resolveFavoriteIds,
+  type FavoriteCatalogQuestion,
+} from '@/application/favorites-catalog';
 import { FavoriteStore } from '@/lib/favorites';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
 import {
@@ -75,6 +80,7 @@ export function initGame(): void {
   const local = safeStorage('local');
   const session = safeStorage('session');
   const favorites = new FavoriteStore(local, config.keys.favorites);
+  let favoriteQuestions: readonly FavoriteCatalogQuestion[] = [];
   const engine = new GameEngine(
     new SessionSeenStore(`${config.keys.seen}:${config.set}`, session),
     undefined,
@@ -110,7 +116,7 @@ export function initGame(): void {
   function updateFavoriteButton(): void {
     if (!favoriteButton) return;
 
-    const saved = Boolean(current && favorites.has(current.id));
+    const saved = Boolean(current && favorites.hasId(current.id));
     favoriteButton.hidden = !current || !local;
     favoriteButton.setAttribute('aria-pressed', String(saved));
     favoriteButton.setAttribute(
@@ -125,24 +131,21 @@ export function initGame(): void {
   function toggleFavorite(): void {
     if (!current) return;
 
-    const wasSaved = favorites.has(current.id);
-    favorites.toggle(current);
-    const saved = favorites.has(current.id);
+    const result = favorites.toggleId(current.id);
 
-    updateFavoriteButton();
-
-    if (saved === wasSaved) {
+    if (!result.ok) {
       showFavoriteMessage('Favorites are unavailable in this browser.');
       return;
     }
 
-    showFavoriteMessage(saved ? 'Added to favorites ♥' : 'Removed from favorites');
+    updateFavoriteButton();
+    showFavoriteMessage(result.saved ? 'Added to favorites ♥' : 'Removed from favorites');
 
-    if (config.mode === 'favorites') {
-      const questions = favorites.getAll();
-      engine.useQuestions(questions);
+    if (config.mode === 'favorites' && !result.saved) {
+      favoriteQuestions = favoriteQuestions.filter((question) => question.id !== current?.id);
+      engine.useQuestions(favoriteQuestions);
 
-      if (!saved && questions.length === 0) {
+      if (favoriteQuestions.length === 0) {
         gameStage.hidden = true;
         if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
         if (favoritesGameEmptyText) {
@@ -153,7 +156,7 @@ export function initGame(): void {
         return;
       }
 
-      if (current) engine.markSeen(current.id);
+      engine.markSeen(current.id);
     }
   }
   if (current) {
@@ -287,7 +290,7 @@ export function initGame(): void {
       }
 
       if (config.mode === 'favorites' && nextButton?.dataset.action === 'replay') {
-        const questions = favorites.getAll();
+        const questions = favoriteQuestions;
         const replaySeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
 
         replaySeen.clear();
@@ -332,31 +335,105 @@ export function initGame(): void {
     }
   }
   async function activateFavoritesGame(): Promise<void> {
-    const questions = favorites.getAll();
-    const favoritesSeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
-    favoritesSeen.clear();
-    engine.setSeenStore(favoritesSeen);
-    engine.useQuestions(questions);
+    gameStage.setAttribute('aria-busy', 'true');
 
-    if (questions.length === 0) {
+    const catalog = await fetchFavoritesCatalog();
+
+    if (!catalog) {
       gameStage.hidden = true;
       if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
       if (favoritesGameEmptyText) {
-        favoritesGameEmptyText.textContent = local
-          ? 'You have no saved questions yet. Return to the main game and tap the heart to add some.'
-          : 'Favorites are unavailable in this browser.';
+        favoritesGameEmptyText.textContent =
+          'Could not load saved questions. Check your connection and reload the page.';
       }
+      announce('Could not load saved questions.');
+      gameStage.setAttribute('aria-busy', 'false');
+      return;
+    }
+
+    const resolved = resolveFavoriteIds(favorites.getIds(), catalog);
+    const reconciliation = favorites.reconcileIds(new Set(catalog.map((question) => question.id)));
+
+    if (!reconciliation.ok) {
+      gameStage.hidden = true;
+      if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
+      if (favoritesGameEmptyText) {
+        favoritesGameEmptyText.textContent =
+          'Favorites could not be updated because browser storage is unavailable.';
+      }
+      announce('Favorites are unavailable in this browser.');
+      gameStage.setAttribute('aria-busy', 'false');
+      return;
+    }
+
+    let questions = resolved.questions;
+    const containsRestricted = questions.some((question) => question.g);
+    const alreadyConfirmed = local?.getItem(config.keys.adult) === '1';
+
+    if (containsRestricted && !alreadyConfirmed) {
+      const confirmed = window.confirm(
+        'Some saved questions contain mature content. Confirm that you are 18 or older to continue.',
+      );
+
+      if (confirmed) {
+        try {
+          local?.setItem(config.keys.adult, '1');
+        } catch {
+          // Confirmation remains valid for this visit.
+        }
+      } else {
+        questions = questions.filter((question) => !question.g);
+      }
+    }
+
+    favoriteQuestions = questions;
+
+    const favoritesSeen = new SessionSeenStore(`${config.keys.seen}:favorites`, session);
+    favoritesSeen.clear();
+    engine.setSeenStore(favoritesSeen);
+    engine.useQuestions(favoriteQuestions);
+
+    if (favoriteQuestions.length === 0) {
+      gameStage.hidden = true;
+      if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
+      if (favoritesGameEmptyText) {
+        favoritesGameEmptyText.textContent =
+          resolved.questions.length > 0
+            ? 'Age confirmation is required to play your restricted saved questions.'
+            : local
+              ? 'You have no available saved questions. Return to the main game and tap the heart to add some.'
+              : 'Favorites are unavailable in this browser.';
+      }
+
+      if (reconciliation.removed > 0) {
+        announce(
+          reconciliation.removed === 1
+            ? 'One unavailable saved question was removed.'
+            : `${reconciliation.removed} unavailable saved questions were removed.`,
+        );
+      }
+
+      gameStage.setAttribute('aria-busy', 'false');
       return;
     }
 
     const question = await engine.next(null);
-    if (!question) return;
+    if (!question) {
+      gameStage.setAttribute('aria-busy', 'false');
+      return;
+    }
 
     if (favoritesGameEmpty) favoritesGameEmpty.hidden = true;
     gameStage.hidden = false;
     renderQuestion(question);
     if (shareButton) shareButton.hidden = false;
-    announce(`Playing ${questions.length} saved questions.`);
+    gameStage.setAttribute('aria-busy', 'false');
+
+    const removedMessage =
+      reconciliation.removed > 0
+        ? ` ${reconciliation.removed} unavailable saved question${reconciliation.removed === 1 ? ' was' : 's were'} removed.`
+        : '';
+    announce(`Playing ${favoriteQuestions.length} saved questions.${removedMessage}`);
   }
 
   async function ensureManifest(): Promise<GameDataManifest | null> {
