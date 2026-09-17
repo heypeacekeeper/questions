@@ -202,6 +202,13 @@ export type Database = {
         Args: { code_length?: number };
         Returns: string;
       };
+      generate_unique_share_code: {
+        Args: {
+          code_length?: number;
+          max_attempts?: number;
+        };
+        Returns: string;
+      };
       import_questions_atomic: {
         Args: {
           p_rows: Array<{
