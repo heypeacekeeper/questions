@@ -93,6 +93,10 @@ export const FORM_LIMITS = {
   /** Per-IP-hash request cap for form endpoints per configured window. */
   rateLimitMaxRequests: 10,
   rateLimitWindowSeconds: 60,
+  /** Identical contact content from the same email is blocked for one day. */
+  contactDuplicateWindowSeconds: 60 * 60 * 24,
+  /** Identical/reversed question pairs are blocked for thirty days. */
+  submissionDuplicateWindowSeconds: 60 * 60 * 24 * 30,
 } as const;
 
 export const TURNSTILE = {
