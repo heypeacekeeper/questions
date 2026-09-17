@@ -166,6 +166,18 @@ export type Database = {
       };
     };
     Functions: {
+      cleanup_expired_personal_data: {
+        Args: {
+          contact_retention?: string;
+          submission_personal_data_retention?: string;
+          vote_retention?: string;
+        };
+        Returns: Array<{
+          contact_messages_deleted: number;
+          submissions_anonymized: number;
+          votes_deleted: number;
+        }>;
+      };
       create_contact_message_limited: {
         Args: {
           p_name: string;

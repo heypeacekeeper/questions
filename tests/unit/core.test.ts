@@ -586,6 +586,56 @@ describe('secure share codes', () => {
   });
 });
 
+describe('personal-data retention', () => {
+  const migration = readFileSync(
+    new URL('../../supabase/migrations/0008_personal_data_retention.sql', import.meta.url),
+    'utf8',
+  );
+  const privacyPolicy = readFileSync(
+    new URL('../../src/pages/privacy-policy/index.astro', import.meta.url),
+    'utf8',
+  );
+
+  it('deletes expired contact messages and legacy votes', () => {
+    expect(migration).toMatch(/contact_retention interval default interval '12 months'/);
+    expect(migration).toMatch(
+      /delete from public\.contact_messages[\s\S]*statement_timestamp\(\) - contact_retention/,
+    );
+    expect(migration).toMatch(/vote_retention interval default interval '90 days'/);
+    expect(migration).toMatch(
+      /delete from public\.votes[\s\S]*statement_timestamp\(\) - vote_retention/,
+    );
+  });
+
+  it('anonymizes submission contact details without deleting submissions', () => {
+    expect(migration).toMatch(
+      /update public\.question_submissions[\s\S]*submitter_name = null[\s\S]*submitter_email = null/,
+    );
+    expect(migration).not.toMatch(/delete from public\.question_submissions/);
+  });
+
+  it('restricts cleanup execution to the service role', () => {
+    expect(migration).toMatch(
+      /revoke all on function public\.cleanup_expired_personal_data[\s\S]*from public, anon, authenticated/,
+    );
+    expect(migration).toMatch(
+      /grant execute on function public\.cleanup_expired_personal_data[\s\S]*to service_role/,
+    );
+  });
+
+  it('schedules the cleanup function daily', () => {
+    expect(migration).toMatch(/daily-personal-data-retention/);
+    expect(migration).toMatch(/'17 3 \* \* \*'/);
+    expect(migration).toMatch(/select public\.cleanup_expired_personal_data\(\)/);
+  });
+
+  it('discloses the retention periods in the privacy policy', () => {
+    expect(privacyPolicy).toMatch(/deleted after 12[\s\S]*months/);
+    expect(privacyPolicy).toMatch(/removed after 90 days/);
+    expect(privacyPolicy).toMatch(/Legacy vote records[\s\S]*deleted after 90 days/);
+  });
+});
+
 describe('bounded request bodies', () => {
   it('cancels an upload as soon as it exceeds the byte limit', async () => {
     let pulls = 0;
