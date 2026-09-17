@@ -32,6 +32,24 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  database:
+    name: Supabase migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      - name: Start temporary Supabase database
+        run: supabase start
+      - name: Apply all migrations from scratch
+        run: supabase db reset
+      - name: Check database schema
+        run: supabase db lint --local --level warning
+      - name: Stop temporary Supabase database
+        if: always()
+        run: supabase stop --no-backup
+
   lighthouse:
     name: Experimental Lighthouse
     needs: verify
