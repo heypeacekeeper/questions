@@ -550,6 +550,42 @@ describe('limited duplicate windows', () => {
   });
 });
 
+describe('secure share codes', () => {
+  const migration = readFileSync(
+    new URL('../../supabase/migrations/0007_secure_share_codes.sql', import.meta.url),
+    'utf8',
+  );
+
+  it('uses cryptographically secure bytes without modulo bias', () => {
+    expect(migration).toMatch(/gen_random_bytes\(code_length \* 2\)/);
+    expect(migration).toMatch(/byte_value < 248/);
+    expect(migration).not.toMatch(/\brandom\s*\(/);
+  });
+
+  it('uses longer codes for new questions without changing existing codes', () => {
+    expect(migration).toMatch(
+      /alter column share_code[\s\S]*set default public\.generate_unique_share_code\(10, 16\)/,
+    );
+    expect(migration).not.toMatch(/update\s+public\.questions/i);
+  });
+
+  it('checks collisions and retries with a concurrency lock', () => {
+    expect(migration).toMatch(/for attempt in 1\.\.max_attempts loop/);
+    expect(migration).toMatch(/pg_advisory_xact_lock/);
+    expect(migration).toMatch(/where question\.share_code = candidate/);
+    expect(migration).toMatch(/Could not generate a unique share code/);
+  });
+
+  it('keeps both share-code functions unavailable to public roles', () => {
+    expect(migration).toMatch(
+      /revoke all on function public\.generate_share_code\(integer\)[\s\S]*from public, anon, authenticated/,
+    );
+    expect(migration).toMatch(
+      /revoke all on function public\.generate_unique_share_code\(integer, integer\)[\s\S]*from public, anon, authenticated/,
+    );
+  });
+});
+
 describe('bounded request bodies', () => {
   it('cancels an upload as soon as it exceeds the byte limit', async () => {
     let pulls = 0;
