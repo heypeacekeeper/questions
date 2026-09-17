@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isSeasonalCategoryActive, isWithinWindow } from '@/application/category-service';
 import { hasErrors, validateContent } from '@/application/content-validation';
 import { pickNextUnseen, QuestionService } from '@/application/question-service';
@@ -14,10 +14,16 @@ import { DEMO_QUESTIONS, LAUNCH_CATEGORIES } from '@/infrastructure/mock/fixture
 import {
   createDefaultMockDataset,
   MockCategoryRepository,
+  MockContactRepository,
   MockQuestionRepository,
+  MockSubmissionRepository,
 } from '@/infrastructure/mock/repositories';
 import { mapCategory, mapQuestion } from '@/infrastructure/supabase/mappers';
-import { loadContentGraph } from '@/infrastructure/supabase/repositories';
+import {
+  loadContentGraph,
+  SupabaseContactRepository,
+  SupabaseSubmissionRepository,
+} from '@/infrastructure/supabase/repositories';
 import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
 import { readBoundedBody } from '@/lib/bounded-body';
 import { normalizePath } from '@/lib/performance-path';
@@ -428,6 +434,119 @@ describe('production Turnstile configuration', () => {
     expect(() =>
       buildAppEnv(productionEnv, { mode: 'production', context: 'worker' }),
     ).not.toThrow();
+  });
+});
+
+describe('limited duplicate windows', () => {
+  it('allows contact content again after the configured window', async () => {
+    let now = Date.parse('2026-09-17T00:00:00.000Z');
+    const repository = new MockContactRepository(() => now);
+    const message = {
+      name: 'Tester',
+      email: 'tester@example.com',
+      subject: 'A question',
+      message: 'This is a sufficiently long contact message.',
+    };
+
+    expect((await repository.createMessage(message, 'contact-fingerprint')).kind).toBe('ok');
+    expect((await repository.createMessage(message, 'contact-fingerprint')).kind).toBe('duplicate');
+
+    now += FORM_LIMITS.contactDuplicateWindowSeconds * 1000 + 1;
+
+    expect((await repository.createMessage(message, 'contact-fingerprint')).kind).toBe('ok');
+  });
+
+  it('allows a question pair again after the configured window', async () => {
+    let now = Date.parse('2026-09-17T00:00:00.000Z');
+    const data = createDefaultMockDataset(0);
+    const repository = new MockSubmissionRepository(data, () => now);
+    const submission = {
+      optionA: 'Live on Mars',
+      optionB: 'Live underwater',
+      categoryId: LAUNCH_CATEGORIES[0]!.id,
+      submitterName: null,
+      submitterEmail: null,
+      agreedToTerms: true as const,
+    };
+
+    expect((await repository.createSubmission(submission, 'submission-fingerprint')).kind).toBe(
+      'ok',
+    );
+    expect((await repository.createSubmission(submission, 'submission-fingerprint')).kind).toBe(
+      'duplicate',
+    );
+
+    now += FORM_LIMITS.submissionDuplicateWindowSeconds * 1000 + 1;
+
+    expect((await repository.createSubmission(submission, 'submission-fingerprint')).kind).toBe(
+      'ok',
+    );
+  });
+
+  it('uses the contact RPC with the configured window', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: null, created_at: null, is_duplicate: true }],
+      error: null,
+    });
+
+    const repository = new SupabaseContactRepository({ rpc } as never);
+    const outcome = await repository.createMessage(
+      {
+        name: 'Tester',
+        email: 'tester@example.com',
+        subject: 'A question',
+        message: 'This is a sufficiently long contact message.',
+      },
+      'a'.repeat(64),
+    );
+
+    expect(outcome).toEqual({ kind: 'duplicate' });
+    expect(rpc).toHaveBeenCalledWith(
+      'create_contact_message_limited',
+      expect.objectContaining({
+        p_duplicate_window_seconds: FORM_LIMITS.contactDuplicateWindowSeconds,
+      }),
+    );
+  });
+
+  it('uses the submission RPC with the configured window', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: null, status: null, created_at: null, is_duplicate: true }],
+      error: null,
+    });
+
+    const repository = new SupabaseSubmissionRepository({ rpc } as never);
+    const outcome = await repository.createSubmission(
+      {
+        optionA: 'Live on Mars',
+        optionB: 'Live underwater',
+        categoryId: LAUNCH_CATEGORIES[0]!.id,
+        submitterName: null,
+        submitterEmail: null,
+        agreedToTerms: true,
+      },
+      'b'.repeat(64),
+    );
+
+    expect(outcome).toEqual({ kind: 'duplicate' });
+    expect(rpc).toHaveBeenCalledWith(
+      'create_question_submission_limited',
+      expect.objectContaining({
+        p_duplicate_window_seconds: FORM_LIMITS.submissionDuplicateWindowSeconds,
+      }),
+    );
+  });
+
+  it('keeps both RPC functions private and concurrency-safe', () => {
+    const migration = readFileSync(
+      new URL('../../supabase/migrations/0006_limited_duplicate_windows.sql', import.meta.url),
+      'utf8',
+    );
+
+    expect(migration.match(/pg_advisory_xact_lock/g)).toHaveLength(2);
+    expect(migration).toMatch(/revoke all on function public\.create_contact_message_limited/);
+    expect(migration).toMatch(/revoke all on function public\.create_question_submission_limited/);
+    expect(migration).toMatch(/grant execute[\s\S]*to service_role/);
   });
 });
 

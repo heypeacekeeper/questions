@@ -15,7 +15,7 @@ import type {
   SubmissionRepository,
   WriteOutcome,
 } from '@/repositories/interfaces';
-import { SEASONAL_WINDOWS } from '@/config/site';
+import { FORM_LIMITS, SEASONAL_WINDOWS } from '@/config/site';
 import { ALL_CATEGORIES, DEMO_QUESTIONS, generateMockFillerQuestions } from './fixtures';
 
 export interface MockDataset {
@@ -79,39 +79,70 @@ export class MockCategoryRepository implements CategoryRepository {
 
 export class MockSubmissionRepository implements SubmissionRepository {
   readonly stored: StoredQuestionSubmission[] = [];
-  constructor(private readonly data: MockDataset) {}
+
+  constructor(
+    private readonly data: MockDataset,
+    private readonly now: () => number = Date.now,
+  ) {}
+
   async isCategoryAcceptingSubmissions(categoryId: string): Promise<boolean> {
     return this.data.categories.some((c) => c.id === categoryId && c.status === 'published');
   }
+
   async createSubmission(
     submission: QuestionSubmission,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredQuestionSubmission>> {
-    if (this.stored.some((s) => s.fingerprint === fingerprint)) return { kind: 'duplicate' };
+    const now = this.now();
+    const cutoff = now - FORM_LIMITS.submissionDuplicateWindowSeconds * 1000;
+
+    if (
+      this.stored.some(
+        (stored) => stored.fingerprint === fingerprint && Date.parse(stored.createdAt) >= cutoff,
+      )
+    ) {
+      return { kind: 'duplicate' };
+    }
+
     const value: StoredQuestionSubmission = {
       ...submission,
       id: crypto.randomUUID(),
       status: 'pending',
       fingerprint,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(now).toISOString(),
     };
+
     this.stored.push(value);
     return { kind: 'ok', value };
   }
 }
 export class MockContactRepository implements ContactRepository {
   readonly stored: (StoredContactMessage & { fingerprint: string })[] = [];
+
+  constructor(private readonly now: () => number = Date.now) {}
+
   async createMessage(
     message: ContactMessage,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredContactMessage>> {
-    if (this.stored.some((s) => s.fingerprint === fingerprint)) return { kind: 'duplicate' };
+    const now = this.now();
+    const cutoff = now - FORM_LIMITS.contactDuplicateWindowSeconds * 1000;
+
+    if (
+      this.stored.some(
+        (stored) => stored.fingerprint === fingerprint && Date.parse(stored.createdAt) >= cutoff,
+      )
+    ) {
+      return { kind: 'duplicate' };
+    }
+
     const value = {
       ...message,
       id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(now).toISOString(),
       fingerprint,
     };
+
     this.stored.push(value);
     return { kind: 'ok', value };
   }

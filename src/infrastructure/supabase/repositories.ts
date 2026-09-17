@@ -21,7 +21,7 @@ import type {
   SubmissionRepository,
   WriteOutcome,
 } from '@/repositories/interfaces';
-import { SEASONAL_WINDOWS } from '@/config/site';
+import { FORM_LIMITS, SEASONAL_WINDOWS } from '@/config/site';
 import type { TypedSupabaseClient } from './client';
 import type { CategoryRow, QuestionCategoryRow, QuestionRow } from './database.types';
 import { mapCategoryWithCount, mapQuestion } from './mappers';
@@ -147,7 +147,6 @@ export class SupabaseCategoryRepository implements CategoryRepository {
   }
 }
 
-const PG_UNIQUE_VIOLATION = '23505';
 const PG_CHECK_VIOLATION = '23514';
 const PG_FK_VIOLATION = '23503';
 
@@ -168,33 +167,38 @@ export class SupabaseSubmissionRepository implements SubmissionRepository {
     submission: QuestionSubmission,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredQuestionSubmission>> {
-    const { data, error } = await this.client
-      .from('question_submissions')
-      .insert({
-        option_a: submission.optionA,
-        option_b: submission.optionB,
-        category_id: submission.categoryId,
-        submitter_name: submission.submitterName,
-        submitter_email: submission.submitterEmail,
-        agreed_to_terms: true,
-        fingerprint,
-      })
-      .select('id, status, created_at')
-      .single();
+    const { data, error } = await this.client.rpc('create_question_submission_limited', {
+      p_option_a: submission.optionA,
+      p_option_b: submission.optionB,
+      p_category_id: submission.categoryId,
+      p_submitter_name: submission.submitterName ?? '',
+      p_submitter_email: submission.submitterEmail ?? '',
+      p_fingerprint: fingerprint,
+      p_duplicate_window_seconds: FORM_LIMITS.submissionDuplicateWindowSeconds,
+    });
+
     if (error) {
-      if (error.code === PG_UNIQUE_VIOLATION) return { kind: 'duplicate' };
       if (error.code === PG_CHECK_VIOLATION || error.code === PG_FK_VIOLATION)
         return { kind: 'invalid', message: 'constraint' };
       return { kind: 'error', message: error.message };
     }
+
+    const result = data?.[0];
+
+    if (result?.is_duplicate) return { kind: 'duplicate' };
+
+    if (!result?.id || !result.status || !result.created_at) {
+      return { kind: 'error', message: 'Submission RPC returned an invalid result.' };
+    }
+
     return {
       kind: 'ok',
       value: {
         ...submission,
-        id: data.id,
-        status: data.status,
+        id: result.id,
+        status: result.status,
         fingerprint,
-        createdAt: data.created_at,
+        createdAt: result.created_at,
       },
     };
   }
@@ -207,23 +211,36 @@ export class SupabaseContactRepository implements ContactRepository {
     message: ContactMessage,
     fingerprint: string,
   ): Promise<WriteOutcome<StoredContactMessage>> {
-    const { data, error } = await this.client
-      .from('contact_messages')
-      .insert({
-        name: message.name,
-        email: message.email,
-        subject: message.subject,
-        message: message.message,
-        fingerprint,
-      })
-      .select('id, created_at')
-      .single();
+    const { data, error } = await this.client.rpc('create_contact_message_limited', {
+      p_name: message.name,
+      p_email: message.email,
+      p_subject: message.subject,
+      p_message: message.message,
+      p_fingerprint: fingerprint,
+      p_duplicate_window_seconds: FORM_LIMITS.contactDuplicateWindowSeconds,
+    });
+
     if (error) {
-      if (error.code === PG_UNIQUE_VIOLATION) return { kind: 'duplicate' };
       if (error.code === PG_CHECK_VIOLATION) return { kind: 'invalid', message: 'constraint' };
       return { kind: 'error', message: error.message };
     }
-    return { kind: 'ok', value: { ...message, id: data.id, createdAt: data.created_at } };
+
+    const result = data?.[0];
+
+    if (result?.is_duplicate) return { kind: 'duplicate' };
+
+    if (!result?.id || !result.created_at) {
+      return { kind: 'error', message: 'Contact RPC returned an invalid result.' };
+    }
+
+    return {
+      kind: 'ok',
+      value: {
+        ...message,
+        id: result.id,
+        createdAt: result.created_at,
+      },
+    };
   }
 }
 

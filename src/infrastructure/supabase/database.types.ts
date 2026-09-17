@@ -166,6 +166,38 @@ export type Database = {
       };
     };
     Functions: {
+      create_contact_message_limited: {
+        Args: {
+          p_name: string;
+          p_email: string;
+          p_subject: string;
+          p_message: string;
+          p_fingerprint: string;
+          p_duplicate_window_seconds: number;
+        };
+        Returns: Array<{
+          id: string | null;
+          created_at: string | null;
+          is_duplicate: boolean;
+        }>;
+      };
+      create_question_submission_limited: {
+        Args: {
+          p_option_a: string;
+          p_option_b: string;
+          p_category_id: string;
+          p_submitter_name: string;
+          p_submitter_email: string;
+          p_fingerprint: string;
+          p_duplicate_window_seconds: number;
+        };
+        Returns: Array<{
+          id: string | null;
+          status: SubmissionStatusRow | null;
+          created_at: string | null;
+          is_duplicate: boolean;
+        }>;
+      };
       generate_share_code: {
         Args: { code_length?: number };
         Returns: string;
