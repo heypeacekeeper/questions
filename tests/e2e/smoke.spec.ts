@@ -61,7 +61,7 @@ test('home game shows stable local display results and advances', async ({ page 
 
   const firstQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
   await page.locator('#choice-a').click();
-  await expect(page.locator('#game-stage')).toHaveClass(/voted/);
+  await expect(page.locator('#game-stage')).toHaveClass(/answered/);
   await expect(page.locator('#choice-a')).toHaveClass(/picked/);
   expect(
     await page.locator('#choice-b').evaluate((element) => element.classList.contains('picked')),
@@ -69,10 +69,8 @@ test('home game shows stable local display results and advances', async ({ page 
   await expect(page.locator('#choice-b')).toHaveClass(/not-picked/);
   const resultA = await page.locator('#percent-a').textContent();
   const resultB = await page.locator('#percent-b').textContent();
-  const displayCount = await page.locator('#vote-count').textContent();
   expect(resultA).toMatch(/^\d+\.\d%$/);
   expect(resultB).toMatch(/^\d+\.\d%$/);
-  expect(displayCount).toMatch(/^\d{1,3}(?:,\d{3})* votes$/);
 
   await page.locator('#choice-b').click();
   await expect(page.locator('#choice-b')).toHaveClass(/picked/);
@@ -82,11 +80,10 @@ test('home game shows stable local display results and advances', async ({ page 
   await expect(page.locator('#choice-a')).toHaveClass(/not-picked/);
   await expect(page.locator('#percent-a')).toHaveText(resultA ?? '');
   await expect(page.locator('#percent-b')).toHaveText(resultB ?? '');
-  await expect(page.locator('#vote-count')).toHaveText(displayCount ?? '');
   expect(removedEndpointRequests).toEqual([]);
 
   await page.locator('#next-button').click();
-  await expect(page.locator('#game-stage')).not.toHaveClass(/voted/);
+  await expect(page.locator('#game-stage')).not.toHaveClass(/answered/);
   await expect(page.locator('#game-stage')).not.toHaveAttribute(
     'data-question-id',
     firstQuestionId ?? '',
@@ -420,21 +417,18 @@ test('favorites migrate, reconcile, and play from the current catalog', async ({
               a: 'stale option A',
               b: 'stale option B',
               s: 'oldcode1',
-              d: 1,
             },
             {
               id: secondId,
               a: 'another stale option A',
               b: 'another stale option B',
               s: 'oldcode2',
-              d: 2,
             },
             {
               id: unavailableId,
               a: 'deleted question A',
               b: 'deleted question B',
               s: 'deleted1',
-              d: 3,
             },
           ],
         }),

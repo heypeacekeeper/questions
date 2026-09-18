@@ -43,7 +43,6 @@ function question(index: number): GameQuestion {
     a: `Option A ${index}`,
     b: `Option B ${index}`,
     s: `share-${index}`,
-    d: 2000 + index,
   };
 }
 
@@ -94,7 +93,7 @@ describe('Favorites catalog', () => {
     expect(file.url).toBe('/game-data/favorites.json');
     expect(file.questionCount).toBe(2);
     expect(payload).toEqual({
-      v: 1,
+      v: 2,
       q: [
         expect.objectContaining({ id: 'favorite-safe', g: false }),
         expect.objectContaining({ id: 'favorite-restricted', g: true }),
@@ -110,7 +109,6 @@ describe('Favorites catalog resolution', () => {
       a: 'Current option A',
       b: 'Current option B',
       s: 'avab222',
-      d: 100,
       g: false,
     },
     {
@@ -118,20 +116,13 @@ describe('Favorites catalog resolution', () => {
       a: 'Restricted option A',
       b: 'Restricted option B',
       s: 'restr22',
-      d: 200,
       g: true,
     },
   ];
 
   it('validates complete catalog question data', () => {
-    expect(parseFavoritesCatalog({ v: 1, q: catalog })).toEqual(catalog);
-    expect(parseFavoritesCatalog({ v: 2, q: catalog })).toBeNull();
-    expect(
-      parseFavoritesCatalog({
-        v: 1,
-        q: [{ ...catalog[0], d: -1 }],
-      }),
-    ).toBeNull();
+    expect(parseFavoritesCatalog({ v: 2, q: catalog })).toEqual(catalog);
+    expect(parseFavoritesCatalog({ v: 1, q: catalog })).toBeNull();
     expect(
       parseFavoritesCatalog({
         v: 1,

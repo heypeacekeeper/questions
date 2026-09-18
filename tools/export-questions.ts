@@ -28,7 +28,6 @@ export interface ExportQuestion {
   status: string;
   share_code: string;
   sort_order: number;
-  display_vote_count: number;
   is_demo: boolean;
   published_at: string | null;
   created_at: string;
@@ -62,7 +61,6 @@ export function asCsv(rows: ExportQuestion[]): string {
     'status',
     'share_code',
     'sort_order',
-    'display_vote_count',
     'is_demo',
     'published_at',
     'created_at',
@@ -160,7 +158,6 @@ async function main(): Promise<void> {
     status: question.status,
     share_code: question.share_code,
     sort_order: question.sort_order,
-    display_vote_count: question.display_vote_count,
     is_demo: question.is_demo,
     published_at: question.published_at,
     created_at: question.created_at,

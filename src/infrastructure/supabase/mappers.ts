@@ -44,7 +44,6 @@ export function mapQuestion(row: QuestionRow, categoryIds: readonly string[]): Q
     status: row.status,
     shareCode: row.share_code,
     sortOrder: row.sort_order,
-    displayVoteCount: row.display_vote_count,
     categoryIds: [...categoryIds],
     isDemo: row.is_demo,
     createdAt: row.created_at,

@@ -3,7 +3,7 @@
  * pack to its content-hashed URL. Pure (no I/O): the build integration writes
  * the returned files to disk.
  *
- * Packs include owner-managed display counts alongside static question content.
+ * Packs contain only the static question content required by the game.
  */
 import type { CategoryWithCount } from '@/domain/category';
 import type { Question } from '@/domain/question';
@@ -68,7 +68,7 @@ export async function buildPackSet(
   const files: GamePackFile[] = [];
   for (let i = 0; i < chunks.length; i++) {
     const questions: GameQuestion[] = chunks[i] ?? [];
-    const json = JSON.stringify({ v: 1, set: source.slug, i, n: chunks.length, q: questions });
+    const json = JSON.stringify({ v: 2, set: source.slug, i, n: chunks.length, q: questions });
     const hash = await contentHash(json, GAME_DATA.hashLength);
     files.push({
       url: `${ROUTES.gameDataPrefix}${source.slug}/pack-${String(i + 1).padStart(2, '0')}.${hash}.json`,

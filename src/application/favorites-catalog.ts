@@ -10,7 +10,7 @@ export interface FavoriteCatalogQuestion extends GameQuestion {
 }
 
 export interface FavoritesCatalogPayload {
-  readonly v: 1;
+  readonly v: 2;
   readonly q: readonly FavoriteCatalogQuestion[];
 }
 
@@ -31,7 +31,7 @@ export function buildFavoritesCatalog(
   );
 
   const catalog: FavoritesCatalogPayload = {
-    v: 1,
+    v: 2,
     q: questions
       .filter((question) => question.status === 'published')
       .map((question) => ({
@@ -71,15 +71,12 @@ function isCatalogQuestion(value: unknown): value is FavoriteCatalogQuestion {
     value.b.length <= CONTENT_LIMITS.optionMax &&
     typeof value.s === 'string' &&
     SHARE_CODE_PATTERN.test(value.s) &&
-    typeof value.d === 'number' &&
-    Number.isSafeInteger(value.d) &&
-    value.d >= 0 &&
     typeof value.g === 'boolean'
   );
 }
 
 export function parseFavoritesCatalog(data: unknown): readonly FavoriteCatalogQuestion[] | null {
-  if (!isRecord(data) || data.v !== 1 || !Array.isArray(data.q)) return null;
+  if (!isRecord(data) || data.v !== 2 || !Array.isArray(data.q)) return null;
 
   const questions: FavoriteCatalogQuestion[] = [];
   const seen = new Set<string>();

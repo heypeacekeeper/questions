@@ -55,7 +55,7 @@ export interface PackFetcher {
 }
 
 export interface PackFilePayload {
-  v: 1;
+  v: 2;
   set: string;
   i: number;
   n: number;
@@ -73,7 +73,7 @@ function isNonEmptyString(value: unknown): value is string {
 export function parsePackFilePayload(data: unknown): GameQuestion[] {
   if (
     !isRecord(data) ||
-    data.v !== 1 ||
+    data.v !== 2 ||
     !isNonEmptyString(data.set) ||
     typeof data.i !== 'number' ||
     !Number.isInteger(data.i) ||
@@ -100,9 +100,6 @@ export function parsePackFilePayload(data: unknown): GameQuestion[] {
       item.b.length > CONTENT_LIMITS.optionMax ||
       !isNonEmptyString(item.s) ||
       !SHARE_CODE_PATTERN.test(item.s) ||
-      typeof item.d !== 'number' ||
-      !Number.isInteger(item.d) ||
-      item.d < 0 ||
       seenIds.has(item.id)
     ) {
       throw new Error('Invalid question in game-data pack');
@@ -114,7 +111,6 @@ export function parsePackFilePayload(data: unknown): GameQuestion[] {
       a: item.a,
       b: item.b,
       s: item.s,
-      d: item.d,
     });
   }
 
