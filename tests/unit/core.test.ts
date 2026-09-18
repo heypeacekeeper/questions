@@ -7,8 +7,7 @@ import { validateContact, validateSubmission } from '@/application/submission-se
 import { buildAppEnv } from '@/config/env';
 import { FORM_LIMITS, SEASONAL_WINDOWS } from '@/config/site';
 import { isSitemapEligible } from '@/config/site-static.mjs';
-import { toGameQuestion, type Question } from '@/domain/question';
-import type { CategoryWithCount } from '@/domain/category';
+import type { Question } from '@/domain/question';
 import { paginate } from '@/domain/site';
 import { DEMO_QUESTIONS, LAUNCH_CATEGORIES } from '@/infrastructure/mock/fixtures';
 import {
@@ -326,7 +325,6 @@ describe('supabase mapping and environment', () => {
           status: 'published',
           share_code: 'abcdefg',
           sort_order: 1,
-          display_vote_count: 3248,
           is_demo: false,
           created_at: 't',
           updated_at: 't',
@@ -632,7 +630,6 @@ describe('personal-data retention', () => {
   it('discloses the retention periods in the privacy policy', () => {
     expect(privacyPolicy).toMatch(/deleted after 12[\s\S]*months/);
     expect(privacyPolicy).toMatch(/removed after 90 days/);
-    expect(privacyPolicy).toMatch(/Legacy vote records[\s\S]*deleted after 90 days/);
   });
 });
 
@@ -764,13 +761,12 @@ describe('game-data payload validation', () => {
     a: 'Option A',
     b: 'Option B',
     s: 'abc2345',
-    d: 100,
   };
 
   it('accepts a valid pack and rejects malformed questions', () => {
     expect(
       parsePackFilePayload({
-        v: 1,
+        v: 2,
         set: 'mixed',
         i: 0,
         n: 1,
@@ -780,7 +776,7 @@ describe('game-data payload validation', () => {
 
     expect(() =>
       parsePackFilePayload({
-        v: 1,
+        v: 2,
         set: 'mixed',
         i: 0,
         n: 1,
@@ -790,7 +786,7 @@ describe('game-data payload validation', () => {
 
     expect(() =>
       parsePackFilePayload({
-        v: 2,
+        v: 1,
         set: 'mixed',
         i: 0,
         n: 1,
@@ -802,7 +798,7 @@ describe('game-data payload validation', () => {
   it('rejects duplicate question ids inside a pack', () => {
     expect(() =>
       parsePackFilePayload({
-        v: 1,
+        v: 2,
         set: 'mixed',
         i: 0,
         n: 1,
@@ -856,7 +852,6 @@ describe('game engine pack loading', () => {
             a: 'Option A',
             b: 'Option B',
             s: 'retry01',
-            d: 100,
           },
         ];
       },
@@ -884,8 +879,8 @@ describe('game engine pack loading', () => {
     const engine = new GameEngine(
       new SessionSeenStore('repeat-seen', null),
       async () => [
-        { id: 'question-1', a: 'A1', b: 'B1', s: 'repeat1', d: 100 },
-        { id: 'question-2', a: 'A2', b: 'B2', s: 'repeat2', d: 200 },
+        { id: 'question-1', a: 'A1', b: 'B1', s: 'repeat1' },
+        { id: 'question-2', a: 'A2', b: 'B2', s: 'repeat2' },
       ],
       1,
       () => 0,
@@ -912,7 +907,7 @@ describe('game engine pack loading', () => {
   it('returns null when a pack only contains the current question', async () => {
     const engine = new GameEngine(
       new SessionSeenStore('single-seen', null),
-      async () => [{ id: 'only-question', a: 'Option A', b: 'Option B', s: 'only001', d: 100 }],
+      async () => [{ id: 'only-question', a: 'Option A', b: 'Option B', s: 'only001' }],
       1,
       () => 0,
     );
@@ -935,9 +930,7 @@ describe('game engine pack loading', () => {
 
 describe('game category switching', () => {
   it('ignores an old pack download after switching categories', async () => {
-    let resolveOld!: (
-      questions: Array<{ id: string; a: string; b: string; s: string; d: number }>,
-    ) => void;
+    let resolveOld!: (questions: Array<{ id: string; a: string; b: string; s: string }>) => void;
     const engine = new GameEngine(
       new SessionSeenStore('race-seen', null),
       async (url) => {
@@ -946,7 +939,7 @@ describe('game category switching', () => {
             resolveOld = resolve;
           });
         }
-        return [{ id: 'new-question', a: 'New A', b: 'New B', s: 'new0001', d: 10 }];
+        return [{ id: 'new-question', a: 'New A', b: 'New B', s: 'new0001' }];
       },
       1,
       () => 0,
@@ -973,7 +966,7 @@ describe('game category switching', () => {
     const current = await engine.next(null);
     expect(current?.id).toBe('new-question');
 
-    resolveOld([{ id: 'old-question', a: 'Old A', b: 'Old B', s: 'old0001', d: 10 }]);
+    resolveOld([{ id: 'old-question', a: 'Old A', b: 'Old B', s: 'old0001' }]);
     await oldLoad;
 
     expect(await engine.next(current?.id ?? null)).toBeNull();
@@ -990,12 +983,12 @@ describe('game background loading', () => {
         calls.push(url);
         if (url === '/pack-2.json') {
           return new Promise((resolve) => {
-            finishPrefetch = () => resolve([{ id: 'q3', a: 'A3', b: 'B3', s: 'pref003', d: 30 }]);
+            finishPrefetch = () => resolve([{ id: 'q3', a: 'A3', b: 'B3', s: 'pref003' }]);
           });
         }
         return [
-          { id: 'q1', a: 'A1', b: 'B1', s: 'pref001', d: 10 },
-          { id: 'q2', a: 'A2', b: 'B2', s: 'pref002', d: 20 },
+          { id: 'q1', a: 'A1', b: 'B1', s: 'pref001' },
+          { id: 'q2', a: 'A2', b: 'B2', s: 'pref002' },
         ];
       },
       2,
@@ -1056,51 +1049,4 @@ describe('generated display results', () => {
     );
     expect(resultsShownForSelections[0]).toEqual(resultsShownForSelections[1]);
   });
-
-  it('ships the owner-managed display count in compact game data', () => {
-    expect(toGameQuestion(DEMO_QUESTIONS[0]!).d).toBe(DEMO_QUESTIONS[0]!.displayVoteCount);
-  });
-});
-
-describe('display vote count validation', () => {
-  const questionId = 'display-count-validation-question';
-  const categoriesWithNoPublishedQuestions: readonly CategoryWithCount[] = LAUNCH_CATEGORIES.map(
-    (category) => ({
-      ...category,
-      publishedQuestionCount: 0,
-    }),
-  );
-  const questionWithCount = (displayVoteCount: number): Question => ({
-    ...DEMO_QUESTIONS[0]!,
-    id: questionId,
-    shareCode: 'counttest',
-    status: 'draft',
-    categoryIds: [],
-    displayVoteCount,
-  });
-  const issuesFor = (displayVoteCount: number) =>
-    validateContent(categoriesWithNoPublishedQuestions, [questionWithCount(displayVoteCount)], {
-      allowDemoContent: true,
-    });
-  const displayCountIssues = (displayVoteCount: number) =>
-    issuesFor(displayVoteCount).filter(
-      (issue) => issue.code === 'QUESTION_INVALID_DISPLAY_VOTE_COUNT',
-    );
-
-  it('accepts a finite non-negative integer and zero', () => {
-    expect(displayCountIssues(3248)).toHaveLength(0);
-    expect(displayCountIssues(0)).toHaveLength(0);
-  });
-
-  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
-    'rejects invalid display count %s with the question id and error code',
-    (displayVoteCount) => {
-      const issues = displayCountIssues(displayVoteCount);
-      expect(issues).toHaveLength(1);
-      expect(issues[0]).toMatchObject({
-        code: 'QUESTION_INVALID_DISPLAY_VOTE_COUNT',
-        records: [questionId],
-      });
-    },
-  );
 });

@@ -532,7 +532,7 @@ svg {
     opacity 0.3s ease;
 }
 
-.game-stage.voted .choice-text {
+.game-stage.answered .choice-text {
   transform: translateY(-8px) scale(0.9);
 }
 
@@ -570,7 +570,7 @@ svg {
       opacity 0.25s ease-out;
   }
 
-  .game-stage.voted .result-fill {
+  .game-stage.answered .result-fill {
     opacity: 1;
   }
 
@@ -584,7 +584,7 @@ svg {
     animation: none;
   }
 
-  .game-stage.voted .water-wave {
+  .game-stage.answered .water-wave {
     animation: water-drift 1.8s ease-in-out 3 alternate;
   }
 
@@ -619,32 +619,25 @@ svg {
   letter-spacing: -0.055em;
 }
 
-.result-votes {
-  display: block;
-  margin-top: 7px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.game-stage.voted .result {
+.game-stage.answered .result {
   visibility: visible;
   opacity: 1;
 }
 
-.game-stage.voted .not-picked {
+.game-stage.answered .not-picked {
   filter: saturate(0.55) brightness(0.87);
 }
 
 /* Result reveal animations — transform/opacity only, so layout stays fixed. */
-.game-stage.voted .result-percent {
+.game-stage.answered .result-percent {
   animation: result-pop 0.48s cubic-bezier(0.2, 0.85, 0.25, 1.2) both;
 }
 
-.game-stage.voted .picked {
+.game-stage.answered .picked {
   animation: selected-glow 0.5s ease-out;
 }
 
-.game-stage.voted .next-button {
+.game-stage.answered .next-button {
   animation: next-button-reveal 0.38s 0.08s ease-out both;
 }
 
@@ -750,10 +743,10 @@ svg {
   height: 17px;
 }
 
-.game-stage.voted .or-badge {
+.game-stage.answered .or-badge {
   display: none;
 }
-.game-stage.voted .next-button {
+.game-stage.answered .next-button {
   display: flex;
 }
 
@@ -769,7 +762,7 @@ svg {
   opacity: 0;
 }
 
-.game-stage.voted .verdict,
+.game-stage.answered .verdict,
 .game-stage.has-notice .verdict {
   opacity: 1;
 }
@@ -1882,29 +1875,29 @@ svg {
     transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  .game-stage:not(.voted) .choice-content {
+  .game-stage:not(.answered) .choice-content {
     transform: translateY(42px);
   }
 
-  .game-stage.voted .choice-content {
+  .game-stage.answered .choice-content {
     transform: translateY(0);
   }
 
   /* Keep the upper result below the category and action buttons. */
-  .game-stage.voted .choice-a .choice-content {
+  .game-stage.answered .choice-a .choice-content {
     transform: translateY(20px);
   }
 
-  /* .game-stage.voted{
+  /* .game-stage.answered{
     height:auto;
     min-height:0;
     max-height:none;
     grid-template-rows:minmax(280px,auto) minmax(320px,auto);
   } */
-  .game-stage.voted .choice-a {
+  .game-stage.answered .choice-a {
     padding-bottom: 84px;
   }
-  .game-stage.voted .choice-b {
+  .game-stage.answered .choice-b {
     padding-top: 84px;
     padding-bottom: 72px;
   }

@@ -53,7 +53,6 @@ export function initGame(): void {
   const textB = $('text-b');
   const percentA = $('percent-a');
   const percentB = $('percent-b');
-  const voteCount = $('vote-count');
   const fillA = $('fill-a');
   const fillB = $('fill-b');
   const verdict = $('verdict-text');
@@ -87,7 +86,7 @@ export function initGame(): void {
     config.refill,
   );
   let current: GameQuestion | null = config.initial;
-  let hasVoted = false;
+  let hasAnswered = false;
   let lastPick: 'A' | 'B' | null = null;
   let busy = false;
   let manifest: GameDataManifest | null = null;
@@ -205,16 +204,16 @@ export function initGame(): void {
       delete nextButton.dataset.action;
     }
     if (nextLabel) nextLabel.textContent = 'Next question';
-    hasVoted = false;
+    hasAnswered = false;
     lastPick = null;
-    gameStage.classList.remove('voted', 'has-notice');
+    gameStage.classList.remove('answered', 'has-notice');
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
     updateFavoriteButton();
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     if (textA) textA.textContent = question.a;
     if (textB) textB.textContent = question.b;
-    [percentA, percentB, voteCount, verdict].forEach((element) => {
+    [percentA, percentB, verdict].forEach((element) => {
       if (element) element.textContent = '';
     });
     if (fillA) fillA.style.height = '0';
@@ -224,10 +223,10 @@ export function initGame(): void {
   }
   function choose(choice: 'A' | 'B'): void {
     if (!current || busy) return;
-    if (hasVoted && lastPick === choice) return;
-    hasVoted = true;
+    if (hasAnswered && lastPick === choice) return;
+    hasAnswered = true;
     lastPick = choice;
-    gameStage.classList.add('voted');
+    gameStage.classList.add('answered');
     const picked = choice === 'A' ? choiceA : choiceB;
     const other = choice === 'A' ? choiceB : choiceA;
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
@@ -236,14 +235,13 @@ export function initGame(): void {
     const result = generatedDisplayResult(current.id);
     if (percentA) percentA.textContent = formatGeneratedPercent(result.percentA);
     if (percentB) percentB.textContent = formatGeneratedPercent(result.percentB);
-    if (voteCount) voteCount.textContent = `${current.d.toLocaleString('en-US')} votes`;
     requestAnimationFrame(() => {
       if (fillA) fillA.style.height = `${result.percentA}%`;
       if (fillB) fillB.style.height = `${result.percentB}%`;
     });
 
     announce(
-      `Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. ${current.d.toLocaleString('en-US')} votes.`,
+      `Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. For-fun result.`,
     );
   }
   function showQuestionLoadFailure(): void {

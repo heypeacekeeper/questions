@@ -32,6 +32,6 @@ test('game result visual', async ({ page }) => {
   await prepare(page);
   await page.goto('/');
   await page.locator('#choice-a').click();
-  await expect(page.locator('#game-stage')).toHaveClass(/voted/);
+  await expect(page.locator('#game-stage')).toHaveClass(/answered/);
   await expect(page.locator('#game-shell')).toHaveScreenshot('game-result.png');
 });

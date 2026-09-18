@@ -9,7 +9,7 @@ Astro pages/components → application services → repository interfaces → ad
 ```
 
 - Supabase content is read at build time with the server-only secret key.
-- The game displays deterministic, local-only result percentages and owner-managed display counts. Selecting an option never sends a request or changes stored content.
+- The game displays deterministic, local-only for-fun percentages. Selecting an option never sends a request or changes stored content.
 - The composition root is `src/repositories/factory.ts`; environment validation is `src/config/env.ts`.
 
 ## Commands
@@ -48,13 +48,16 @@ A production Supabase database must have every migration in
 2. `0001_initial_schema.sql` — tables, indexes, constraints, RLS and grants
 3. `0002_seed_categories.sql` — category definitions
 4. `0003_cast_vote_function.sql` — historical voting support
-5. `0004_display_vote_count.sql` — owner-managed display counts
+
+- The game displays deterministic, local-only for-fun percentages. Selecting an option never sends a request or changes stored content.
+
 6. `0005_atomic_question_import.sql` — atomic CSV question imports
 7. `0006_limited_duplicate_windows.sql` — time-limited duplicate protection
 8. `0007_secure_share_codes.sql` — cryptographically secure share codes
 9. `0008_personal_data_retention.sql` — scheduled deletion and anonymization of expired personal data
+10. `0009_remove_legacy_voting.sql` — removes obsolete voting tables, functions, types and display counts
 
-Review each migration before applying it to production. Apply all nine using the
+Review each migration before applying it to production. Apply all ten using the
 Supabase CLI or the Supabase SQL editor. Do not run
 `supabase/seed/demo_questions.sql` in production.
 
@@ -67,10 +70,9 @@ After applying the migrations:
 - regenerate `src/infrastructure/supabase/database.types.ts` from the linked project;
 - run a production build using the real Supabase credentials.
 
-Selecting either game option reveals a deterministic display result generated
-from the question ID. The displayed count comes from the owner-managed
-`display_vote_count` column. Selecting an option does not send a voting request
-or modify database content.
+Selecting either game option reveals deterministic for-fun percentages generated
+from the question ID. Selecting an option does not send a request or modify
+database content.
 
 ## Isolated mock development
 
@@ -108,7 +110,7 @@ Implement repository interfaces in `src/infrastructure/<provider>/`, map provide
 
 ## Owner setup
 
-- Create/review the production Supabase project, then apply migrations 0000–0008 in numerical order.
+- Create/review the production Supabase project, then apply migrations 0000–0009 in numerical order.
 - Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
 - Configure Worker secrets and the Cloudflare form rate-limit binding.
 - Replace legal placeholders and create production Turnstile widgets.

@@ -3,7 +3,7 @@
  * Import questions from CSV into Supabase.
  *
  * Required columns: option_a, option_b, categories
- * Optional columns: status, sort_order, display_vote_count, is_demo
+ * Optional columns: status, sort_order, is_demo
  * `categories` is a pipe-separated list of existing category slugs.
  *
  * Usage:
@@ -31,7 +31,6 @@ export interface ImportRow {
   categorySlugs: string[];
   status: ContentStatus;
   sortOrder: number;
-  displayVoteCount?: number;
   isDemo: boolean;
   line: number;
 }
@@ -42,7 +41,6 @@ export interface AtomicImportQuestion {
   option_b: string;
   status: ContentStatus;
   sort_order: number;
-  display_vote_count?: number;
   is_demo: boolean;
   category_ids: string[];
 }
@@ -174,33 +172,12 @@ export function parseRows(csv: string): ImportRow[] {
       throw new Error(`Line ${line}: invalid sort_order.`);
     }
 
-    const displayVoteCountRaw = read(cells, 'display_vote_count');
-
-    let displayVoteCount: number | undefined;
-
-    if (displayVoteCountRaw !== '') {
-      if (!/^\d+$/.test(displayVoteCountRaw)) {
-        throw new Error(
-          `Line ${line}: invalid display_vote_count "${displayVoteCountRaw}". Expected a non-negative integer.`,
-        );
-      }
-
-      displayVoteCount = Number(displayVoteCountRaw);
-
-      if (!Number.isSafeInteger(displayVoteCount)) {
-        throw new Error(
-          `Line ${line}: invalid display_vote_count "${displayVoteCountRaw}". Expected a safe non-negative integer.`,
-        );
-      }
-    }
-
     return {
       optionA,
       optionB,
       categorySlugs,
       status: statusRaw as ContentStatus,
       sortOrder,
-      displayVoteCount,
       isDemo: parseBoolean(read(cells, 'is_demo'), line),
       line,
     };
@@ -318,7 +295,6 @@ async function main(): Promise<void> {
     option_b: row.optionB,
     status: row.status,
     sort_order: row.sortOrder,
-    ...(row.displayVoteCount === undefined ? {} : { display_vote_count: row.displayVoteCount }),
     is_demo: row.isDemo,
     category_ids: row.categorySlugs.map((slug) => categoryBySlug.get(slug)!.id),
   }));

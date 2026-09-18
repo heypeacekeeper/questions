@@ -36,10 +36,7 @@ function isLegacyFavoriteQuestion(value: unknown): value is GameQuestion {
     isText(question.id, 128) &&
     isText(question.a, 200) &&
     isText(question.b, 200) &&
-    isText(question.s, 64) &&
-    typeof question.d === 'number' &&
-    Number.isSafeInteger(question.d) &&
-    question.d >= 0
+    isText(question.s, 64)
   );
 }
 

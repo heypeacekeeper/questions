@@ -34,7 +34,6 @@ export type CategoryRow = {
 };
 
 export type QuestionRow = {
-  display_vote_count: number;
   id: string;
   option_a: string;
   option_b: string;
@@ -123,7 +122,6 @@ export type Database = {
           | 'published_at'
           | 'share_code'
           | 'sort_order'
-          | 'display_vote_count'
           | 'is_demo'
           | 'status'
         >;
@@ -170,12 +168,10 @@ export type Database = {
         Args: {
           contact_retention?: string;
           submission_personal_data_retention?: string;
-          vote_retention?: string;
         };
         Returns: Array<{
           contact_messages_deleted: number;
           submissions_anonymized: number;
-          votes_deleted: number;
         }>;
       };
       create_contact_message_limited: {
@@ -229,7 +225,6 @@ export type Database = {
             option_b: string;
             status: ContentStatus;
             sort_order: number;
-            display_vote_count?: number;
             is_demo: boolean;
             category_ids: string[];
           }>;
