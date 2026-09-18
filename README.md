@@ -39,15 +39,38 @@ npx wrangler deploy
 
 Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY`. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
 
-## Display-only results and Supabase migration
+## Production database migrations
 
-Selecting either option immediately reveals a deterministic display result generated from the question ID. Option A is always in the 25.0%–75.0% range, Option B complements it to 100.0%, and the same question always produces the same result. The displayed count is the owner-editable `display_vote_count` stored on each question.
+A production Supabase database must have every migration in
+`supabase/migrations/` applied in numerical order:
 
-1. For a new database, manually run the historical migrations in order through migration 0003.
-2. Review and manually run `supabase/migrations/0004_display_vote_count.sql` in the Supabase SQL editor. Do not apply it automatically from the application.
-3. Migration 0004 adds `display_vote_count`, safely backfills only existing `NULL` values with integers from 2,000 through 7,000, gives new rows a value in that range, and then makes the column required. Owners can later set any non-negative integer count directly in Supabase.
+1. `0000_functions.sql` — shared database functions
+2. `0001_initial_schema.sql` — tables, indexes, constraints, RLS and grants
+3. `0002_seed_categories.sql` — category definitions
+4. `0003_cast_vote_function.sql` — historical voting support
+5. `0004_display_vote_count.sql` — owner-managed display counts
+6. `0005_atomic_question_import.sql` — atomic CSV question imports
+7. `0006_limited_duplicate_windows.sql` — time-limited duplicate protection
+8. `0007_secure_share_codes.sql` — cryptographically secure share codes
+9. `0008_personal_data_retention.sql` — scheduled deletion and anonymization of expired personal data
 
-Historical migrations and legacy database data are retained unchanged. The active application does not read or write historical vote records.
+Review each migration before applying it to production. Apply all nine using the
+Supabase CLI or the Supabase SQL editor. Do not run
+`supabase/seed/demo_questions.sql` in production.
+
+After applying the migrations:
+
+- confirm all migrations completed successfully;
+- confirm RLS is enabled on protected tables;
+- confirm service-role RPC permissions are present;
+- confirm the `daily-personal-data-retention` cron job exists;
+- regenerate `src/infrastructure/supabase/database.types.ts` from the linked project;
+- run a production build using the real Supabase credentials.
+
+Selecting either game option reveals a deterministic display result generated
+from the question ID. The displayed count comes from the owner-managed
+`display_vote_count` column. Selecting an option does not send a voting request
+or modify database content.
 
 ## Isolated mock development
 
@@ -85,7 +108,7 @@ Implement repository interfaces in `src/infrastructure/<provider>/`, map provide
 
 ## Owner setup
 
-- Create/review the production Supabase project, then manually run migration 0004 after reviewing it.
+- Create/review the production Supabase project, then apply migrations 0000–0008 in numerical order.
 - Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
 - Configure Worker secrets and the Cloudflare form rate-limit binding.
 - Replace legal placeholders and create production Turnstile widgets.
