@@ -636,6 +636,36 @@ describe('personal-data retention', () => {
   });
 });
 
+describe('cache policy', () => {
+  const headers = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8');
+  const middleware = readFileSync(new URL('../../src/middleware.ts', import.meta.url), 'utf8');
+
+  it('caches only fingerprinted assets permanently', () => {
+    expect(headers).toMatch(
+      /\/_astro\/\*[\s\S]*Cache-Control: public, max-age=31536000, immutable/,
+    );
+    expect(headers).toMatch(
+      /\/game-data\/:pack\/pack-\*[\s\S]*Cache-Control: public, max-age=31536000, immutable/,
+    );
+  });
+
+  it('keeps mutable catalogs short-lived', () => {
+    expect(headers).toMatch(
+      /\/game-data\/manifest\.json[\s\S]*Cache-Control: public, max-age=300, must-revalidate/,
+    );
+    expect(headers).toMatch(
+      /\/game-data\/favorites\.json[\s\S]*Cache-Control: public, max-age=300, must-revalidate/,
+    );
+  });
+
+  it('never caches APIs or the deployment manifest', () => {
+    expect(headers).toMatch(/\/deployment-manifest\.json[\s\S]*Cache-Control: no-store/);
+    expect(middleware).toMatch(
+      /pathname\.startsWith\('\/api\/'\)[\s\S]*cache-control', 'no-store'/,
+    );
+  });
+});
+
 describe('bounded request bodies', () => {
   it('cancels an upload as soon as it exceeds the byte limit', async () => {
     let pulls = 0;

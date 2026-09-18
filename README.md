@@ -27,6 +27,14 @@ npm run preview
 npx wrangler deploy
 ```
 
+## Caching policy
+
+- HTML uses Cloudflare's default revalidation policy: cached responses must be checked before reuse.
+- Hashed Astro assets and hashed game-data packs are cached for one year as immutable files.
+- The mutable game-data manifest and Favorites catalog are cached for five minutes with revalidation.
+- API responses and the deployment manifest use `no-store`.
+- Cache rules for static files live in `public/_headers`; API protection lives in `src/middleware.ts`.
+
 ## Environment variables
 
 Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY`. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
