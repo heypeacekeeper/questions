@@ -20,7 +20,7 @@ export class CloudflareBindingRateLimiter implements RateLimiter {
       const { success } = await this.binding.limit({ key });
       return success;
     } catch {
-      return true; // fail open — limiter outage must not break the site
+      return false; // Fail closed: protected forms stop when the limiter is unavailable
     }
   }
 }
@@ -48,9 +48,15 @@ export class IsolateRateLimiter implements RateLimiter {
 /** Shared per-isolate instance for Worker endpoints. */
 export const isolateRateLimiter = new IsolateRateLimiter();
 
-export function createRateLimiter(binding: unknown): RateLimiter {
+export function createRateLimiter(
+  binding: unknown,
+  options: { required?: boolean } = {},
+): RateLimiter {
   if (binding && typeof (binding as CloudflareRateLimitBinding).limit === 'function') {
     return new CloudflareBindingRateLimiter(binding as CloudflareRateLimitBinding);
+  }
+  if (options.required) {
+    throw new Error('FORM_RATE_LIMITER binding is required for enabled production forms.');
   }
   return isolateRateLimiter;
 }

@@ -23,7 +23,11 @@ import {
   SupabaseContactRepository,
   SupabaseSubmissionRepository,
 } from '@/infrastructure/supabase/repositories';
-import { IsolateRateLimiter } from '@/infrastructure/rate-limit/rate-limiter';
+import {
+  CloudflareBindingRateLimiter,
+  createRateLimiter,
+  IsolateRateLimiter,
+} from '@/infrastructure/rate-limit/rate-limiter';
 import { readBoundedBody } from '@/lib/bounded-body';
 import { normalizePath } from '@/lib/performance-path';
 import { normalizeForComparison, questionPairFingerprint } from '@/lib/text';
@@ -722,6 +726,24 @@ describe('Cloudflare rate-limit configuration', () => {
       limit: FORM_LIMITS.rateLimitMaxRequests,
       period: FORM_LIMITS.rateLimitWindowSeconds,
     });
+  });
+});
+
+describe('production rate limiter safety', () => {
+  it('throws when a required binding is missing', () => {
+    expect(() => createRateLimiter(undefined, { required: true })).toThrow(
+      /FORM_RATE_LIMITER binding is required/,
+    );
+  });
+
+  it('rejects a protected request when the Cloudflare limiter fails', async () => {
+    const limiter = new CloudflareBindingRateLimiter({
+      limit: async () => {
+        throw new Error('limiter unavailable');
+      },
+    });
+
+    await expect(limiter.allow('client-a')).resolves.toBe(false);
   });
 });
 
