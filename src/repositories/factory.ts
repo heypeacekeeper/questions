@@ -139,7 +139,13 @@ export function selectVerifier(env: AppEnv): HumanVerificationService {
 export function createMutationContext(bindings: RawEnv | undefined): MutationContext {
   const env = getWorkerEnv(bindings);
   const runtimeBindings = bindings as Record<string, unknown> | undefined;
-  const formRateLimiter = createRateLimiter(runtimeBindings?.FORM_RATE_LIMITER);
+  const requireFormRateLimiter =
+    env.isProduction &&
+    env.dataProvider !== 'mock' &&
+    (env.features.FEATURE_SUBMISSIONS || env.features.FEATURE_CONTACT_FORM);
+  const formRateLimiter = createRateLimiter(runtimeBindings?.FORM_RATE_LIMITER, {
+    required: requireFormRateLimiter,
+  });
 
   const verifier: HumanVerificationService = selectVerifier(env);
 
