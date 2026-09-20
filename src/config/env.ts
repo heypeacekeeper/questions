@@ -27,6 +27,9 @@ export interface AppEnv {
   /** Server only. */
   readonly turnstileSecretKey: string | undefined;
 
+  /** Server-only HMAC key used to derive opaque rate-limit client identifiers. */
+  readonly rateLimitPepper: string | undefined;
+
   readonly ga4MeasurementId: string | undefined;
   readonly cloudflareAnalyticsToken: string | undefined;
   readonly searchConsoleVerification: string | undefined;
@@ -101,6 +104,12 @@ const TURNSTILE_TEST_SECRET_KEYS = [
   '3x0000000000000000000000000000000AA',
 ] as const;
 
+/** Minimum secret length; production values should use 32 random bytes. */
+export const RATE_LIMIT_PEPPER_MIN_LENGTH = 32;
+
+/** Deterministic local-only fallback. Production must never accept this value. */
+export const DEVELOPMENT_RATE_LIMIT_PEPPER = 'local-development-only-rate-limit-pepper';
+
 /**
  * Build a typed, validated `AppEnv` from a raw key/value record.
  * Pure function — easy to unit test.
@@ -147,6 +156,8 @@ export function buildAppEnv(
   const supabaseSecretKey = trimOrUndefined(raw.SUPABASE_SECRET_KEY);
   const turnstileSiteKey = trimOrUndefined(raw.PUBLIC_TURNSTILE_SITE_KEY);
   const turnstileSecretKey = trimOrUndefined(raw.TURNSTILE_SECRET_KEY);
+
+  const rateLimitPepper = trimOrUndefined(raw.RATE_LIMIT_PEPPER);
   const ga4MeasurementId = trimOrUndefined(raw.PUBLIC_GA4_MEASUREMENT_ID);
   const cloudflareAnalyticsToken = trimOrUndefined(raw.PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN);
   const searchConsoleVerification = trimOrUndefined(raw.PUBLIC_SEARCH_CONSOLE_VERIFICATION);
@@ -229,6 +240,21 @@ export function buildAppEnv(
     );
   }
 
+  if (context === 'worker' && isProduction && dataProvider !== 'mock') {
+    if (!rateLimitPepper) {
+      problems.push(
+        'RATE_LIMIT_PEPPER is required in the production Worker ' +
+          '(npx wrangler secret put RATE_LIMIT_PEPPER)',
+      );
+    } else if (rateLimitPepper.length < RATE_LIMIT_PEPPER_MIN_LENGTH) {
+      problems.push(
+        `RATE_LIMIT_PEPPER must be at least ${RATE_LIMIT_PEPPER_MIN_LENGTH} characters`,
+      );
+    } else if (rateLimitPepper === DEVELOPMENT_RATE_LIMIT_PEPPER) {
+      problems.push('RATE_LIMIT_PEPPER must not use the shared development value in production');
+    }
+  }
+
   if (problems.length > 0) throw new EnvValidationError(problems);
 
   return Object.freeze({
@@ -240,6 +266,7 @@ export function buildAppEnv(
     supabaseSecretKey,
     turnstileSiteKey,
     turnstileSecretKey,
+    rateLimitPepper,
     ga4MeasurementId,
     cloudflareAnalyticsToken,
     searchConsoleVerification,

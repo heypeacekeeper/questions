@@ -406,6 +406,7 @@ describe('production Turnstile configuration', () => {
     SUPABASE_SECRET_KEY: 'test-supabase-secret',
     PUBLIC_TURNSTILE_SITE_KEY: 'production-site-key',
     TURNSTILE_SECRET_KEY: 'production-secret-key',
+    RATE_LIMIT_PEPPER: 'a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f70819a2b3c4d5e6f7081',
   };
 
   it('rejects Cloudflare test sitekeys in production', () => {

@@ -3,7 +3,8 @@ import { createMutationContext } from '@/repositories/factory';
 import { workerBindings } from '@/lib/worker-env';
 import { ContactService } from '@/application/submission-service';
 import { FORM_LIMITS } from '@/config/site';
-import { clientKey, fail, json, readJsonBody } from '@/lib/api';
+import { fail, json, readJsonBody } from '@/lib/api';
+import { clientKey } from '@/lib/client-key';
 import { formOutcomeResponse } from '@/lib/form-response';
 export const prerender = false;
 export const POST: APIRoute = async (ctx) => {
@@ -18,7 +19,7 @@ export const POST: APIRoute = async (ctx) => {
   }
   if (!mc.env.features.FEATURE_CONTACT_FORM)
     return fail(503, 'The contact form is currently disabled.');
-  const key = await clientKey(ctx.request, 'contact');
+  const key = await clientKey(ctx.request, 'contact', mc.rateLimitPepper);
   const outcome = await new ContactService(mc.contact, mc.verifier, mc.formRateLimiter).send(
     parsed.body,
     { hostname: new URL(ctx.request.url).hostname, clientKey: key },

@@ -3,7 +3,8 @@ import { createMutationContext } from '@/repositories/factory';
 import { workerBindings } from '@/lib/worker-env';
 import { SubmissionService } from '@/application/submission-service';
 import { FORM_LIMITS } from '@/config/site';
-import { clientKey, fail, json, readJsonBody } from '@/lib/api';
+import { fail, json, readJsonBody } from '@/lib/api';
+import { clientKey } from '@/lib/client-key';
 import { formOutcomeResponse } from '@/lib/form-response';
 export const prerender = false;
 export const POST: APIRoute = async (ctx) => {
@@ -17,7 +18,7 @@ export const POST: APIRoute = async (ctx) => {
     return fail(503, 'Submissions are temporarily unavailable.');
   }
   if (!mc.env.features.FEATURE_SUBMISSIONS) return fail(503, 'Submissions are currently closed.');
-  const key = await clientKey(ctx.request, 'submit');
+  const key = await clientKey(ctx.request, 'submit', mc.rateLimitPepper);
   const outcome = await new SubmissionService(
     mc.submissions,
     mc.verifier,
