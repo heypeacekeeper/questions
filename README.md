@@ -46,20 +46,22 @@ A production Supabase database must have every migration in
 
 1. `0000_functions.sql` — shared database functions
 2. `0001_initial_schema.sql` — tables, indexes, constraints, RLS and grants
-3. `0002_seed_categories.sql` — category definitions
+3. `0002_seed_categories.sql` — initial category definitions
 4. `0003_cast_vote_function.sql` — historical voting support
-
-- The game displays deterministic, local-only for-fun percentages. Selecting an option never sends a request or changes stored content.
-
+5. `0004_display_vote_count.sql` — historical display-count support
 6. `0005_atomic_question_import.sql` — atomic CSV question imports
 7. `0006_limited_duplicate_windows.sql` — time-limited duplicate protection
 8. `0007_secure_share_codes.sql` — cryptographically secure share codes
-9. `0008_personal_data_retention.sql` — scheduled deletion and anonymization of expired personal data
-10. `0009_remove_legacy_voting.sql` — removes obsolete voting tables, functions, types and display counts
+9. `0008_personal_data_retention.sql` — scheduled deletion and anonymization
+10. `0009_remove_legacy_voting.sql` — removes obsolete voting infrastructure
+11. `0010_finalize_category_catalog.sql` — installs the approved 27-category catalog
 
-Review each migration before applying it to production. Apply all ten using the
-Supabase CLI or the Supabase SQL editor. Do not run
-`supabase/seed/demo_questions.sql` in production.
+Review each migration before applying it to production. Apply all eleven using
+the Supabase CLI or SQL editor. Historical migrations must not be edited.
+
+`tools/generate-seed-sql.ts` writes the current category snapshot to
+`supabase/seed/categories.sql`; it does not overwrite migration `0002`.
+Do not run `supabase/seed/demo_questions.sql` in production.
 
 After applying the migrations:
 
@@ -110,7 +112,7 @@ Implement repository interfaces in `src/infrastructure/<provider>/`, map provide
 
 ## Owner setup
 
-- Create/review the production Supabase project, then apply migrations 0000–0009 in numerical order.
+- Create/review the production Supabase project, then apply migrations 0000–0010 in numerical order.
 - Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
 - Configure Worker secrets and the Cloudflare form rate-limit binding.
 - Replace legal placeholders and create production Turnstile widgets.
