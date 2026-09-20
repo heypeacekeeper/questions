@@ -96,6 +96,7 @@ export function initGame(): void {
   let hasAnswered = false;
   let lastPick: 'A' | 'B' | null = null;
   let busy = false;
+  let resultAnimationFrame: number | null = null;
   let manifest: GameDataManifest | null = null;
   let pendingGatedPack: { slug: string; name: string } | null = null;
   let activationRequestId = 0;
@@ -204,7 +205,57 @@ export function initGame(): void {
     gameStage.classList.add('has-notice');
   };
 
+  function cancelResultAnimation(): void {
+    if (resultAnimationFrame !== null) {
+      cancelAnimationFrame(resultAnimationFrame);
+      resultAnimationFrame = null;
+    }
+  }
+
+  function animateResult(percentATarget: number, percentBTarget: number): void {
+    cancelResultAnimation();
+    gameStage.dataset.resultReady = '0';
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (percentA) percentA.textContent = formatGeneratedPercent(percentATarget);
+      if (percentB) percentB.textContent = formatGeneratedPercent(percentBTarget);
+      gameStage.dataset.resultReady = '1';
+      return;
+    }
+
+    const duration = 900;
+    const startValue = 20;
+    const startedAt = performance.now();
+
+    if (percentA) percentA.textContent = formatGeneratedPercent(startValue);
+    if (percentB) percentB.textContent = formatGeneratedPercent(startValue);
+
+    const update = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      const valueA = startValue + (percentATarget - startValue) * eased;
+      const valueB = startValue + (percentBTarget - startValue) * eased;
+
+      if (percentA) percentA.textContent = formatGeneratedPercent(valueA);
+      if (percentB) percentB.textContent = formatGeneratedPercent(valueB);
+
+      if (progress < 1) {
+        resultAnimationFrame = requestAnimationFrame(update);
+      } else {
+        resultAnimationFrame = null;
+        if (percentA) percentA.textContent = formatGeneratedPercent(percentATarget);
+        if (percentB) percentB.textContent = formatGeneratedPercent(percentBTarget);
+        gameStage.dataset.resultReady = '1';
+      }
+    };
+
+    resultAnimationFrame = requestAnimationFrame(update);
+  }
+
   function renderQuestion(question: GameQuestion): void {
+    cancelResultAnimation();
+    delete gameStage.dataset.resultReady;
     current = question;
 
     if (nextButton?.dataset.action === 'retry') {
@@ -231,6 +282,7 @@ export function initGame(): void {
   function choose(choice: 'A' | 'B'): void {
     if (!current || busy) return;
     if (hasAnswered && lastPick === choice) return;
+    const firstAnswer = !hasAnswered;
     hasAnswered = true;
     lastPick = choice;
     gameStage.classList.add('answered');
@@ -240,8 +292,9 @@ export function initGame(): void {
     picked?.classList.add('picked');
     other?.classList.add('not-picked');
     const result = generatedDisplayResult(current.id);
-    if (percentA) percentA.textContent = formatGeneratedPercent(result.percentA);
-    if (percentB) percentB.textContent = formatGeneratedPercent(result.percentB);
+    if (firstAnswer) {
+      animateResult(result.percentA, result.percentB);
+    }
     requestAnimationFrame(() => {
       if (fillA) fillA.style.height = `${result.percentA}%`;
       if (fillB) fillB.style.height = `${result.percentB}%`;
