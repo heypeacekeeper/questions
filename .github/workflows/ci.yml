@@ -53,6 +53,8 @@ jobs:
         run: supabase db reset
       - name: Check database schema
         run: supabase db lint --local --level warning
+      - name: Test database behavior
+        run: supabase test db
       - name: Stop temporary Supabase database
         if: always()
         run: supabase stop --no-backup
