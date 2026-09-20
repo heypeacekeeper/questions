@@ -55,8 +55,9 @@ A production Supabase database must have every migration in
 9. `0008_personal_data_retention.sql` — scheduled deletion and anonymization
 10. `0009_remove_legacy_voting.sql` — removes obsolete voting infrastructure
 11. `0010_finalize_category_catalog.sql` — installs the approved 27-category catalog
+12. `0011_enforce_published_submission_categories.sql` — rejects submissions to draft, archived or unknown categories
 
-Review each migration before applying it to production. Apply all eleven using
+Review each migration before applying it to production. Apply all twelve using
 the Supabase CLI or SQL editor. Historical migrations must not be edited.
 
 `tools/generate-seed-sql.ts` writes the current category snapshot to
@@ -114,7 +115,7 @@ Implement repository interfaces in `src/infrastructure/<provider>/`, map provide
 
 ## Owner setup
 
-- Create/review the production Supabase project, then apply migrations 0000–0010 in numerical order.
+- Create/review the production Supabase project, then apply migrations 0000–0011 in numerical order.
 - Regenerate `database.types.ts` from the linked project before real Supabase end-to-end testing.
 - Configure Worker secrets and the Cloudflare form rate-limit binding.
 - Replace legal placeholders and create production Turnstile widgets.

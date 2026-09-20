@@ -155,6 +155,19 @@ export function validateContent(
   const reversed = new Map<string, Map<string, string[]>>();
   for (const q of questions) {
     const label = `question ${q.id}`;
+    const hasPublishedCategory = q.categoryIds.some(
+      (categoryId) => categoryById.get(categoryId)?.status === 'published',
+    );
+
+    if (q.status === 'published' && !hasPublishedCategory) {
+      push(
+        'error',
+        'QUESTION_NO_PUBLISHED_CATEGORY',
+        `${label} is published without at least one published category`,
+        [q.id],
+      );
+    }
+
     ids.set(q.id, (ids.get(q.id) ?? 0) + 1);
     shareCodes.set(q.shareCode, [...(shareCodes.get(q.shareCode) ?? []), q.id]);
     if (!QUESTION_STATUSES.includes(q.status))
