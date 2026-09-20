@@ -224,7 +224,7 @@ export function initGame(): void {
     }
 
     const duration = 900;
-    const startValue = 20;
+    const startValue = 50;
     const startedAt = performance.now();
 
     if (percentA) percentA.textContent = formatGeneratedPercent(startValue);
@@ -591,6 +591,7 @@ export function initGame(): void {
     const cloneLayer = (): HTMLElement => {
       const layer = gameStage.cloneNode(true) as HTMLElement;
 
+      layer.setAttribute('aria-hidden', 'true');
       layer.removeAttribute('id');
       layer.removeAttribute('aria-busy');
       layer.classList.remove('is-question-transitioning');

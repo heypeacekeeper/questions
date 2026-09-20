@@ -315,7 +315,9 @@ const packOptions =
         </div>
       )}
       <p class="sr-only" id="game-instructions">
-        Would you rather… choose Option A or Option B, or skip this question.
+        {mode === 'single'
+          ? 'Would you rather… choose Option A or Option B.'
+          : 'Would you rather… choose Option A or Option B, or skip this question.'}
       </p>
       <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
     </div>
