@@ -1,5 +1,5 @@
 /**
- * Generates supabase/migrations/0002_seed_categories.sql and
+ * Generates supabase/seed/categories.sql and
  * supabase/seed/demo_questions.sql from the TypeScript fixtures so SQL and
  * mock data never drift apart.
  *
@@ -108,8 +108,6 @@ on conflict do nothing;
 
 const root = resolve(import.meta.dirname ?? '.', '..');
 mkdirSync(resolve(root, 'supabase/seed'), { recursive: true });
-writeFileSync(resolve(root, 'supabase/migrations/0002_seed_categories.sql'), categorySql);
+writeFileSync(resolve(root, 'supabase/seed/categories.sql'), categorySql);
 writeFileSync(resolve(root, 'supabase/seed/demo_questions.sql'), demoSql);
-console.log(
-  'Wrote supabase/migrations/0002_seed_categories.sql and supabase/seed/demo_questions.sql',
-);
+console.log('Wrote supabase/seed/categories.sql and supabase/seed/demo_questions.sql');
