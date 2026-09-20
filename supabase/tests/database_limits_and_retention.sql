@@ -95,6 +95,8 @@ select is(
 delete from public.question_submissions;
 delete from public.contact_messages;
 
+do $setup$
+begin
 perform public.create_contact_message_limited(
   'Old Tester', 'old@example.com', 'Old subject', 'Old message',
   repeat('c', 64), 3600
@@ -116,6 +118,8 @@ perform public.create_question_submission_limited(
   'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
   'Recent Tester', 'recent@example.com', repeat('f', 64), 3600
 );
+end
+$setup$;
 
 update public.contact_messages
 set created_at = statement_timestamp() - interval '2 days'
