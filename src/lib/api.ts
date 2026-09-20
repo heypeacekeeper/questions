@@ -1,7 +1,7 @@
 /** Shared helpers for the on-demand API endpoints (Worker runtime). */
 import type { APIContext } from 'astro';
 import { workerBindings } from '@/lib/worker-env';
-import { sha256Hex } from '@/lib/crypto';
+
 import { readBoundedBody } from '@/lib/bounded-body';
 
 export const NO_STORE = {
@@ -64,13 +64,4 @@ export async function readJsonBody(
   } catch {
     return { error: fail(400, 'Invalid JSON') };
   }
-}
-
-/** Opaque per-client key for rate limiting: hashed CF connecting IP (never stored raw), or a fallback. */
-export async function clientKey(request: Request, pepper: string): Promise<string> {
-  const ip =
-    request.headers.get('cf-connecting-ip') ??
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    'unknown';
-  return (await sha256Hex(`${pepper}|${ip}`)).slice(0, 32);
 }

@@ -6,7 +6,12 @@
  * Replacing Supabase = write a new adapter set + edit this file.
  */
 import type { AppEnv } from '@/config/env';
-import { getBuildEnv, getWorkerEnv, type RawEnv } from '@/config/env';
+import {
+  DEVELOPMENT_RATE_LIMIT_PEPPER,
+  getBuildEnv,
+  getWorkerEnv,
+  type RawEnv,
+} from '@/config/env';
 import type {
   ContentRepositories,
   HumanVerificationService,
@@ -119,6 +124,7 @@ export interface MutationContext extends MutationRepositories {
   readonly env: AppEnv;
   readonly verifier: HumanVerificationService;
   readonly formRateLimiter: RateLimiter;
+  readonly rateLimitPepper: string;
 }
 
 let mockMutationSingleton: MutationRepositories | undefined;
@@ -138,6 +144,7 @@ export function selectVerifier(env: AppEnv): HumanVerificationService {
 
 export function createMutationContext(bindings: RawEnv | undefined): MutationContext {
   const env = getWorkerEnv(bindings);
+  const rateLimitPepper = env.rateLimitPepper ?? DEVELOPMENT_RATE_LIMIT_PEPPER;
   const runtimeBindings = bindings as Record<string, unknown> | undefined;
   const requireFormRateLimiter =
     env.isProduction &&
@@ -162,6 +169,7 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
       ...mockMutationSingleton,
       verifier,
       formRateLimiter,
+      rateLimitPepper,
     };
   }
 
@@ -177,5 +185,6 @@ export function createMutationContext(bindings: RawEnv | undefined): MutationCon
     contact: new SupabaseContactRepository(client),
     verifier,
     formRateLimiter,
+    rateLimitPepper,
   };
 }

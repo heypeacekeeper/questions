@@ -36,6 +36,20 @@ export async function sha256Hex(input: string): Promise<string> {
   return toHex(digest);
 }
 
+/** Keyed SHA-256 digest for opaque, non-reversible identifiers. */
+export async function hmacSha256Hex(secret: string, input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(input));
+  return toHex(signature);
+}
+
 /** Short non-cryptographic hash for content-addressed filenames (stable across builds). */
 export async function contentHash(input: string, length: number): Promise<string> {
   return (await sha256Hex(input)).slice(0, length);

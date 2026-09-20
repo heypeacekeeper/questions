@@ -37,7 +37,7 @@ npx wrangler deploy
 
 ## Environment variables
 
-Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY`. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
+Production requires `DATA_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and the server-only `RATE_LIMIT_PEPPER`. Optional GA4 and Cloudflare Web Analytics remain gated behind their `FEATURE_*` flags and consent requirements.
 
 ## Production database migrations
 
@@ -97,10 +97,12 @@ Set server-only secrets without committing values:
 ```bash
 npx wrangler secret put SUPABASE_SECRET_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
+openssl rand -hex 32
+npx wrangler secret put RATE_LIMIT_PEPPER
 npm run build && npx wrangler deploy
 ```
 
-Configure the configured rate-limit namespace in the Cloudflare account if it differs from the repository default. Worker observability remains enabled and samples approximately 5% of production requests. Configure Turnstile actions `contact` and `submit_question`, then enable custom routes after the zone is on Cloudflare.
+Configure the configured rate-limit namespace in the Cloudflare account if it differs from the repository default. Generate `RATE_LIMIT_PEPPER` from at least 32 random bytes and store it only as a Cloudflare Worker secret and GitHub production secret. Rotating it resets the effective per-client rate-limit buckets. Worker observability remains enabled and samples approximately 5% of production requests. Configure Turnstile actions `contact` and `submit_question`, then enable custom routes after the zone is on Cloudflare.
 
 ## Performance and fonts
 
