@@ -62,6 +62,7 @@ test('home game shows stable local display results and advances', async ({ page 
   const firstQuestionId = await page.locator('#game-stage').getAttribute('data-question-id');
   await page.locator('#choice-a').click();
   await expect(page.locator('#game-stage')).toHaveClass(/answered/);
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-result-ready', '1');
   await expect(page.locator('#choice-a')).toHaveClass(/picked/);
   expect(
     await page.locator('#choice-b').evaluate((element) => element.classList.contains('picked')),

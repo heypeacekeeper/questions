@@ -27,7 +27,10 @@ const sections = (
     }),
   )
 ).filter((s): s is NonNullable<typeof s> => s !== null && s.questions.length > 0);
-const quickLinks = visible.filter((c) => c.navFeatured).slice(0, NAVIGATION.quickLinkLimit);
+const sectionSlugs = new Set(sections.map((section) => section.category.slug));
+const quickLinks = visible
+  .filter((category) => category.navFeatured && sectionSlugs.has(category.slug))
+  .slice(0, NAVIGATION.quickLinkLimit);
 const totalQuestions = (await ctx.questionService.getPublished()).length;
 const { popular, seasonal } = await sidebarData();
 const meta = {
@@ -59,7 +62,7 @@ const meta = {
       {quickLinks.length > 0 && (
         <nav class="quick-links" aria-label="Popular question categories">
           {quickLinks.map((c) => (
-            <a href={c.canonicalPath}>{c.name}</a>
+            <a href={`${ROUTES.home}#${c.slug}`}>{c.name}</a>
           ))}
         </nav>
       )}
