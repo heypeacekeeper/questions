@@ -221,7 +221,7 @@ select lives_ok(
           'Tester',
           'tester@example.com',
           'Subject ' || i,
-          'Message ' || i,
+          'This is test message number ' || i,
           lpad(to_hex(i + 2000), 64, '0'),
           3600
         );
