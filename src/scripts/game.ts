@@ -14,6 +14,12 @@ import {
   loadManifest,
   SessionSeenStore,
 } from './game-engine';
+import {
+  DownwardWheelDetector,
+  isUpwardSwipe,
+  normalizeWheelDelta,
+  type GesturePoint,
+} from './game-navigation';
 
 interface GameConfig {
   mode: 'mixed' | 'category' | 'single' | 'favorites';
@@ -57,6 +63,7 @@ export function initGame(): void {
   const fillB = $('fill-b');
   const verdict = $('verdict-text');
   const nextButton = $<HTMLButtonElement>('next-button');
+  const skipButton = $<HTMLButtonElement>('skip-button');
   const nextLabel = $('next-label');
   const live = $('game-live');
   const favoriteButton = $<HTMLButtonElement>('favorite-button');
@@ -274,6 +281,7 @@ export function initGame(): void {
     busy = true;
     gameStage.setAttribute('aria-busy', 'true');
     if (nextButton) nextButton.disabled = true;
+    if (skipButton) skipButton.disabled = true;
     if (nextLabel) nextLabel.textContent = 'Loading…';
     announce('Loading next question.');
     try {
@@ -298,7 +306,7 @@ export function initGame(): void {
 
         const replayQuestion = await engine.next(null);
         if (replayQuestion) {
-          renderQuestion(replayQuestion);
+          await transitionToQuestion(replayQuestion);
         } else {
           setNotice('Save at least one question before playing favorites.');
         }
@@ -308,7 +316,7 @@ export function initGame(): void {
 
       const question = await engine.next(current?.id ?? null);
       if (question) {
-        renderQuestion(question);
+        await transitionToQuestion(question);
       } else if (engine.supplyLoadFailed || engine.totalInSet === 0) {
         showQuestionLoadFailure();
       } else {
@@ -322,6 +330,7 @@ export function initGame(): void {
       busy = false;
       gameStage.removeAttribute('aria-busy');
       if (nextButton) nextButton.disabled = false;
+      if (skipButton) skipButton.disabled = false;
       if (nextLabel) {
         nextLabel.textContent =
           nextButton?.dataset.action === 'replay'
@@ -513,6 +522,71 @@ export function initGame(): void {
   const isFullscreen = () =>
     Boolean(document.fullscreenElement || fullscreenDocument.webkitFullscreenElement);
 
+  const transitionToQuestion = async (question: GameQuestion): Promise<void> => {
+    const shouldAnimate =
+      current &&
+      choiceA &&
+      choiceB &&
+      typeof gameStage.animate === 'function' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!shouldAnimate) {
+      renderQuestion(question);
+      return;
+    }
+
+    const cloneLayer = (): HTMLElement => {
+      const layer = gameStage.cloneNode(true) as HTMLElement;
+
+      layer.removeAttribute('id');
+      layer.removeAttribute('aria-busy');
+      layer.classList.remove('is-question-transitioning');
+      layer.classList.add('question-transition-layer');
+      layer.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+      layer.querySelectorAll('button').forEach((button) => {
+        button.disabled = true;
+      });
+
+      return layer;
+    };
+
+    const outgoing = cloneLayer();
+    renderQuestion(question);
+    const incoming = cloneLayer();
+
+    outgoing.classList.add('question-transition-outgoing');
+    incoming.classList.add('question-transition-incoming');
+
+    gameStage.classList.add('is-question-transitioning');
+    gameStage.append(outgoing, incoming);
+
+    const timing: KeyframeAnimationOptions = {
+      duration: 950,
+      easing: 'cubic-bezier(0.76, 0, 0.24, 1)',
+      fill: 'both',
+    };
+
+    const outgoingAnimation = outgoing.animate(
+      [{ transform: 'translate3d(0, 0, 0)' }, { transform: 'translate3d(0, -100%, 0)' }],
+      timing,
+    );
+
+    const incomingAnimation = incoming.animate(
+      [{ transform: 'translate3d(0, 100%, 0)' }, { transform: 'translate3d(0, 0, 0)' }],
+      timing,
+    );
+
+    try {
+      await Promise.all([outgoingAnimation.finished, incomingAnimation.finished]);
+    } catch {
+      // The new question remains rendered if animation is interrupted.
+    } finally {
+      outgoing.remove();
+      incoming.remove();
+      gameStage.classList.remove('is-question-transitioning');
+    }
+  };
+
   const runFullscreenAction = (action: (() => Promise<void> | void) | undefined): void => {
     if (!action) return;
 
@@ -541,19 +615,84 @@ export function initGame(): void {
 
     runFullscreenAction(enter);
   };
-  const updateFullscreenLabel = () =>
+  const wheelDetector = new DownwardWheelDetector();
+  let touchStart: GesturePoint | null = null;
+
+  const updateFullscreenState = () => {
     fullscreenButton?.setAttribute(
       'aria-label',
       isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen',
     );
+    wheelDetector.reset();
+    touchStart = null;
+  };
+
+  const startSwipe = (event: TouchEvent) => {
+    if (!isFullscreen() || config.mode === 'single' || event.touches.length !== 1) {
+      touchStart = null;
+      return;
+    }
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    touchStart = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: performance.now(),
+    };
+  };
+
+  const finishSwipe = (event: TouchEvent) => {
+    const start = touchStart;
+    touchStart = null;
+
+    if (!start || !isFullscreen() || config.mode === 'single' || busy) return;
+
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+
+    const end: GesturePoint = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: performance.now(),
+    };
+
+    if (!isUpwardSwipe(start, end)) return;
+
+    event.preventDefault();
+    void nextQuestion();
+  };
+
+  const handleFullscreenWheel = (event: WheelEvent) => {
+    if (!isFullscreen() || config.mode === 'single' || busy) {
+      wheelDetector.reset();
+      return;
+    }
+
+    event.preventDefault();
+
+    const delta = normalizeWheelDelta(event.deltaY, event.deltaMode, window.innerHeight);
+    if (wheelDetector.push(delta, performance.now())) {
+      void nextQuestion();
+    }
+  };
+
   choiceA?.addEventListener('click', () => choose('A'));
   choiceB?.addEventListener('click', () => choose('B'));
   nextButton?.addEventListener('click', () => void nextQuestion());
+  skipButton?.addEventListener('click', () => void nextQuestion());
+  gameStage.addEventListener('touchstart', startSwipe, { passive: true });
+  gameStage.addEventListener('touchend', finishSwipe, { passive: false });
+  gameStage.addEventListener('touchcancel', () => {
+    touchStart = null;
+  });
+  gameStage.addEventListener('wheel', handleFullscreenWheel, { passive: false });
   favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);
-  document.addEventListener('fullscreenchange', updateFullscreenLabel);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenLabel);
+  document.addEventListener('fullscreenchange', updateFullscreenState);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenState);
   packButton?.addEventListener('click', openDialog);
   $('close-pack-dialog')?.addEventListener('click', closeDialog);
   $('close-age-gate')?.addEventListener('click', closeDialog);
@@ -604,6 +743,7 @@ export function initGame(): void {
       gameStage.dataset.entryReady = '0';
       gameStage.setAttribute('aria-busy', 'true');
       if (nextButton) nextButton.disabled = true;
+      if (skipButton) skipButton.disabled = true;
       if (choiceA) choiceA.disabled = true;
       if (choiceB) choiceB.disabled = true;
       if (favoriteButton) favoriteButton.disabled = true;
@@ -634,6 +774,7 @@ export function initGame(): void {
         gameStage.dataset.entryReady = '1';
         gameStage.removeAttribute('aria-busy');
         if (nextButton) nextButton.disabled = false;
+        if (skipButton) skipButton.disabled = false;
         if (choiceA) choiceA.disabled = false;
         if (choiceB) choiceB.disabled = false;
         if (favoriteButton) favoriteButton.disabled = false;

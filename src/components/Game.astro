@@ -255,9 +255,20 @@ const packOptions =
             </button>
 
             <div class="game-pivot">
-              <div class="or-badge" aria-hidden="true">
-                OR
-              </div>
+              {mode !== 'single' ? (
+                <button
+                  class="or-badge skip-button"
+                  id="skip-button"
+                  type="button"
+                  aria-label="Skip this question"
+                >
+                  SKIP
+                </button>
+              ) : (
+                <div class="or-badge" aria-hidden="true">
+                  OR
+                </div>
+              )}
               {mode !== 'single' && (
                 <button class="next-button" id="next-button" type="button">
                   <span id="next-label">Next question</span>
@@ -304,7 +315,7 @@ const packOptions =
         </div>
       )}
       <p class="sr-only" id="game-instructions">
-        Would you rather… choose Option A or Option B.
+        Would you rather… choose Option A or Option B, or skip this question.
       </p>
       <div class="sr-only" id="game-live" aria-live="polite" aria-atomic="true"></div>
     </div>
