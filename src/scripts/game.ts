@@ -14,12 +14,7 @@ import {
   loadManifest,
   SessionSeenStore,
 } from './game-engine';
-import {
-  DownwardWheelDetector,
-  isUpwardSwipe,
-  normalizeWheelDelta,
-  type GesturePoint,
-} from './game-navigation';
+import { installFullscreenNavigation } from './game-fullscreen-navigation';
 import { createGameMilestoneController } from './game-milestone';
 
 interface GameConfig {
@@ -706,144 +701,30 @@ export function initGame(): void {
 
     runFullscreenAction(enter);
   };
-  const wheelDetector = new DownwardWheelDetector();
-  let touchStart: GesturePoint | null = null;
-  let gestureHintTimer: number | null = null;
-  let gestureHintShown = false;
-
-  const hideGestureHint = () => {
-    if (!gestureHint) return;
-    if (gestureHintTimer !== null) {
-      window.clearTimeout(gestureHintTimer);
-      gestureHintTimer = null;
-    }
-    gestureHint.classList.remove('is-visible');
-    window.setTimeout(() => {
-      gestureHint.hidden = true;
-    }, 180);
-  };
-
-  const showGestureHint = () => {
-    if (!gestureHint || gestureHintShown) return;
-
-    try {
-      if (local?.getItem(config.keys.gestureHint) === '1') {
-        gestureHintShown = true;
-        return;
-      }
-      local?.setItem(config.keys.gestureHint, '1');
-    } catch {
-      // In-memory state still prevents repeated hints during this page visit.
-    }
-
-    gestureHintShown = true;
-    const touchDevice =
-      window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-
-    if (gestureHintIcon) gestureHintIcon.textContent = touchDevice ? '↑' : '↓';
-    if (gestureHintText) {
-      gestureHintText.textContent = touchDevice
-        ? 'Swipe up for the next question'
-        : 'Scroll down for the next question';
-    }
-
-    gestureHint.hidden = false;
-    requestAnimationFrame(() => gestureHint.classList.add('is-visible'));
-    gestureHintTimer = window.setTimeout(hideGestureHint, 2500);
-  };
-
-  const updateFullscreenState = () => {
-    fullscreenButton?.setAttribute(
-      'aria-label',
-      isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen',
-    );
-    wheelDetector.reset();
-    touchStart = null;
-
-    if (isFullscreen()) showGestureHint();
-    else hideGestureHint();
-  };
-
-  const startSwipe = (event: TouchEvent) => {
-    if (!isFullscreen() || config.mode === 'single' || event.touches.length !== 1) {
-      touchStart = null;
-      return;
-    }
-
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    touchStart = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: performance.now(),
-    };
-  };
-
-  const finishSwipe = (event: TouchEvent) => {
-    const start = touchStart;
-    touchStart = null;
-
-    if (
-      !start ||
-      !isFullscreen() ||
-      config.mode === 'single' ||
-      busy ||
-      milestoneController.visible
-    )
-      return;
-
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-
-    const end: GesturePoint = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: performance.now(),
-    };
-
-    if (!isUpwardSwipe(start, end)) return;
-
-    event.preventDefault();
-    hideGestureHint();
-    void nextQuestion();
-  };
-
-  const handleFullscreenWheel = (event: WheelEvent) => {
-    if (milestoneController.visible) {
-      event.preventDefault();
-      return;
-    }
-
-    if (!isFullscreen() || config.mode === 'single' || busy) {
-      wheelDetector.reset();
-      return;
-    }
-
-    event.preventDefault();
-
-    const delta = normalizeWheelDelta(event.deltaY, event.deltaMode, window.innerHeight);
-    if (wheelDetector.push(delta, performance.now())) {
-      hideGestureHint();
+  installFullscreenNavigation({
+    stage: gameStage,
+    fullscreenButton,
+    gestureHint,
+    gestureHintIcon,
+    gestureHintText,
+    localStorage: local,
+    gestureHintKey: config.keys.gestureHint,
+    enabled: config.mode !== 'single',
+    isFullscreen,
+    isBusy: () => busy,
+    isBlocked: () => milestoneController.visible,
+    nextQuestion: () => {
       void nextQuestion();
-    }
-  };
+    },
+  });
 
   choiceA?.addEventListener('click', () => choose('A'));
   choiceB?.addEventListener('click', () => choose('B'));
   nextButton?.addEventListener('click', () => void nextQuestion());
   skipButton?.addEventListener('click', () => void nextQuestion());
-  gameStage.addEventListener('touchstart', startSwipe, { passive: true });
-  gameStage.addEventListener('touchend', finishSwipe, { passive: false });
-  gameStage.addEventListener('touchcancel', () => {
-    touchStart = null;
-  });
-  gameStage.addEventListener('wheel', handleFullscreenWheel, { passive: false });
   favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);
-  document.addEventListener('fullscreenchange', updateFullscreenState);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenState);
   packButton?.addEventListener('click', openDialog);
   $('close-pack-dialog')?.addEventListener('click', closeDialog);
   $('close-age-gate')?.addEventListener('click', closeDialog);
