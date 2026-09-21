@@ -114,13 +114,13 @@ test('game milestone counts unique answers and restores keyboard focus', async (
   await expect(milestone).toBeFocused();
   await expect(milestone).toHaveAttribute('aria-label', '5 questions completed. Continue');
 
-  await choiceB.click({ force: true });
-
-  expect(await page.evaluate(() => sessionStorage.getItem('wyr_completed_questions'))).toBe('5');
-
-  await milestone.click();
+  await page.keyboard.press('Escape');
   await expect(milestone).toBeHidden();
   await expect(nextButton).toBeFocused();
+
+  await choiceB.click();
+
+  expect(await page.evaluate(() => sessionStorage.getItem('wyr_completed_questions'))).toBe('5');
 
   const answeredQuestionId = await stage.getAttribute('data-question-id');
   await nextButton.click();
