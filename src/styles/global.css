@@ -2324,3 +2324,164 @@ svg {
 .result-percent {
   font-variant-numeric: tabular-nums;
 }
+
+/* Fullscreen gesture discovery */
+.game-gesture-hint {
+  position: fixed;
+  bottom: max(30px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 17px;
+  color: #fff;
+  background: rgba(20, 16, 28, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
+  font-size: 14px;
+  font-weight: 750;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 14px, 0);
+  transition:
+    opacity 180ms ease,
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(12px);
+}
+
+.game-gesture-hint.is-visible {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0);
+}
+
+.gesture-hint-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-gesture-hint {
+    transition: none;
+  }
+}
+
+/* Selected answer feedback */
+.game-stage.answered .choice.picked {
+  z-index: 2;
+  filter: saturate(1.08) brightness(1.035);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.38),
+    inset 0 0 70px rgba(255, 255, 255, 0.08);
+}
+
+.choice .option-label {
+  transition:
+    color 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease,
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.choice.picked .option-label {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(255, 255, 255, 0.94);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice .option-label {
+    transition: none;
+  }
+}
+
+/* Completion milestone overlay */
+.game-shell {
+  position: relative;
+}
+
+.game-milestone {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  padding: 32px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(55, 48, 73, 0.48), transparent 36%),
+    rgba(5, 5, 8, 0.965);
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+  transition: transform 950ms cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-milestone.is-visible {
+  transform: translate3d(0, 0, 0);
+}
+
+.game-milestone.is-leaving {
+  transform: translate3d(0, -100%, 0);
+}
+
+.game-milestone > * {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0) scale(0.96);
+  transition:
+    opacity 280ms ease,
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.game-milestone.is-visible > * {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.milestone-icon {
+  margin-bottom: 5px;
+  font-size: clamp(64px, 9vw, 104px);
+  line-height: 1;
+  filter: drop-shadow(0 10px 22px rgba(255, 116, 30, 0.22));
+}
+
+.milestone-count {
+  font-size: clamp(76px, 13vw, 144px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+  text-shadow: 0 8px 35px rgba(0, 0, 0, 0.38);
+}
+
+.milestone-label {
+  margin-top: 14px;
+  font-size: clamp(19px, 2.5vw, 30px);
+  font-weight: 750;
+}
+
+.milestone-dismiss {
+  margin-top: 40px;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-milestone,
+  .game-milestone > * {
+    transition: none;
+  }
+}

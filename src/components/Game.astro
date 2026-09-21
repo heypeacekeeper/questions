@@ -56,6 +56,8 @@ const config = {
     adult: STORAGE_KEYS.adultConfirmed,
     seen: STORAGE_KEYS.seen,
     favorites: STORAGE_KEYS.favorites,
+    gestureHint: STORAGE_KEYS.gestureHintSeen,
+    completedQuestions: STORAGE_KEYS.completedQuestions,
   },
   initial,
 };
@@ -197,9 +199,13 @@ const packOptions =
               id="choice-a"
               type="button"
               aria-describedby="game-instructions"
+              aria-pressed="false"
+              aria-pressed="false"
             >
               <span class="choice-content">
-                <span class="option-label">OPTION A</span>
+                <span class="option-label" id="option-label-a">
+                  OPTION A
+                </span>
                 <span class="choice-text" id="text-a">
                   {initial?.a ?? ''}
                 </span>
@@ -228,9 +234,13 @@ const packOptions =
               id="choice-b"
               type="button"
               aria-describedby="game-instructions"
+              aria-pressed="false"
+              aria-pressed="false"
             >
               <span class="choice-content">
-                <span class="option-label">OPTION B</span>
+                <span class="option-label" id="option-label-b">
+                  OPTION B
+                </span>
                 <span class="choice-text" id="text-b">
                   {initial?.b ?? ''}
                 </span>
@@ -307,6 +317,34 @@ const packOptions =
           </div>
         )}
       </div>
+
+      {mode !== 'single' && (
+        <>
+          <div
+            class="game-gesture-hint"
+            id="game-gesture-hint"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <span class="gesture-hint-icon" id="gesture-hint-icon" aria-hidden="true"></span>
+            <span id="gesture-hint-text"></span>
+          </div>
+
+          <button
+            class="game-milestone"
+            id="game-milestone"
+            type="button"
+            aria-label="Dismiss completion milestone"
+            hidden
+          >
+            <span class="milestone-icon" id="milestone-icon" aria-hidden="true"></span>
+            <strong class="milestone-count" id="milestone-count"></strong>
+            <span class="milestone-label">questions completed</span>
+            <span class="milestone-dismiss">Continue</span>
+          </button>
+        </>
+      )}
 
       {mode === 'favorites' && (
         <div class="game-empty" id="favorites-game-empty">

@@ -117,6 +117,8 @@ export const STORAGE_KEYS = {
   pack: 'wyr_pack',
   adultConfirmed: 'wyr_adult',
   favorites: 'wyr_favorites',
+  gestureHintSeen: 'wyr_gesture_hint_seen',
+  completedQuestions: 'wyr_completed_questions',
   /** sessionStorage: seen question ids for repeat-prevention. */
   seen: 'wyr_seen',
 } as const;
