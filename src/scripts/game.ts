@@ -20,6 +20,7 @@ import {
   normalizeWheelDelta,
   type GesturePoint,
 } from './game-navigation';
+import { isCompletionMilestone, milestoneIcon } from './game-progress';
 
 interface GameConfig {
   mode: 'mixed' | 'category' | 'single' | 'favorites';
@@ -27,7 +28,14 @@ interface GameConfig {
   manifest: string;
   refill: number;
   sharePrefix: string;
-  keys: { pack: string; adult: string; seen: string; favorites: string };
+  keys: {
+    pack: string;
+    adult: string;
+    seen: string;
+    favorites: string;
+    gestureHint: string;
+    completedQuestions: string;
+  };
   initial: GameQuestion | null;
 }
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -57,6 +65,8 @@ export function initGame(): void {
   const choiceB = $<HTMLButtonElement>('choice-b');
   const textA = $('text-a');
   const textB = $('text-b');
+  const optionLabelA = $('option-label-a');
+  const optionLabelB = $('option-label-b');
   const percentA = $('percent-a');
   const percentB = $('percent-b');
   const fillA = $('fill-a');
@@ -72,6 +82,12 @@ export function initGame(): void {
   let favoriteToastTimer: number | null = null;
   const shareButton = $<HTMLButtonElement>('share-button');
   const fullscreenButton = $<HTMLButtonElement>('fullscreen-button');
+  const gestureHint = $('game-gesture-hint');
+  const gestureHintIcon = $('gesture-hint-icon');
+  const gestureHintText = $('gesture-hint-text');
+  const milestone = $<HTMLButtonElement>('game-milestone');
+  const milestoneIconElement = $('milestone-icon');
+  const milestoneCount = $('milestone-count');
   const packButton = $<HTMLButtonElement>('pack-button');
   const packLabel = $('pack-label');
   const packDialog = $<HTMLDialogElement>('pack-dialog');
@@ -103,6 +119,17 @@ export function initGame(): void {
   let userSelectedPack = false;
   let activeSet = config.set;
   let activeLabel: string | undefined;
+  const storedCompletedQuestions = Number.parseInt(
+    session?.getItem(config.keys.completedQuestions) ?? '0',
+    10,
+  );
+  let completedQuestions =
+    Number.isInteger(storedCompletedQuestions) && storedCompletedQuestions >= 0
+      ? storedCompletedQuestions
+      : 0;
+  let milestoneVisible = false;
+  let milestoneTimer: number | null = null;
+  let milestoneHideTimer: number | null = null;
   function showFavoriteMessage(message: string): void {
     if (!favoriteToast) return;
 
@@ -253,6 +280,75 @@ export function initGame(): void {
     resultAnimationFrame = requestAnimationFrame(update);
   }
 
+  function hideCompletionMilestone(): void {
+    if (!milestone || !milestoneVisible) return;
+    const shouldRestoreFocus = document.activeElement === milestone;
+
+    if (milestoneTimer !== null) {
+      window.clearTimeout(milestoneTimer);
+      milestoneTimer = null;
+    }
+    if (milestoneHideTimer !== null) {
+      window.clearTimeout(milestoneHideTimer);
+    }
+
+    milestone.classList.remove('is-visible');
+    milestone.classList.add('is-leaving');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    milestoneHideTimer = window.setTimeout(
+      () => {
+        milestone.hidden = true;
+        milestone.classList.remove('is-leaving');
+        milestoneVisible = false;
+        milestoneHideTimer = null;
+        if (shouldRestoreFocus) {
+          nextButton?.focus({ preventScroll: true });
+        }
+      },
+      reducedMotion ? 0 : 950,
+    );
+  }
+
+  function showCompletionMilestone(count: number): void {
+    if (!milestone || !milestoneIconElement || !milestoneCount) return;
+
+    if (milestoneTimer !== null) window.clearTimeout(milestoneTimer);
+    if (milestoneHideTimer !== null) window.clearTimeout(milestoneHideTimer);
+
+    milestoneIconElement.textContent = milestoneIcon(count);
+    milestoneCount.textContent = String(count);
+    milestone.setAttribute('aria-label', `${count} questions completed. Continue`);
+    milestone.classList.remove('is-visible', 'is-leaving');
+    milestone.hidden = false;
+    milestoneVisible = true;
+    milestone.focus({ preventScroll: true });
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (milestoneVisible) milestone.classList.add('is-visible');
+      });
+    });
+
+    announce(`${count} questions completed.`);
+    milestoneTimer = window.setTimeout(hideCompletionMilestone, 2500);
+  }
+
+  function recordCompletedQuestion(): void {
+    if (config.mode === 'single') return;
+
+    completedQuestions += 1;
+    try {
+      session?.setItem(config.keys.completedQuestions, String(completedQuestions));
+    } catch {
+      // Continue using the in-memory count.
+    }
+
+    if (isCompletionMilestone(completedQuestions)) {
+      showCompletionMilestone(completedQuestions);
+    }
+  }
+
   function renderQuestion(question: GameQuestion): void {
     cancelResultAnimation();
     delete gameStage.dataset.resultReady;
@@ -268,7 +364,12 @@ export function initGame(): void {
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
     updateFavoriteButton();
-    [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
+    [choiceA, choiceB].forEach((button) => {
+      button?.classList.remove('picked', 'not-picked');
+      button?.setAttribute('aria-pressed', 'false');
+    });
+    if (optionLabelA) optionLabelA.textContent = 'OPTION A';
+    if (optionLabelB) optionLabelB.textContent = 'OPTION B';
     if (textA) textA.textContent = question.a;
     if (textB) textB.textContent = question.b;
     [percentA, percentB, verdict].forEach((element) => {
@@ -291,9 +392,14 @@ export function initGame(): void {
     [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
     picked?.classList.add('picked');
     other?.classList.add('not-picked');
+    choiceA?.setAttribute('aria-pressed', String(choice === 'A'));
+    choiceB?.setAttribute('aria-pressed', String(choice === 'B'));
+    if (optionLabelA) optionLabelA.textContent = choice === 'A' ? 'YOUR CHOICE' : 'OPTION A';
+    if (optionLabelB) optionLabelB.textContent = choice === 'B' ? 'YOUR CHOICE' : 'OPTION B';
     const result = generatedDisplayResult(current.id);
     if (firstAnswer) {
       animateResult(result.percentA, result.percentB);
+      recordCompletedQuestion();
     }
     requestAnimationFrame(() => {
       if (fillA) fillA.style.height = `${result.percentA}%`;
@@ -671,6 +777,49 @@ export function initGame(): void {
   };
   const wheelDetector = new DownwardWheelDetector();
   let touchStart: GesturePoint | null = null;
+  let gestureHintTimer: number | null = null;
+  let gestureHintShown = false;
+
+  const hideGestureHint = () => {
+    if (!gestureHint) return;
+    if (gestureHintTimer !== null) {
+      window.clearTimeout(gestureHintTimer);
+      gestureHintTimer = null;
+    }
+    gestureHint.classList.remove('is-visible');
+    window.setTimeout(() => {
+      gestureHint.hidden = true;
+    }, 180);
+  };
+
+  const showGestureHint = () => {
+    if (!gestureHint || gestureHintShown) return;
+
+    try {
+      if (local?.getItem(config.keys.gestureHint) === '1') {
+        gestureHintShown = true;
+        return;
+      }
+      local?.setItem(config.keys.gestureHint, '1');
+    } catch {
+      // In-memory state still prevents repeated hints during this page visit.
+    }
+
+    gestureHintShown = true;
+    const touchDevice =
+      window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+    if (gestureHintIcon) gestureHintIcon.textContent = touchDevice ? '↑' : '↓';
+    if (gestureHintText) {
+      gestureHintText.textContent = touchDevice
+        ? 'Swipe up for the next question'
+        : 'Scroll down for the next question';
+    }
+
+    gestureHint.hidden = false;
+    requestAnimationFrame(() => gestureHint.classList.add('is-visible'));
+    gestureHintTimer = window.setTimeout(hideGestureHint, 2500);
+  };
 
   const updateFullscreenState = () => {
     fullscreenButton?.setAttribute(
@@ -679,6 +828,9 @@ export function initGame(): void {
     );
     wheelDetector.reset();
     touchStart = null;
+
+    if (isFullscreen()) showGestureHint();
+    else hideGestureHint();
   };
 
   const startSwipe = (event: TouchEvent) => {
@@ -701,7 +853,7 @@ export function initGame(): void {
     const start = touchStart;
     touchStart = null;
 
-    if (!start || !isFullscreen() || config.mode === 'single' || busy) return;
+    if (!start || !isFullscreen() || config.mode === 'single' || busy || milestoneVisible) return;
 
     const touch = event.changedTouches[0];
     if (!touch) return;
@@ -715,10 +867,16 @@ export function initGame(): void {
     if (!isUpwardSwipe(start, end)) return;
 
     event.preventDefault();
+    hideGestureHint();
     void nextQuestion();
   };
 
   const handleFullscreenWheel = (event: WheelEvent) => {
+    if (milestoneVisible) {
+      event.preventDefault();
+      return;
+    }
+
     if (!isFullscreen() || config.mode === 'single' || busy) {
       wheelDetector.reset();
       return;
@@ -728,6 +886,7 @@ export function initGame(): void {
 
     const delta = normalizeWheelDelta(event.deltaY, event.deltaMode, window.innerHeight);
     if (wheelDetector.push(delta, performance.now())) {
+      hideGestureHint();
       void nextQuestion();
     }
   };
@@ -742,6 +901,13 @@ export function initGame(): void {
     touchStart = null;
   });
   gameStage.addEventListener('wheel', handleFullscreenWheel, { passive: false });
+  milestone?.addEventListener('click', hideCompletionMilestone);
+  milestone?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    event.preventDefault();
+    hideCompletionMilestone();
+  });
   favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);

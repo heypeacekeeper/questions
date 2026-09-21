@@ -91,6 +91,48 @@ test('home game shows stable local display results and advances', async ({ page 
   );
 });
 
+test('game milestone counts unique answers and restores keyboard focus', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('wyr_completed_questions', '4');
+  });
+
+  await page.goto('/');
+
+  const stage = page.locator('#game-stage');
+  const choiceA = page.locator('#choice-a');
+  const choiceB = page.locator('#choice-b');
+  const milestone = page.locator('#game-milestone');
+  const nextButton = page.locator('#next-button');
+
+  await expect(stage).toHaveAttribute('data-entry-ready', '1');
+  await choiceA.click();
+
+  await expect(choiceA).toHaveAttribute('aria-pressed', 'true');
+  await expect(choiceB).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#option-label-a')).toHaveText('YOUR CHOICE');
+  await expect(milestone).toBeVisible();
+  await expect(milestone).toBeFocused();
+  await expect(milestone).toHaveAttribute('aria-label', '5 questions completed. Continue');
+
+  await choiceB.click({ force: true });
+
+  expect(await page.evaluate(() => sessionStorage.getItem('wyr_completed_questions'))).toBe('5');
+
+  await milestone.click();
+  await expect(milestone).toBeHidden();
+  await expect(nextButton).toBeFocused();
+
+  const answeredQuestionId = await stage.getAttribute('data-question-id');
+  await nextButton.click();
+  await expect(stage).not.toHaveAttribute('data-question-id', answeredQuestionId ?? '');
+
+  const skippedQuestionId = await stage.getAttribute('data-question-id');
+  await page.locator('#skip-button').click();
+  await expect(stage).not.toHaveAttribute('data-question-id', skippedQuestionId ?? '');
+
+  expect(await page.evaluate(() => sessionStorage.getItem('wyr_completed_questions'))).toBe('5');
+});
+
 test('single question page does not render a next button', async ({ page }) => {
   await page.goto('/s/demq22a/');
 
