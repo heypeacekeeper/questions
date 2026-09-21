@@ -20,7 +20,7 @@ import {
   normalizeWheelDelta,
   type GesturePoint,
 } from './game-navigation';
-import { isCompletionMilestone, milestoneIcon } from './game-progress';
+import { createGameMilestoneController } from './game-milestone';
 
 interface GameConfig {
   mode: 'mixed' | 'category' | 'single' | 'favorites';
@@ -119,17 +119,6 @@ export function initGame(): void {
   let userSelectedPack = false;
   let activeSet = config.set;
   let activeLabel: string | undefined;
-  const storedCompletedQuestions = Number.parseInt(
-    session?.getItem(config.keys.completedQuestions) ?? '0',
-    10,
-  );
-  let completedQuestions =
-    Number.isInteger(storedCompletedQuestions) && storedCompletedQuestions >= 0
-      ? storedCompletedQuestions
-      : 0;
-  let milestoneVisible = false;
-  let milestoneTimer: number | null = null;
-  let milestoneHideTimer: number | null = null;
   function showFavoriteMessage(message: string): void {
     if (!favoriteToast) return;
 
@@ -280,74 +269,16 @@ export function initGame(): void {
     resultAnimationFrame = requestAnimationFrame(update);
   }
 
-  function hideCompletionMilestone(): void {
-    if (!milestone || !milestoneVisible) return;
-    const shouldRestoreFocus = document.activeElement === milestone;
-
-    if (milestoneTimer !== null) {
-      window.clearTimeout(milestoneTimer);
-      milestoneTimer = null;
-    }
-    if (milestoneHideTimer !== null) {
-      window.clearTimeout(milestoneHideTimer);
-    }
-
-    milestone.classList.remove('is-visible');
-    milestone.classList.add('is-leaving');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    milestoneHideTimer = window.setTimeout(
-      () => {
-        milestone.hidden = true;
-        milestone.classList.remove('is-leaving');
-        milestoneVisible = false;
-        milestoneHideTimer = null;
-        if (shouldRestoreFocus) {
-          nextButton?.focus({ preventScroll: true });
-        }
-      },
-      reducedMotion ? 0 : 950,
-    );
-  }
-
-  function showCompletionMilestone(count: number): void {
-    if (!milestone || !milestoneIconElement || !milestoneCount) return;
-
-    if (milestoneTimer !== null) window.clearTimeout(milestoneTimer);
-    if (milestoneHideTimer !== null) window.clearTimeout(milestoneHideTimer);
-
-    milestoneIconElement.textContent = milestoneIcon(count);
-    milestoneCount.textContent = String(count);
-    milestone.setAttribute('aria-label', `${count} questions completed. Continue`);
-    milestone.classList.remove('is-visible', 'is-leaving');
-    milestone.hidden = false;
-    milestoneVisible = true;
-    milestone.focus({ preventScroll: true });
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (milestoneVisible) milestone.classList.add('is-visible');
-      });
-    });
-
-    announce(`${count} questions completed.`);
-    milestoneTimer = window.setTimeout(hideCompletionMilestone, 2500);
-  }
-
-  function recordCompletedQuestion(): void {
-    if (config.mode === 'single') return;
-
-    completedQuestions += 1;
-    try {
-      session?.setItem(config.keys.completedQuestions, String(completedQuestions));
-    } catch {
-      // Continue using the in-memory count.
-    }
-
-    if (isCompletionMilestone(completedQuestions)) {
-      showCompletionMilestone(completedQuestions);
-    }
-  }
+  const milestoneController = createGameMilestoneController({
+    element: milestone,
+    iconElement: milestoneIconElement,
+    countElement: milestoneCount,
+    nextButton,
+    session,
+    storageKey: config.keys.completedQuestions,
+    enabled: config.mode !== 'single',
+    announce,
+  });
 
   function renderQuestion(question: GameQuestion): void {
     cancelResultAnimation();
@@ -399,7 +330,7 @@ export function initGame(): void {
     const result = generatedDisplayResult(current.id);
     if (firstAnswer) {
       animateResult(result.percentA, result.percentB);
-      recordCompletedQuestion();
+      milestoneController.recordCompletedQuestion();
     }
     requestAnimationFrame(() => {
       if (fillA) fillA.style.height = `${result.percentA}%`;
@@ -853,7 +784,14 @@ export function initGame(): void {
     const start = touchStart;
     touchStart = null;
 
-    if (!start || !isFullscreen() || config.mode === 'single' || busy || milestoneVisible) return;
+    if (
+      !start ||
+      !isFullscreen() ||
+      config.mode === 'single' ||
+      busy ||
+      milestoneController.visible
+    )
+      return;
 
     const touch = event.changedTouches[0];
     if (!touch) return;
@@ -872,7 +810,7 @@ export function initGame(): void {
   };
 
   const handleFullscreenWheel = (event: WheelEvent) => {
-    if (milestoneVisible) {
+    if (milestoneController.visible) {
       event.preventDefault();
       return;
     }
@@ -901,13 +839,6 @@ export function initGame(): void {
     touchStart = null;
   });
   gameStage.addEventListener('wheel', handleFullscreenWheel, { passive: false });
-  milestone?.addEventListener('click', hideCompletionMilestone);
-  milestone?.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-
-    event.preventDefault();
-    hideCompletionMilestone();
-  });
   favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);
