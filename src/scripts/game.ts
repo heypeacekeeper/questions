@@ -282,6 +282,7 @@ export function initGame(): void {
 
   function hideCompletionMilestone(): void {
     if (!milestone || !milestoneVisible) return;
+    const shouldRestoreFocus = document.activeElement === milestone;
 
     if (milestoneTimer !== null) {
       window.clearTimeout(milestoneTimer);
@@ -301,6 +302,9 @@ export function initGame(): void {
         milestone.classList.remove('is-leaving');
         milestoneVisible = false;
         milestoneHideTimer = null;
+        if (shouldRestoreFocus) {
+          nextButton?.focus({ preventScroll: true });
+        }
       },
       reducedMotion ? 0 : 950,
     );
@@ -314,9 +318,11 @@ export function initGame(): void {
 
     milestoneIconElement.textContent = milestoneIcon(count);
     milestoneCount.textContent = String(count);
+    milestone.setAttribute('aria-label', `${count} questions completed. Continue`);
     milestone.classList.remove('is-visible', 'is-leaving');
     milestone.hidden = false;
     milestoneVisible = true;
+    milestone.focus({ preventScroll: true });
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -896,6 +902,12 @@ export function initGame(): void {
   });
   gameStage.addEventListener('wheel', handleFullscreenWheel, { passive: false });
   milestone?.addEventListener('click', hideCompletionMilestone);
+  milestone?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    event.preventDefault();
+    hideCompletionMilestone();
+  });
   favoriteButton?.addEventListener('click', toggleFavorite);
   shareButton?.addEventListener('click', () => void share());
   fullscreenButton?.addEventListener('click', toggleFullscreen);
