@@ -5,7 +5,7 @@ import {
   resolveFavoriteIds,
   type FavoriteCatalogQuestion,
 } from '@/application/favorites-catalog';
-import { FavoriteStore } from '@/lib/favorites';
+import { createGameFavoritesController } from './game-favorites';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
 import { GameEngine, loadManifest, SessionSeenStore } from './game-engine';
 import { installFullscreenNavigation } from './game-fullscreen-navigation';
@@ -69,7 +69,6 @@ export function initGame(): void {
   const favoriteButton = $<HTMLButtonElement>('favorite-button');
   const favoriteIcon = $('favorite-icon');
   const favoriteToast = $('favorite-toast');
-  let favoriteToastTimer: number | null = null;
   const shareButton = $<HTMLButtonElement>('share-button');
   const fullscreenButton = $<HTMLButtonElement>('fullscreen-button');
   const gestureHint = $('game-gesture-hint');
@@ -91,7 +90,6 @@ export function initGame(): void {
   const gameStage = stage;
   const local = safeStorage('local');
   const session = safeStorage('session');
-  const favorites = new FavoriteStore(local, config.keys.favorites);
   let favoriteQuestions: readonly FavoriteCatalogQuestion[] = [];
   const engine = new GameEngine(
     new SessionSeenStore(`${config.keys.seen}:${config.set}`, session),
@@ -106,75 +104,50 @@ export function initGame(): void {
   let userSelectedPack = false;
   let activeSet = config.set;
   let activeLabel: string | undefined;
-  function showFavoriteMessage(message: string): void {
-    if (!favoriteToast) return;
-
-    if (favoriteToastTimer !== null) {
-      window.clearTimeout(favoriteToastTimer);
-    }
-
-    favoriteToast.textContent = message;
-    favoriteToast.hidden = false;
-
-    favoriteToastTimer = window.setTimeout(() => {
-      favoriteToast.hidden = true;
-      favoriteToast.textContent = '';
-      favoriteToastTimer = null;
-    }, 2000);
-  }
-
-  function updateFavoriteButton(): void {
-    if (!favoriteButton) return;
-
-    const saved = Boolean(current && favorites.hasId(current.id));
-    favoriteButton.hidden = !current || !local;
-    favoriteButton.setAttribute('aria-pressed', String(saved));
-    favoriteButton.setAttribute(
-      'aria-label',
-      saved ? 'Remove this question from favorites' : 'Save this question to favorites',
-    );
-    favoriteButton.title = saved ? 'Remove from favorites' : 'Save question';
-
-    if (favoriteIcon) favoriteIcon.textContent = saved ? '♥' : '♡';
-  }
+  const favoritesController = createGameFavoritesController({
+    button: favoriteButton,
+    icon: favoriteIcon,
+    toast: favoriteToast,
+    storage: local,
+    storageKey: config.keys.favorites,
+  });
 
   function toggleFavorite(): void {
     if (!current) return;
 
-    const result = favorites.toggleId(current.id);
+    const removedQuestionId = current.id;
+    const result = favoritesController.toggle(current);
 
-    if (!result.ok) {
-      showFavoriteMessage('Favorites are unavailable in this browser.');
-      return;
-    }
-
-    updateFavoriteButton();
-    showFavoriteMessage(result.saved ? 'Added to favorites ♥' : 'Removed from favorites');
+    if (!result?.ok) return;
 
     if (config.mode === 'favorites' && !result.saved) {
-      favoriteQuestions = favoriteQuestions.filter((question) => question.id !== current?.id);
+      favoriteQuestions = favoriteQuestions.filter((question) => question.id !== removedQuestionId);
       engine.useQuestions(favoriteQuestions);
 
       if (favoriteQuestions.length === 0) {
         gameStage.hidden = true;
+
         if (favoritesGameEmpty) favoritesGameEmpty.hidden = false;
+
         if (favoritesGameEmptyText) {
           favoritesGameEmptyText.textContent =
             'You have no saved questions left. Return to the main game to save more.';
         }
+
         announce('You have no saved questions left.');
         return;
       }
 
-      engine.markSeen(current.id);
+      engine.markSeen(removedQuestionId);
     }
   }
+
   if (current) {
     engine.primeWith(current);
     engine.markSeen(current.id);
   }
   if (shareButton && current) shareButton.hidden = false;
-  updateFavoriteButton();
+  favoritesController.update(current);
   type WebkitDocument = Document & {
     webkitFullscreenEnabled?: boolean;
     webkitFullscreenElement?: Element;
@@ -249,7 +222,7 @@ export function initGame(): void {
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
 
-    updateFavoriteButton();
+    favoritesController.update(current);
     resultsController.reset(question);
   }
 
@@ -365,8 +338,10 @@ export function initGame(): void {
       return;
     }
 
-    const resolved = resolveFavoriteIds(favorites.getIds(), catalog);
-    const reconciliation = favorites.reconcileIds(new Set(catalog.map((question) => question.id)));
+    const resolved = resolveFavoriteIds(favoritesController.getIds(), catalog);
+    const reconciliation = favoritesController.reconcileIds(
+      new Set(catalog.map((question) => question.id)),
+    );
 
     if (!reconciliation.ok) {
       gameStage.hidden = true;
