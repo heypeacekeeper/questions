@@ -7,14 +7,9 @@ import {
 } from '@/application/favorites-catalog';
 import { FavoriteStore } from '@/lib/favorites';
 import type { GameDataManifest, PackSetManifestEntry } from '@/application/game-data-service';
-import {
-  formatGeneratedPercent,
-  GameEngine,
-  generatedDisplayResult,
-  loadManifest,
-  SessionSeenStore,
-} from './game-engine';
+import { GameEngine, loadManifest, SessionSeenStore } from './game-engine';
 import { installFullscreenNavigation } from './game-fullscreen-navigation';
+import { createGameResultsController } from './game-results';
 import { createGameMilestoneController } from './game-milestone';
 
 interface GameConfig {
@@ -104,10 +99,7 @@ export function initGame(): void {
     config.refill,
   );
   let current: GameQuestion | null = config.initial;
-  let hasAnswered = false;
-  let lastPick: 'A' | 'B' | null = null;
   let busy = false;
-  let resultAnimationFrame: number | null = null;
   let manifest: GameDataManifest | null = null;
   let pendingGatedPack: { slug: string; name: string } | null = null;
   let activationRequestId = 0;
@@ -216,54 +208,6 @@ export function initGame(): void {
     gameStage.classList.add('has-notice');
   };
 
-  function cancelResultAnimation(): void {
-    if (resultAnimationFrame !== null) {
-      cancelAnimationFrame(resultAnimationFrame);
-      resultAnimationFrame = null;
-    }
-  }
-
-  function animateResult(percentATarget: number, percentBTarget: number): void {
-    cancelResultAnimation();
-    gameStage.dataset.resultReady = '0';
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if (percentA) percentA.textContent = formatGeneratedPercent(percentATarget);
-      if (percentB) percentB.textContent = formatGeneratedPercent(percentBTarget);
-      gameStage.dataset.resultReady = '1';
-      return;
-    }
-
-    const duration = 900;
-    const startValue = 50;
-    const startedAt = performance.now();
-
-    if (percentA) percentA.textContent = formatGeneratedPercent(startValue);
-    if (percentB) percentB.textContent = formatGeneratedPercent(startValue);
-
-    const update = (now: number) => {
-      const progress = Math.min((now - startedAt) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-
-      const valueA = startValue + (percentATarget - startValue) * eased;
-      const valueB = startValue + (percentBTarget - startValue) * eased;
-
-      if (percentA) percentA.textContent = formatGeneratedPercent(valueA);
-      if (percentB) percentB.textContent = formatGeneratedPercent(valueB);
-
-      if (progress < 1) {
-        resultAnimationFrame = requestAnimationFrame(update);
-      } else {
-        resultAnimationFrame = null;
-        if (percentA) percentA.textContent = formatGeneratedPercent(percentATarget);
-        if (percentB) percentB.textContent = formatGeneratedPercent(percentBTarget);
-        gameStage.dataset.resultReady = '1';
-      }
-    };
-
-    resultAnimationFrame = requestAnimationFrame(update);
-  }
-
   const milestoneController = createGameMilestoneController({
     element: milestone,
     iconElement: milestoneIconElement,
@@ -275,67 +219,45 @@ export function initGame(): void {
     announce,
   });
 
+  const resultsController = createGameResultsController({
+    stage: gameStage,
+    choiceA,
+    choiceB,
+    textA,
+    textB,
+    optionLabelA,
+    optionLabelB,
+    percentA,
+    percentB,
+    fillA,
+    fillB,
+    verdict,
+    announce,
+    onFirstAnswer: () => milestoneController.recordCompletedQuestion(),
+  });
+
   function renderQuestion(question: GameQuestion): void {
-    cancelResultAnimation();
-    delete gameStage.dataset.resultReady;
     current = question;
 
     if (nextButton?.dataset.action === 'retry') {
       delete nextButton.dataset.action;
     }
+
     if (nextLabel) nextLabel.textContent = 'Next question';
-    hasAnswered = false;
-    lastPick = null;
-    gameStage.classList.remove('answered', 'has-notice');
+
+    gameStage.classList.remove('has-notice');
     gameStage.dataset.questionId = question.id;
     gameStage.dataset.shareCode = question.s;
+
     updateFavoriteButton();
-    [choiceA, choiceB].forEach((button) => {
-      button?.classList.remove('picked', 'not-picked');
-      button?.setAttribute('aria-pressed', 'false');
-    });
-    if (optionLabelA) optionLabelA.textContent = 'OPTION A';
-    if (optionLabelB) optionLabelB.textContent = 'OPTION B';
-    if (textA) textA.textContent = question.a;
-    if (textB) textB.textContent = question.b;
-    [percentA, percentB, verdict].forEach((element) => {
-      if (element) element.textContent = '';
-    });
-    if (fillA) fillA.style.height = '0';
-    if (fillB) fillB.style.height = '0';
-
-    announce(`Would you rather ${question.a}, or ${question.b}?`);
+    resultsController.reset(question);
   }
+
   function choose(choice: 'A' | 'B'): void {
-    if (!current || busy) return;
-    if (hasAnswered && lastPick === choice) return;
-    const firstAnswer = !hasAnswered;
-    hasAnswered = true;
-    lastPick = choice;
-    gameStage.classList.add('answered');
-    const picked = choice === 'A' ? choiceA : choiceB;
-    const other = choice === 'A' ? choiceB : choiceA;
-    [choiceA, choiceB].forEach((button) => button?.classList.remove('picked', 'not-picked'));
-    picked?.classList.add('picked');
-    other?.classList.add('not-picked');
-    choiceA?.setAttribute('aria-pressed', String(choice === 'A'));
-    choiceB?.setAttribute('aria-pressed', String(choice === 'B'));
-    if (optionLabelA) optionLabelA.textContent = choice === 'A' ? 'YOUR CHOICE' : 'OPTION A';
-    if (optionLabelB) optionLabelB.textContent = choice === 'B' ? 'YOUR CHOICE' : 'OPTION B';
-    const result = generatedDisplayResult(current.id);
-    if (firstAnswer) {
-      animateResult(result.percentA, result.percentB);
-      milestoneController.recordCompletedQuestion();
-    }
-    requestAnimationFrame(() => {
-      if (fillA) fillA.style.height = `${result.percentA}%`;
-      if (fillB) fillB.style.height = `${result.percentB}%`;
-    });
-
-    announce(
-      `Option A ${formatGeneratedPercent(result.percentA)}. Option B ${formatGeneratedPercent(result.percentB)}. For-fun result.`,
-    );
+    if (!current) return;
+    resultsController.choose(current, choice);
   }
+
   function showQuestionLoadFailure(): void {
     const message = 'Could not load more questions. Check your connection and try again.';
     setNotice(message);
