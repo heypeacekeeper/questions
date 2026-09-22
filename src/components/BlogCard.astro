@@ -18,8 +18,8 @@ const path = blogPostPath(post);
         <img
           src={post.data.image}
           alt={post.data.imageAlt ?? ''}
-          width="960"
-          height="540"
+          width="1200"
+          height="630"
           loading={featured ? 'eager' : 'lazy'}
           decoding="async"
         />
@@ -85,7 +85,7 @@ const path = blogPostPath(post);
   }
 
   .blog-card-media {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 40 / 21;
     overflow: hidden;
     background: #f1eafb;
   }
@@ -207,7 +207,7 @@ const path = blogPostPath(post);
 
     .blog-card-featured .blog-card-media {
       min-height: 0;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 40 / 21;
     }
 
     .blog-card-featured .blog-card-content {

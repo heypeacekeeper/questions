@@ -30,6 +30,14 @@ const blogSchema = z
         message: 'Image alt text is required when an article image is provided',
       });
     }
+
+    if (data.updatedAt && data.updatedAt < data.publishedAt) {
+      context.addIssue({
+        code: 'custom',
+        path: ['updatedAt'],
+        message: 'Updated date cannot be earlier than publication date',
+      });
+    }
   });
 
 const blog = defineCollection({

@@ -614,3 +614,16 @@ test('blog listing and article expose expected SEO metadata', async ({ page }) =
   await expect(tableOfContentsLink).toHaveAttribute('href', '#what-you-need-to-play');
   await expect(page.locator('#what-you-need-to-play')).toHaveCount(1);
 });
+
+test('sitemap includes the published blog routes', async ({ request }) => {
+  const sitemapResponse = await request.get('/sitemap-0.xml');
+
+  expect(sitemapResponse.ok()).toBe(true);
+
+  const sitemap = await sitemapResponse.text();
+
+  expect(sitemap).toContain('<loc>https://wouldyouratherquestions.org/blog/</loc>');
+  expect(sitemap).toContain(
+    '<loc>https://wouldyouratherquestions.org/blog/how-to-play-would-you-rather/</loc>',
+  );
+});

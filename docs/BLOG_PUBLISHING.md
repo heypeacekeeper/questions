@@ -17,7 +17,7 @@ Keep `draft: true` while writing. Change it to `draft: false` when the article i
 
 Use only one H1. The article title automatically becomes the H1. Use `##` for main sections and `###` for subsections.
 
-Store article images in `public/images/blog/`. Prefer compressed WebP images around 1200 × 675 pixels and below 200 KB.
+Store article images in `public/images/blog/`. Prefer compressed WebP images around 1200 × 630 pixels and below 200 KB.
 
 Before publishing, confirm:
 

@@ -104,9 +104,7 @@ const articleJsonLd = {
       <div class="wrap article-hero-inner">
         <Breadcrumbs items={breadcrumbs} />
 
-        <a class="article-category" href={ROUTES.blog}>
-          {blogCategoryLabel(post.data.category)}
-        </a>
+        <span class="article-category">{blogCategoryLabel(post.data.category)}</span>
 
         <h1>{post.data.title}</h1>
         <p class="article-excerpt">{post.data.excerpt}</p>
@@ -151,7 +149,7 @@ const articleJsonLd = {
               src={post.data.image}
               alt={post.data.imageAlt ?? ''}
               width="1200"
-              height="675"
+              height="630"
               decoding="async"
             />
           </figure>
@@ -267,11 +265,6 @@ const articleJsonLd = {
     text-transform: uppercase;
   }
 
-  .article-category:hover {
-    background: #ffe2ec;
-    text-decoration: none;
-  }
-
   .article-hero h1 {
     max-width: 900px;
     margin: 13px 0 0;
@@ -342,10 +335,15 @@ const articleJsonLd = {
     box-shadow: var(--shadow-md);
   }
 
+  .article-image {
+    aspect-ratio: 40 / 21;
+  }
+
   .article-image img {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
+    object-fit: cover;
   }
 
   .article-cover-placeholder {
