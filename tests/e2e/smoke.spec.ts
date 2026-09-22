@@ -561,3 +561,56 @@ test('favorites migrate, reconcile, and play from the current catalog', async ({
   await expect(page.locator('#favorites-empty')).toBeVisible();
   await expect(page.locator('#favorite-list')).toBeHidden();
 });
+
+test('blog listing and article expose expected SEO metadata', async ({ page }) => {
+  await page.goto('/blog/');
+
+  await expect(page).toHaveTitle(/Blog.*Would You Rather Questions/);
+  await expect(page.locator('main h1')).toHaveText('The Would You Rather Blog');
+
+  const articleLink = page.locator('.blog-card-link[href="/blog/how-to-play-would-you-rather/"]');
+
+  await expect(articleLink).toBeVisible();
+  await expect(
+    articleLink.getByRole('heading', {
+      name: 'How to Play Would You Rather',
+    }),
+  ).toBeVisible();
+
+  await expect(page.locator('#nav-links a[href="/blog/"]')).toHaveCount(1);
+  await expect(page.locator('#site-footer a[href="/blog/"]')).toHaveCount(1);
+
+  await page.goto('/blog/how-to-play-would-you-rather/');
+
+  await expect(page).toHaveTitle(/How to Play Would You Rather/);
+  await expect(page.locator('main h1')).toHaveText('How to Play Would You Rather');
+
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    /wouldyouratherquestions\.org\/blog\/how-to-play-would-you-rather\/$/,
+  );
+
+  const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
+
+  const blogPosting = structuredData
+    .map(
+      (block) =>
+        JSON.parse(block) as {
+          '@type'?: string;
+          headline?: string;
+          datePublished?: string;
+        },
+    )
+    .find((block) => block['@type'] === 'BlogPosting');
+
+  expect(blogPosting).toMatchObject({
+    '@type': 'BlogPosting',
+    headline: 'How to Play Would You Rather',
+  });
+  expect(blogPosting?.datePublished).toMatch(/^2026-09-22T/);
+
+  const tableOfContentsLink = page.locator('a[href="#what-you-need-to-play"]').first();
+
+  await expect(tableOfContentsLink).toHaveAttribute('href', '#what-you-need-to-play');
+  await expect(page.locator('#what-you-need-to-play')).toHaveCount(1);
+});

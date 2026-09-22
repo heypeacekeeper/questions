@@ -1,12 +1,14 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { isBlogPostPublished } from '@/lib/blog-publication';
 
 export type BlogPost = CollectionEntry<'blog'>;
 
 export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
   const posts = await getCollection('blog');
+  const now = new Date();
 
   return posts
-    .filter((post: BlogPost) => !post.data.draft)
+    .filter((post: BlogPost) => isBlogPostPublished(post.data, now))
     .sort(
       (first: BlogPost, second: BlogPost) =>
         second.data.publishedAt.getTime() - first.data.publishedAt.getTime(),
