@@ -20,12 +20,32 @@ test('home game shows stable local display results and advances', async ({ page 
     localStorage.setItem('wyr_pack', 'for-couples');
   });
 
-  const manifestLoaded = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === '/game-data/manifest.json',
-  );
+  const initialGameDataRequests: string[] = [];
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith('/game-data/')) {
+      initialGameDataRequests.push(pathname);
+    }
+  });
 
   await page.goto('/');
-  await manifestLoaded;
+
+  const serverRenderedQuestionId = await page
+    .locator('#game-stage')
+    .getAttribute('data-question-id');
+
+  expect(serverRenderedQuestionId).toBeTruthy();
+
+  await page.waitForTimeout(500);
+
+  expect(initialGameDataRequests).toEqual([]);
+  await expect(page.locator('#game-stage')).toHaveAttribute(
+    'data-question-id',
+    serverRenderedQuestionId ?? '',
+  );
+  await expect(page.locator('#choice-a')).toBeEnabled();
+  await expect(page.locator('#choice-b')).toBeEnabled();
+  await expect(page.locator('#skip-button')).toBeEnabled();
 
   await expect(page.locator('#pack-label')).toHaveText('Mixed');
   expect(await page.evaluate(() => localStorage.getItem('wyr_pack'))).toBeNull();
@@ -362,7 +382,9 @@ test('support pages and 404 render without blank states', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Page not found');
 });
 
-test('home question changes after reload and browser history restoration', async ({ page }) => {
+test('home question remains stable after reload and browser history restoration', async ({
+  page,
+}) => {
   await page.goto('/');
 
   const stage = page.locator('#game-stage');
@@ -373,20 +395,20 @@ test('home question changes after reload and browser history restoration', async
 
   await page.reload();
   await expect(stage).toHaveAttribute('data-entry-ready', '1');
+  await expect(stage).toHaveAttribute('data-question-id', firstQuestionId ?? '');
 
-  const secondQuestionId = await stage.getAttribute('data-question-id');
-  expect(secondQuestionId).toBeTruthy();
-  expect(secondQuestionId).not.toBe(firstQuestionId);
+  const reloadedQuestionId = await stage.getAttribute('data-question-id');
+  expect(reloadedQuestionId).toBe(firstQuestionId);
 
   await page.goto('/categories/');
   await page.goBack();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(stage).not.toHaveAttribute('data-question-id', secondQuestionId ?? '');
+  await expect(stage).toHaveAttribute('data-entry-ready', '1');
+  await expect(stage).toHaveAttribute('data-question-id', reloadedQuestionId ?? '');
 
   const restoredQuestionId = await stage.getAttribute('data-question-id');
-  expect(restoredQuestionId).toBeTruthy();
-  expect(restoredQuestionId).not.toBe(secondQuestionId);
+  expect(restoredQuestionId).toBe(reloadedQuestionId);
 });
 
 test('game question can be saved and removed using ID-only storage', async ({ page }) => {

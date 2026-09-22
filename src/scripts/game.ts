@@ -104,6 +104,7 @@ export function initGame(): void {
   let userSelectedPack = false;
   let activeSet = config.set;
   let activeLabel: string | undefined;
+  let initialSetReady = config.mode === 'single' || config.mode === 'favorites';
   const favoritesController = createGameFavoritesController({
     button: favoriteButton,
     icon: favoriteIcon,
@@ -273,6 +274,8 @@ export function initGame(): void {
           showQuestionLoadFailure();
           return;
         }
+
+        initialSetReady = true;
       }
 
       if (config.mode === 'favorites' && nextButton?.dataset.action === 'replay') {
@@ -292,6 +295,17 @@ export function initGame(): void {
         }
 
         return;
+      }
+
+      if (!initialSetReady && !userSelectedPack) {
+        const requestId = await activateSet(activeSet, activeLabel);
+
+        if (requestId === null) {
+          showQuestionLoadFailure();
+          return;
+        }
+
+        initialSetReady = true;
       }
 
       const question = await engine.next(current?.id ?? null);
@@ -665,63 +679,10 @@ export function initGame(): void {
   if (config.mode === 'favorites') void activateFavoritesGame();
 
   if (config.mode !== 'single' && config.mode !== 'favorites') {
-    async function loadRandomEntryQuestion(): Promise<void> {
-      if (busy || userSelectedPack) return;
+    gameStage.dataset.entryReady = '1';
+  }
 
-      busy = true;
-      gameStage.dataset.entryReady = '0';
-      gameStage.setAttribute('aria-busy', 'true');
-      if (nextButton) nextButton.disabled = true;
-      if (skipButton) skipButton.disabled = true;
-      if (choiceA) choiceA.disabled = true;
-      if (choiceB) choiceB.disabled = true;
-      if (favoriteButton) favoriteButton.disabled = true;
-      if (shareButton) shareButton.disabled = true;
-      if (packButton) packButton.disabled = true;
-
-      try {
-        if (config.mode === 'mixed') {
-          local?.removeItem(config.keys.pack);
-        }
-
-        const previousQuestionId = current?.id ?? null;
-        const requestId = await activateSet(config.set);
-
-        if (requestId === null || userSelectedPack) return;
-
-        const question = await engine.next(previousQuestionId);
-
-        if (requestId !== activationRequestId || userSelectedPack) return;
-
-        if (question) {
-          renderQuestion(question);
-        } else {
-          showQuestionLoadFailure();
-        }
-      } finally {
-        busy = false;
-        gameStage.dataset.entryReady = '1';
-        gameStage.removeAttribute('aria-busy');
-        if (nextButton) nextButton.disabled = false;
-        if (skipButton) skipButton.disabled = false;
-        if (choiceA) choiceA.disabled = false;
-        if (choiceB) choiceB.disabled = false;
-        if (favoriteButton) favoriteButton.disabled = false;
-        if (shareButton) shareButton.disabled = false;
-        if (packButton) packButton.disabled = false;
-      }
-    }
-
-    void loadRandomEntryQuestion();
-
-    window.addEventListener('pageshow', (event) => {
-      if (!event.persisted || busy) return;
-
-      gameStage.dataset.entryReady = '0';
-
-      void nextQuestion().finally(() => {
-        gameStage.dataset.entryReady = '1';
-      });
-    });
+  if (config.mode === 'mixed') {
+    local?.removeItem(config.keys.pack);
   }
 }
