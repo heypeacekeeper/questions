@@ -1,0 +1,610 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BlogCard from '@/components/BlogCard.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getContentContext } from '@/repositories/factory';
+import { BRAND_NAME, ROUTES, absoluteUrl } from '@/config/site';
+import {
+  blogCategoryLabel,
+  blogPostPath,
+  formatBlogDate,
+  getPublishedBlogPosts,
+  type BlogPost,
+} from '@/lib/blog';
+import { defaultImage, homeBreadcrumb } from '@/lib/seo';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedBlogPosts();
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: BlogPost;
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const posts = await getPublishedBlogPosts();
+
+const relatedPosts = posts
+  .filter((candidate) => candidate.id !== post.id)
+  .sort((first, second) => {
+    const firstScore =
+      Number(first.data.category === post.data.category) +
+      first.data.tags.filter((tag) => post.data.tags.includes(tag)).length;
+
+    const secondScore =
+      Number(second.data.category === post.data.category) +
+      second.data.tags.filter((tag) => post.data.tags.includes(tag)).length;
+
+    return secondScore - firstScore;
+  })
+  .slice(0, 3);
+
+const tableOfContents = headings.filter((heading) => heading.depth === 2);
+const path = blogPostPath(post);
+const ctx = await getContentContext();
+const siteUrl = ctx.env.siteUrl;
+const canonicalUrl = absoluteUrl(path, siteUrl);
+const socialImage = post.data.image ? absoluteUrl(post.data.image, siteUrl) : defaultImage(siteUrl);
+
+const meta = {
+  title: `${post.data.title} – ${BRAND_NAME}`,
+  description: post.data.description,
+  path,
+  ogType: 'article' as const,
+  image: post.data.image,
+  imageAlt: post.data.imageAlt,
+};
+
+const breadcrumbs = [
+  homeBreadcrumb(),
+  { name: 'Blog', path: ROUTES.blog },
+  { name: post.data.title, path },
+];
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  url: canonicalUrl,
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonicalUrl,
+  },
+  image: socialImage,
+  datePublished: post.data.publishedAt.toISOString(),
+  dateModified: (post.data.updatedAt ?? post.data.publishedAt).toISOString(),
+  author: {
+    '@type': 'Organization',
+    name: post.data.author,
+  },
+  publisher: {
+    '@type': 'Organization',
+    '@id': `${absoluteUrl('/', siteUrl)}#organization`,
+    name: BRAND_NAME,
+  },
+  articleSection: blogCategoryLabel(post.data.category),
+  keywords: post.data.tags.join(', '),
+  timeRequired: `PT${post.data.readingMinutes}M`,
+  inLanguage: 'en-US',
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout meta={meta} breadcrumbs={breadcrumbs} jsonLd={[articleJsonLd]} bodyClass="blog-post">
+  <article>
+    <header class="article-hero">
+      <div class="wrap article-hero-inner">
+        <Breadcrumbs items={breadcrumbs} />
+
+        <a class="article-category" href={ROUTES.blog}>
+          {blogCategoryLabel(post.data.category)}
+        </a>
+
+        <h1>{post.data.title}</h1>
+        <p class="article-excerpt">{post.data.excerpt}</p>
+
+        <div class="article-byline">
+          <div class="article-author-mark" aria-hidden="true">
+            ?
+          </div>
+
+          <div>
+            <p>
+              By <strong>{post.data.author}</strong>
+            </p>
+
+            <p class="article-date">
+              <time datetime={post.data.publishedAt.toISOString()}>
+                Published {formatBlogDate(post.data.publishedAt)}
+              </time>
+
+              {post.data.updatedAt && (
+                <>
+                  <span aria-hidden="true"> · </span>
+                  <time datetime={post.data.updatedAt.toISOString()}>
+                    Updated {formatBlogDate(post.data.updatedAt)}
+                  </time>
+                </>
+              )}
+
+              <span aria-hidden="true"> · </span>
+              <span>{post.data.readingMinutes} min read</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap article-layout">
+      <div class="article-main">
+        {post.data.image ? (
+          <figure class="article-image">
+            <img
+              src={post.data.image}
+              alt={post.data.imageAlt ?? ''}
+              width="1200"
+              height="675"
+              decoding="async"
+            />
+          </figure>
+        ) : (
+          <div class="article-cover-placeholder" aria-hidden="true">
+            <span>Would you rather?</span>
+          </div>
+        )}
+
+        {tableOfContents.length >= 2 && (
+          <nav class="mobile-table-of-contents" aria-labelledby="mobile-contents-heading">
+            <h2 id="mobile-contents-heading">In this guide</h2>
+            <ol>
+              {tableOfContents.map((heading) => (
+                <li>
+                  <a href={`#${heading.slug}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+
+        <div class="prose blog-prose">
+          <Content />
+        </div>
+
+        <aside class="article-editorial-note" aria-label="Editorial information">
+          <strong>About this guide</strong>
+          <p>
+            This article was prepared by the {BRAND_NAME} editorial team. Read our{' '}
+            <a href={ROUTES.editorialPolicy}>editorial policy</a> to learn how we create and review
+            our content.
+          </p>
+        </aside>
+
+        <aside class="article-cta" aria-labelledby="article-cta-heading">
+          <span class="section-tag">Ready to play?</span>
+          <h2 id="article-cta-heading">Put these rules into practice</h2>
+          <p>
+            Browse questions by category or start the free interactive game. No account or equipment
+            is required.
+          </p>
+
+          <div class="article-cta-actions">
+            <a class="article-primary-action" href={ROUTES.categories}>
+              Browse questions
+            </a>
+            <a class="article-secondary-action" href={ROUTES.home}>
+              Play the game
+            </a>
+          </div>
+        </aside>
+      </div>
+
+      {tableOfContents.length >= 2 && (
+        <aside class="desktop-table-of-contents">
+          <nav aria-labelledby="desktop-contents-heading">
+            <h2 id="desktop-contents-heading">In this guide</h2>
+            <ol>
+              {tableOfContents.map((heading) => (
+                <li>
+                  <a href={`#${heading.slug}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </aside>
+      )}
+    </div>
+  </article>
+
+  {relatedPosts.length > 0 && (
+    <section class="related-articles" aria-labelledby="related-articles-heading">
+      <div class="wrap">
+        <header>
+          <span class="section-tag">Keep reading</span>
+          <h2 id="related-articles-heading">Related articles</h2>
+        </header>
+
+        <div class="related-grid">
+          {relatedPosts.map((relatedPost) => (
+            <BlogCard post={relatedPost} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .article-hero {
+    padding: clamp(30px, 6vw, 70px) 0 clamp(35px, 6vw, 68px);
+    background:
+      radial-gradient(circle at 86% 16%, rgba(255, 212, 42, 0.22), transparent 28%),
+      radial-gradient(circle at 10% 88%, rgba(118, 69, 223, 0.12), transparent 30%);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .article-hero-inner {
+    max-width: 940px;
+  }
+
+  .article-category {
+    display: inline-flex;
+    margin-top: 24px;
+    padding: 5px 11px;
+    color: var(--pink-dark);
+    background: #fff0f5;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .article-category:hover {
+    background: #ffe2ec;
+    text-decoration: none;
+  }
+
+  .article-hero h1 {
+    max-width: 900px;
+    margin: 13px 0 0;
+    color: var(--ink);
+    font-size: clamp(39px, 7vw, 67px);
+    line-height: 1.04;
+    letter-spacing: -0.052em;
+    text-wrap: balance;
+  }
+
+  .article-excerpt {
+    max-width: 790px;
+    margin: 18px 0 0;
+    color: var(--text);
+    font-size: clamp(18px, 2.2vw, 21px);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .article-byline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 25px;
+  }
+
+  .article-author-mark {
+    width: 45px;
+    height: 45px;
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: 900;
+    transform: rotate(-6deg);
+  }
+
+  .article-byline p {
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .article-date {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .article-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 780px) minmax(210px, 260px);
+    justify-content: center;
+    gap: clamp(35px, 6vw, 72px);
+    padding-block: clamp(35px, 6vw, 75px);
+  }
+
+  .article-main {
+    min-width: 0;
+  }
+
+  .article-image,
+  .article-cover-placeholder {
+    margin: 0 0 clamp(28px, 5vw, 48px);
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .article-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .article-cover-placeholder {
+    min-height: 310px;
+    display: grid;
+    place-items: center;
+    padding: 30px;
+    background:
+      radial-gradient(circle at 26% 24%, rgba(255, 212, 42, 0.8), transparent 24%),
+      radial-gradient(circle at 78% 72%, rgba(45, 131, 237, 0.4), transparent 26%),
+      linear-gradient(135deg, var(--pink), var(--purple));
+  }
+
+  .article-cover-placeholder span {
+    color: #fff;
+    font-size: clamp(31px, 6vw, 56px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    text-align: center;
+    text-shadow: 0 3px 20px rgba(40, 24, 63, 0.28);
+    transform: rotate(-3deg);
+  }
+
+  .desktop-table-of-contents {
+    position: relative;
+  }
+
+  .desktop-table-of-contents nav {
+    position: sticky;
+    top: calc(var(--nav-height) + 24px);
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .desktop-table-of-contents h2,
+  .mobile-table-of-contents h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .desktop-table-of-contents ol,
+  .mobile-table-of-contents ol {
+    display: grid;
+    gap: 8px;
+    margin: 13px 0 0;
+    padding-left: 20px;
+  }
+
+  .desktop-table-of-contents a,
+  .mobile-table-of-contents a {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .desktop-table-of-contents a:hover,
+  .mobile-table-of-contents a:hover {
+    color: var(--pink-dark);
+  }
+
+  .mobile-table-of-contents {
+    display: none;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+  }
+
+  .blog-prose {
+    max-width: none;
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.78;
+  }
+
+  .blog-prose :global(h2) {
+    margin: 48px 0 14px;
+    color: var(--ink);
+    font-size: clamp(27px, 4vw, 37px);
+    line-height: 1.18;
+    letter-spacing: -0.035em;
+    scroll-margin-top: calc(var(--nav-height) + 20px);
+    text-wrap: balance;
+  }
+
+  .blog-prose :global(h3) {
+    margin: 32px 0 10px;
+    color: var(--ink);
+    font-size: 22px;
+    line-height: 1.3;
+    scroll-margin-top: calc(var(--nav-height) + 20px);
+  }
+
+  .blog-prose :global(p) {
+    margin-block: 0 19px;
+  }
+
+  .blog-prose :global(ul),
+  .blog-prose :global(ol) {
+    margin: 0 0 22px;
+    padding-left: 26px;
+  }
+
+  .blog-prose :global(li) {
+    margin-bottom: 8px;
+    padding-left: 3px;
+  }
+
+  .blog-prose :global(blockquote) {
+    margin: 28px 0;
+    padding: 18px 22px;
+    color: var(--ink);
+    background: #fff6da;
+    border-left: 5px solid var(--yellow);
+    border-radius: 0 12px 12px 0;
+  }
+
+  .blog-prose :global(strong) {
+    color: var(--ink);
+  }
+
+  .article-editorial-note {
+    margin-top: 42px;
+    padding: 20px;
+    color: var(--text);
+    background: #faf7ff;
+    border: 1px solid #dfd2fa;
+    border-radius: 14px;
+  }
+
+  .article-editorial-note p {
+    margin: 6px 0 0;
+  }
+
+  .article-cta {
+    margin-top: 30px;
+    padding: clamp(25px, 5vw, 40px);
+    background: radial-gradient(circle at 88% 12%, rgba(255, 212, 42, 0.5), transparent 28%), #fff;
+    border: 1px solid var(--line);
+    border-radius: 19px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .article-cta h2 {
+    margin: 3px 0 0;
+    color: var(--ink);
+    font-size: clamp(27px, 4vw, 36px);
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+  }
+
+  .article-cta p {
+    margin: 10px 0 0;
+    color: var(--text);
+  }
+
+  .article-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .article-primary-action,
+  .article-secondary-action {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 17px;
+    border: 2px solid transparent;
+    border-radius: 11px;
+    font-weight: 900;
+  }
+
+  .article-primary-action {
+    color: #fff;
+    background: var(--pink-dark);
+  }
+
+  .article-primary-action:hover {
+    color: #fff;
+    background: #b90f49;
+    text-decoration: none;
+  }
+
+  .article-secondary-action {
+    color: var(--ink);
+    background: #fff;
+    border-color: var(--line);
+  }
+
+  .article-secondary-action:hover {
+    border-color: var(--purple);
+    background: #faf7ff;
+    text-decoration: none;
+  }
+
+  .related-articles {
+    padding: clamp(48px, 7vw, 82px) 0;
+    background: rgba(255, 255, 255, 0.5);
+    border-top: 1px solid var(--line);
+  }
+
+  .related-articles header {
+    margin-bottom: 22px;
+  }
+
+  .related-articles h2 {
+    margin: 3px 0 0;
+    font-size: clamp(29px, 4vw, 41px);
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 21px;
+  }
+
+  @media (max-width: 900px) {
+    .article-layout {
+      grid-template-columns: minmax(0, 780px);
+    }
+
+    .desktop-table-of-contents {
+      display: none;
+    }
+
+    .mobile-table-of-contents {
+      display: block;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .article-cover-placeholder {
+      min-height: 225px;
+    }
+
+    .article-byline {
+      align-items: flex-start;
+    }
+
+    .related-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .article-cta-actions {
+      flex-direction: column;
+    }
+  }
+</style>
