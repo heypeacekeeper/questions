@@ -1,0 +1,513 @@
+---
+import type { Question } from '@/domain/question';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Game from '@/components/Game.astro';
+import QuestionList from '@/components/QuestionList.astro';
+import Sidebar from '@/components/Sidebar.astro';
+import AdSlot from '@/components/AdSlot.astro';
+import { getContentContext } from '@/repositories/factory';
+import { HOMEPAGE, NAVIGATION, ROUTES } from '@/config/site';
+import { initialGameQuestion, sidebarData } from '@/lib/page-data';
+
+const ctx = await getContentContext();
+const visible = await ctx.categoryService.getVisibleCategories();
+
+const packs = (await ctx.categoryService.getGamePackCategories()).map((category) => ({
+  slug: category.slug,
+  name: category.name,
+  icon: category.icon,
+  description: category.shortDescription,
+  requiresAgeGate: category.requiresAgeGate,
+}));
+
+const initial = await initialGameQuestion(null);
+
+const sections = (
+  await Promise.all(
+    HOMEPAGE.sectionSlugs.map(async (slug) => {
+      const category = visible.find((item) => item.slug === slug);
+      if (!category) return null;
+
+      const questions = await ctx.questionService.getHomepageSample(category);
+      if (questions.length === 0) return null;
+
+      return { category, questions };
+    }),
+  )
+).filter((section): section is NonNullable<typeof section> => section !== null);
+
+const featuredSeen = new Set<string>();
+
+const featuredQuestions: Question[] = sections
+  .flatMap((section) => section.questions.slice(0, 4))
+  .filter((question) => {
+    if (featuredSeen.has(question.id)) return false;
+    featuredSeen.add(question.id);
+    return true;
+  })
+  .slice(0, 12);
+
+const featuredIds = new Set(featuredQuestions.map((question) => question.id));
+
+const remainingSections = sections
+  .map((section) => ({
+    category: section.category,
+    questions: section.questions.filter((question) => !featuredIds.has(question.id)),
+  }))
+  .filter((section) => section.questions.length > 0);
+
+const sectionSlugs = new Set(remainingSections.map((section) => section.category.slug));
+
+const quickLinks = visible
+  .filter((category) => category.navFeatured && sectionSlugs.has(category.slug))
+  .slice(0, NAVIGATION.quickLinkLimit);
+
+const totalQuestions = (await ctx.questionService.getPublished()).length;
+const { popular, seasonal } = await sidebarData();
+
+const meta = {
+  title: 'Would You Rather Questions – Homepage V2 Preview',
+  description:
+    'Browse funny, hard, kids, adult, couples and family Would You Rather questions, or play the free interactive game.',
+  path: '/homepage2/',
+  robots: 'noindex,nofollow',
+};
+---
+
+<BaseLayout meta={meta} bodyClass="homepage-v2">
+  <section class="v2-hero" aria-labelledby="v2-page-title">
+    <div class="wrap v2-hero-inner">
+      <p class="v2-eyebrow">Free question library and interactive game</p>
+
+      <h1 id="v2-page-title">Would You Rather Questions</h1>
+
+      <p class="v2-lead">
+        Browse {totalQuestions > 0 ? `${totalQuestions} ` : ''}funny, challenging and
+        conversation-starting questions for parties, classrooms, road trips, dates and game nights.
+        Prefer to play? Try the interactive game below.
+      </p>
+
+      <div class="v2-actions" aria-label="Choose how to use the questions">
+        <a class="v2-button v2-button-primary" href="#browse-questions">
+          Browse questions
+          <span aria-hidden="true">↓</span>
+        </a>
+
+        <a class="v2-button v2-button-secondary" href="#play-game">
+          Play the game
+          <span aria-hidden="true">▶</span>
+        </a>
+      </div>
+
+      <ul class="v2-benefits" aria-label="Website benefits">
+        <li>No sign-up</li>
+        <li>Free to use</li>
+        <li>Questions for every group</li>
+      </ul>
+
+      {quickLinks.length > 0 && (
+        <nav class="v2-category-links" aria-label="Popular question categories">
+          {quickLinks.map((category) => (
+            <a href={`#${category.slug}`}>
+              <span aria-hidden="true">{category.icon}</span>
+              {category.name}
+            </a>
+          ))}
+          <a href={ROUTES.categories}>All categories</a>
+        </nav>
+      )}
+    </div>
+  </section>
+
+  <section
+    class="v2-featured wrap"
+    id="browse-questions"
+    aria-labelledby="featured-questions-heading"
+  >
+    <header class="v2-section-header">
+      <span class="section-tag">Start here</span>
+      <h2 id="featured-questions-heading">Best Would You Rather Questions</h2>
+      <p>
+        Read these questions aloud, choose one answer, and ask everyone to explain their choice.
+        There are no wrong answers—but “neither” is not allowed.
+      </p>
+    </header>
+
+    <QuestionList questions={featuredQuestions} ariaLabel="Best Would You Rather questions" />
+
+    <div class="v2-after-list">
+      <a class="section-action" href={ROUTES.categories}>
+        Browse all question categories →
+      </a>
+      <a class="v2-text-link" href="#play-game">
+        Or play these questions as a game ↓
+      </a>
+    </div>
+  </section>
+
+  <section class="v2-game-block" id="play-game" aria-labelledby="play-game-heading">
+    <div class="wrap v2-game-intro">
+      <div>
+        <span class="section-tag">Interactive mode</span>
+        <h2 id="play-game-heading">Want to play instead?</h2>
+        <p>
+          Pick between two options, compare the results and move through questions one at a time.
+          Use fullscreen for parties and group games.
+        </p>
+      </div>
+
+      <a class="v2-text-link" href="#more-questions">
+        Skip to more question lists ↓
+      </a>
+    </div>
+
+    <div class="v2-game">
+      <Game mode="mixed" initial={initial} packs={packs} />
+    </div>
+  </section>
+
+  <AdSlot slot="belowGame" />
+
+  <div class="wrap page-layout" id="more-questions">
+    <div class="content-column">
+      {remainingSections.map((section, index) => (
+        <>
+          <section
+            class="question-section"
+            id={section.category.slug}
+            aria-labelledby={`${section.category.slug}-heading`}
+          >
+            <header class="section-header">
+              <span class="section-tag">{section.category.shortDescription}</span>
+              <h2 id={`${section.category.slug}-heading`}>{section.category.h1}</h2>
+              <p>{section.category.metaDescription}</p>
+            </header>
+
+            <QuestionList questions={section.questions} />
+
+            <a class="section-action" href={section.category.canonicalPath}>
+              See all {section.category.publishedQuestionCount}{' '}
+              {section.category.name.toLowerCase()} questions →
+            </a>
+          </section>
+
+          {index === 0 && <AdSlot slot="inContent" class="inline-ad" />}
+        </>
+      ))}
+
+      <section class="how-to" aria-labelledby="v2-how-to-heading">
+        <header class="how-to-header">
+          <h2 id="v2-how-to-heading">How to Play Would You Rather</h2>
+          <p>No downloads, accounts, equipment or complicated rules are required.</p>
+        </header>
+
+        <div class="steps">
+          <article class="step">
+            <span class="step-number">1</span>
+            <h3>Read the choices</h3>
+            <p>Give everyone the same two funny, strange or difficult options.</p>
+          </article>
+
+          <article class="step">
+            <span class="step-number">2</span>
+            <h3>Pick one answer</h3>
+            <p>Everyone must choose option A or option B. “Neither” is not allowed.</p>
+          </article>
+
+          <article class="step">
+            <span class="step-number">3</span>
+            <h3>Explain your choice</h3>
+            <p>The best conversations happen when everyone explains why they chose their answer.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <Sidebar popular={popular} seasonal={seasonal} />
+  </div>
+
+  <AdSlot slot="footer" />
+</BaseLayout>
+
+<style>
+  .v2-hero {
+    padding: clamp(34px, 6vw, 74px) 0 30px;
+  }
+
+  .v2-hero-inner {
+    max-width: 980px;
+    text-align: center;
+  }
+
+  .v2-eyebrow {
+    margin: 0 0 8px;
+    color: var(--pink-dark);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+
+  .v2-hero h1 {
+    max-width: 850px;
+    margin: 0 auto;
+    color: var(--ink);
+    font-size: clamp(40px, 7vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+
+  .v2-lead {
+    max-width: 820px;
+    margin: 18px auto 0;
+    color: var(--text);
+    font-size: clamp(17px, 2vw, 20px);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .v2-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 11px;
+    margin-top: 24px;
+  }
+
+  .v2-button {
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 13px 21px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    font-weight: 800;
+  }
+
+  .v2-button:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .v2-button-primary {
+    color: #fff;
+    background: var(--pink-dark);
+  }
+
+  .v2-button-primary:hover {
+    color: #fff;
+    background: #b90f49;
+  }
+
+  .v2-button-secondary {
+    color: var(--ink);
+    background: #fff;
+    border-color: var(--line);
+  }
+
+  .v2-button-secondary:hover {
+    border-color: var(--purple);
+    background: #faf7ff;
+  }
+
+  .v2-benefits {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+    margin: 17px 0 0;
+    padding: 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+    list-style: none;
+  }
+
+  .v2-benefits li::before {
+    content: '✓';
+    margin-right: 6px;
+    color: #087a5c;
+    font-weight: 900;
+  }
+
+  .v2-category-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 23px;
+  }
+
+  .v2-category-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 13px;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .v2-category-links a:hover {
+    border-color: var(--pink);
+    background: #fff4f7;
+    text-decoration: none;
+  }
+
+  .v2-featured {
+    padding: 34px 0 52px;
+    scroll-margin-top: calc(var(--nav-height) + 18px);
+  }
+
+  .v2-section-header {
+    max-width: 820px;
+    margin-bottom: 19px;
+  }
+
+  .v2-section-header h2,
+  .v2-game-intro h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(30px, 4.2vw, 43px);
+    line-height: 1.14;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+
+  .v2-section-header p,
+  .v2-game-intro p {
+    margin: 9px 0 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .v2-after-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    margin-top: 17px;
+  }
+
+  .v2-text-link {
+    color: var(--pink-dark);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .v2-game-block {
+    padding: 42px 0 12px;
+    background: rgba(255, 255, 255, 0.48);
+    border-block: 1px solid var(--line);
+    scroll-margin-top: calc(var(--nav-height) + 12px);
+  }
+
+  .v2-game-intro {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 19px;
+  }
+
+  .v2-game-intro > div {
+    max-width: 780px;
+  }
+
+  .v2-game :global(.game-section) {
+    padding-top: 0;
+  }
+
+  .v2-game :global(.game-wrap) {
+    width: min(calc(100% - 32px), var(--content-max));
+  }
+
+  .v2-game :global(.game-stage) {
+    height: min(68svh, 620px);
+  }
+
+  .v2-game :global(.game-shell:fullscreen .game-stage) {
+    height: 100svh;
+    max-height: none;
+  }
+
+  #more-questions {
+    scroll-margin-top: calc(var(--nav-height) + 14px);
+  }
+
+  @media (max-width: 700px) {
+    .v2-hero {
+      padding-top: 29px;
+    }
+
+    .v2-hero-inner {
+      text-align: left;
+    }
+
+    .v2-hero h1 {
+      margin: 0;
+      font-size: clamp(38px, 13vw, 54px);
+    }
+
+    .v2-lead {
+      margin-inline: 0;
+      font-size: 17px;
+    }
+
+    .v2-actions {
+      justify-content: stretch;
+    }
+
+    .v2-button {
+      flex: 1 1 100%;
+    }
+
+    .v2-benefits,
+    .v2-category-links {
+      justify-content: flex-start;
+    }
+
+    .v2-category-links {
+      flex-wrap: nowrap;
+      margin-right: -16px;
+      padding: 2px 16px 8px 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .v2-category-links a {
+      flex: 0 0 auto;
+    }
+
+    .v2-featured {
+      padding-top: 24px;
+    }
+
+    .v2-game-intro {
+      display: block;
+    }
+
+    .v2-game-intro .v2-text-link {
+      display: inline-block;
+      margin-top: 13px;
+    }
+
+    .v2-game :global(.game-wrap) {
+      width: min(calc(100% - 20px), var(--content-max));
+    }
+
+    .v2-game :global(.game-stage) {
+      height: min(66svh, 590px);
+      min-height: 430px;
+    }
+  }
+</style>
