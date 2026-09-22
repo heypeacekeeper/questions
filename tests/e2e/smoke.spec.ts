@@ -286,6 +286,78 @@ test('contact and submission APIs remain protected form flows', async ({ page },
   expect((await submission.json()).ok).toBe(true);
 });
 
+test('contact form validates locally and exposes accessible errors', async ({ page }) => {
+  await page.addInitScript(() => {
+    const browserWindow = window as Window & {
+      __turnstileResetCount?: number;
+    };
+
+    browserWindow.__turnstileResetCount = 0;
+
+    window.turnstile = {
+      render(_element, options) {
+        const callback = options.callback;
+        if (typeof callback === 'function') {
+          callback('test-turnstile-token-value');
+        }
+        return 'test-widget';
+      },
+      reset() {
+        browserWindow.__turnstileResetCount = (browserWindow.__turnstileResetCount ?? 0) + 1;
+      },
+      getResponse() {
+        return 'test-turnstile-token-value';
+      },
+    };
+  });
+
+  let requestCount = 0;
+
+  await page.route('**/api/contact/', async (route) => {
+    requestCount += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.goto('/contact-us/');
+
+  const form = page.locator('#contact-form');
+  const name = page.locator('#c-name');
+  const email = page.locator('#c-email');
+  const nameError = form.locator('[data-error-for="name"]');
+
+  await expect(form.locator('button[type="submit"]')).toBeEnabled();
+  await form.locator('button[type="submit"]').click();
+
+  expect(requestCount).toBe(0);
+  await expect(name).toBeFocused();
+  await expect(name).toHaveAttribute('aria-invalid', 'true');
+  await expect(name).toHaveAttribute('aria-errormessage', 'contact-form-name-error');
+  await expect(nameError).toHaveText('Please complete this field.');
+
+  const emailDescriptions = ((await email.getAttribute('aria-describedby')) ?? '').split(/\s+/);
+
+  expect(emailDescriptions).toContain('contact-form-email-error');
+  expect(emailDescriptions).toContain('c-email-hint');
+
+  const resetCount = await page.evaluate(() => {
+    const browserWindow = window as Window & {
+      __turnstileResetCount?: number;
+    };
+    return browserWindow.__turnstileResetCount;
+  });
+
+  expect(resetCount).toBe(0);
+
+  await name.fill('Browser Test');
+  await expect(name).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(name).not.toHaveAttribute('aria-errormessage', /.+/);
+  await expect(nameError).toBeEmpty();
+});
+
 test('browser form excludes the automatic Turnstile response field', async ({ page }) => {
   await page.addInitScript(() => {
     const browserWindow = window as Window & {
