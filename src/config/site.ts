@@ -24,6 +24,7 @@ export const ROUTES = {
   categories: '/categories/',
   favorites: '/favorites/',
   favoritesPlay: '/favorites/play/',
+  blog: '/blog/',
   about: '/about-us/',
   contact: '/contact-us/',
   submit: '/submit-a-question/',
