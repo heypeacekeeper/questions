@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:runtime:mock": "npm run build:mock && tsx tools/mock-runtime-smoke.ts",
+    "verify:deployment": "tsx tools/verify-deployment.ts",
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "validate:content": "tsx tools/validate-content.ts",
     "budget": "tsx tools/performance-budget.ts",
