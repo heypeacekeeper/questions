@@ -50,6 +50,31 @@ async function main() {
     if ((await fetch(origin)).status !== 200) throw new Error('Homepage did not return 200');
     if ((await fetch(`${origin}/game-data/manifest.json`, { redirect: 'manual' })).status !== 200)
       throw new Error('Manifest did not return 200');
+
+    const healthResponse = await fetch(`${origin}/api/health/`, {
+      redirect: 'manual',
+    });
+
+    if (healthResponse.status !== 200) {
+      throw new Error(`Health endpoint returned ${healthResponse.status}`);
+    }
+
+    const health = (await healthResponse.json()) as {
+      ok?: boolean;
+      status?: string;
+      dataProvider?: string;
+      publishedQuestionCount?: number;
+    };
+
+    if (
+      !health.ok ||
+      health.status !== 'healthy' ||
+      health.dataProvider !== 'mock' ||
+      !health.publishedQuestionCount
+    ) {
+      throw new Error('Health endpoint returned invalid mock deployment metadata');
+    }
+
     console.log('✔ Mock runtime smoke passed.');
   } finally {
     if (worker.pid && process.platform !== 'win32')
