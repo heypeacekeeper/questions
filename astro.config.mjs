@@ -22,6 +22,7 @@ export default defineConfig({
   site: SITE_URL,
   output: 'static',
   trailingSlash: 'always',
+  prerenderConflictBehavior: 'error',
   build: {
     format: 'directory',
     inlineStylesheets: 'auto',
