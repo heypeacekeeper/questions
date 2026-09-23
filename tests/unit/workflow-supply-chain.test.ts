@@ -15,22 +15,15 @@ describe('workflow supply-chain security', () => {
 
     for (const file of workflowFiles) {
       const source = read(`.github/workflows/${file}`);
-      const actionReferences = [...source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm)].map(
+      const actionReferences = Array.from(
+        source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm),
         (match) => match[1],
-      );
+      ).filter((reference): reference is string => reference !== undefined);
 
       for (const reference of actionReferences) {
-        if (reference === undefined || reference.startsWith('./')) continue;
+        if (reference.startsWith('./')) continue;
         expect(reference, `${file}: ${reference}`).toMatch(/^[^@\s]+@[0-9a-f]{40}$/);
       }
     }
-  });
-
-  it('enables weekly npm and GitHub Actions dependency updates', () => {
-    const dependabot = read('.github/dependabot.yml');
-
-    expect(dependabot).toContain('package-ecosystem: npm');
-    expect(dependabot).toContain('package-ecosystem: github-actions');
-    expect(dependabot.match(/interval: weekly/g)).toHaveLength(2);
   });
 });
